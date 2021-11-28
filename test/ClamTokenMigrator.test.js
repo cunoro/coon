@@ -1,12 +1,12 @@
 const { ethers } = require('hardhat')
 const { ContractFactory } = require('ethers')
 const { expect } = require('chai')
-const { toClamAmount } = require('./helper')
+const { toCoonAmount } = require('./helper')
 const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
 const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
-describe.skip('ClamTokenMigrator', () => {
+describe.skip('CoonTokenMigrator', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -30,8 +30,8 @@ describe.skip('ClamTokenMigrator', () => {
     depositor,
     clam,
     clam2,
-    sClam,
-    sClam2,
+    sCoon,
+    sCoon2,
     dai,
     lp,
     lp2,
@@ -53,13 +53,13 @@ describe.skip('ClamTokenMigrator', () => {
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const CLAM = await ethers.getContractFactory('OtterClamERC20')
-    clam = await CLAM.deploy()
-    const CLAM2 = await ethers.getContractFactory('OtterClamERC20V2')
-    clam2 = await CLAM2.deploy()
+    const COON = await ethers.getContractFactory('CunoroCoonERC20')
+    clam = await COON.deploy()
+    const COON2 = await ethers.getContractFactory('CunoroCoonERC20V2')
+    clam2 = await COON2.deploy()
 
-    const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
-    sClam = await StakedCLAM.deploy()
+    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20')
+    sCoon = await StakedCOON.deploy()
 
     const UniswapV2FactoryContract = ContractFactory.fromSolidity(
       UniswapV2FactoryJson,
@@ -89,11 +89,11 @@ describe.skip('ClamTokenMigrator', () => {
     lp2 = UniswapV2Pair.attach(pair2Address)
 
     const BondingCalculator = await ethers.getContractFactory(
-      'OtterBondingCalculator'
+      'CunoroBondingCalculator'
     )
     const bondingCalculator = await BondingCalculator.deploy(clam.address)
 
-    const Treasury = await ethers.getContractFactory('OtterTreasury')
+    const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
       clam.address,
       dai.address,
@@ -110,7 +110,7 @@ describe.skip('ClamTokenMigrator', () => {
     )
 
     const MigratorContract = await ethers.getContractFactory(
-      'ClamTokenMigrator'
+      'CoonTokenMigrator'
     )
     migrator = await MigratorContract.deploy(
       clam.address,
@@ -123,7 +123,7 @@ describe.skip('ClamTokenMigrator', () => {
     )
 
     // const StakingDistributor = await ethers.getContractFactory(
-    //   'OtterStakingDistributor'
+    //   'CunoroStakingDistributor'
     // )
     // stakingDistributor = await StakingDistributor.deploy(
     //   treasury.address,
@@ -132,27 +132,27 @@ describe.skip('ClamTokenMigrator', () => {
     //   firstEpochTime
     // )
 
-    // const Staking = await ethers.getContractFactory('OtterStaking')
+    // const Staking = await ethers.getContractFactory('CunoroStaking')
     // staking = await Staking.deploy(
     //   clam.address,
-    //   sClam.address,
+    //   sCoon.address,
     //   epochLength,
     //   firstEpochNumber,
     //   firstEpochTime
     // )
 
     // // Deploy staking helper
-    // const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
+    // const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
     // stakingHelper = await StakingHelper.deploy(staking.address, clam.address)
 
-    // const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
+    // const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     // const stakingWarmup = await StakingWarmup.deploy(
     //   staking.address,
-    //   sClam.address
+    //   sCoon.address
     // )
 
-    // await sClam.initialize(staking.address)
-    // await sClam.setIndex(initialIndex)
+    // await sCoon.initialize(staking.address)
+    // await sCoon.setIndex(initialIndex)
 
     // await staking.setContract('0', stakingDistributor.address)
     // await staking.setContract('1', stakingWarmup.address)
@@ -206,21 +206,21 @@ describe.skip('ClamTokenMigrator', () => {
       const oldLPDaiAmount = ethers.utils.parseEther(
         '1328699.790772922615662018'
       )
-      const oldLPClamAmount = toClamAmount('46983.066687369')
+      const oldLPCoonAmount = toCoonAmount('46983.066687369')
 
-      // deposit DAI and mint CLAMs
+      // deposit DAI and mint COONs
       await expect(() =>
         treasury.deposit(oldDaiReserve, dai.address, profit)
       ).to.changeTokenBalance(clam, deployer, oldTotalSupply)
 
-      // deposit CLAM/DAI lp
+      // deposit COON/DAI lp
       await quickRouter.addLiquidity(
         dai.address,
         clam.address,
         oldLPDaiAmount,
-        oldLPClamAmount,
+        oldLPCoonAmount,
         oldLPDaiAmount,
-        oldLPClamAmount,
+        oldLPCoonAmount,
         deployer.address,
         1000000000000
       )
@@ -229,7 +229,7 @@ describe.skip('ClamTokenMigrator', () => {
       const lpValue = await treasury.valueOfToken(lp.address, lpBalance)
       await treasury.deposit(lpBalance, lp.address, lpValue)
 
-      const oldClamAmount = await clam.balanceOf(deployer.address)
+      const oldCoonAmount = await clam.balanceOf(deployer.address)
 
       // migrate contracts
       await migrator.migrateContracts()
@@ -254,7 +254,7 @@ describe.skip('ClamTokenMigrator', () => {
       await migrator.connect(depositor).migrate()
 
       expect(await clam2.balanceOf(deployer.address)).to.eq(
-        oldClamAmount.sub(ethers.utils.parseUnits('100', 9)).div(5)
+        oldCoonAmount.sub(ethers.utils.parseUnits('100', 9)).div(5)
       )
       expect(await clam2.balanceOf(depositor.address)).to.eq(
         ethers.utils.parseUnits('20', 9)
@@ -276,9 +276,9 @@ describe.skip('ClamTokenMigrator', () => {
       expect(await lp.balanceOf(treasury.address)).to.eq('0')
 
       // new LP open in x5 price
-      const [daiAmount, newClamAmount] = await lp2.getReserves()
+      const [daiAmount, newCoonAmount] = await lp2.getReserves()
       expect(daiAmount).to.eq('1328699790772922447494252')
-      expect(newClamAmount).to.eq(oldLPClamAmount.div(5))
+      expect(newCoonAmount).to.eq(oldLPCoonAmount.div(5))
 
       // new treasury have the same amount of total reserves
       await treasury2.auditReserves()

@@ -11,23 +11,23 @@ interface ITreasury {
     function deposit( uint _amount, address _token, uint _profit ) external returns ( uint );
 }
 
-interface IPreOtterClam {
+interface IPreCunoroCoon {
     function burnFrom( address account_, uint256 amount_ ) external;
 }
 
-interface ICirculatingCLAM {
-    function CLAMCirculatingSupply() external view returns ( uint );
+interface ICirculatingCOON {
+    function COONCirculatingSupply() external view returns ( uint );
 }
 
-contract ExercisePreClam is Ownable {
+contract ExercisePreCoon is Ownable {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
-    address public immutable pCLAM;
-    address public immutable CLAM;
+    address public immutable pCOON;
+    address public immutable COON;
     address public immutable DAI;
     address public immutable treasury;
-    address public immutable circulatingCLAMContract;
+    address public immutable circulatingCOONContract;
 
     struct Term {
         uint percent; // 4 decimals ( 5000 = 0.5% )
@@ -38,17 +38,17 @@ contract ExercisePreClam is Ownable {
 
     mapping( address => address ) public walletChange;
 
-    constructor( address _pCLAM, address _clam, address _dai, address _treasury, address _circulatingCLAMContract ) {
-        require( _pCLAM != address(0) );
-        pCLAM = _pCLAM;
+    constructor( address _pCOON, address _clam, address _dai, address _treasury, address _circulatingCOONContract ) {
+        require( _pCOON != address(0) );
+        pCOON = _pCOON;
         require( _clam != address(0) );
-        CLAM = _clam;
+        COON = _clam;
         require( _dai != address(0) );
         DAI = _dai;
         require( _treasury != address(0) );
         treasury = _treasury;
-        require( _circulatingCLAMContract != address(0) );
-        circulatingCLAMContract = _circulatingCLAMContract;
+        require( _circulatingCOONContract != address(0) );
+        circulatingCOONContract = _circulatingCOONContract;
     }
 
     // Sets terms for a new wallet
@@ -62,21 +62,21 @@ contract ExercisePreClam is Ownable {
         return true;
     }
 
-    // Allows wallet to redeem pCLAM for CLAM
+    // Allows wallet to redeem pCOON for COON
     function exercise( uint _amount ) external returns ( bool ) {
         Term memory info = terms[ msg.sender ];
         require( redeemable( info ) >= _amount, 'Not enough vested' );
         require( info.max.sub( info.claimed ) >= _amount, 'Claimed over max' );
 
         IERC20( DAI ).safeTransferFrom( msg.sender, address( this ), _amount );
-        IPreOtterClam( pCLAM ).burnFrom( msg.sender, _amount );
+        IPreCunoroCoon( pCOON ).burnFrom( msg.sender, _amount );
 
         IERC20( DAI ).approve( treasury, _amount );
-        uint CLAMToSend = ITreasury( treasury ).deposit( _amount, DAI, 0 );
+        uint COONToSend = ITreasury( treasury ).deposit( _amount, DAI, 0 );
 
         terms[ msg.sender ].claimed = info.claimed.add( _amount );
 
-        IERC20( CLAM ).safeTransfer( msg.sender, CLAMToSend );
+        IERC20( COON ).safeTransfer( msg.sender, COONToSend );
 
         return true;
     }
@@ -105,7 +105,7 @@ contract ExercisePreClam is Ownable {
     }
 
     function redeemable( Term memory _info ) internal view returns ( uint ) {
-        return ( ICirculatingCLAM( circulatingCLAMContract ).CLAMCirculatingSupply().mul( _info.percent ).mul( 1000 ) ).sub( _info.claimed );
+        return ( ICirculatingCOON( circulatingCOONContract ).COONCirculatingSupply().mul( _info.percent ).mul( 1000 ) ).sub( _info.claimed );
     }
 
 }

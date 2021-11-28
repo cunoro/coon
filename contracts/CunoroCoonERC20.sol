@@ -26,11 +26,15 @@ contract VaultOwned is Ownable {
 
 }
 
-contract OtterClamERC20 is ERC20Permit, VaultOwned {
+contract CunoroCoonERC20V2 is ERC20Permit, VaultOwned {
 
     using SafeMath for uint256;
 
-    constructor() ERC20("Otter Clam", "CLAM", 9) {
+    constructor() ERC20("Cunoro Coon", "COON2", 9) {
+    }
+
+    function completeMigration() external onlyOwner() {
+      _symbol = "COON";
     }
 
     function mint(address account_, uint256 amount_) external onlyVault() {

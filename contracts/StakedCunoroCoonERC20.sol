@@ -6,7 +6,7 @@ import "./types/ERC20.sol";
 import "./types/Ownable.sol";
 
 
-contract StakedOtterClamERC20V2 is ERC20Permit, Ownable {
+contract StakedCunoroCoonERC20V2 is ERC20Permit, Ownable {
 
     using SafeMath for uint256;
 
@@ -50,14 +50,14 @@ contract StakedOtterClamERC20V2 is ERC20Permit, Ownable {
 
     mapping ( address => mapping ( address => uint256 ) ) private _allowedValue;
 
-    constructor() ERC20("Staked Clam", "sCLAM2", 9) ERC20Permit() {
+    constructor() ERC20("Staked Coon", "sCOON2", 9) ERC20Permit() {
         initializer = msg.sender;
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
     }
 
     function completeMigration() external onlyOwner() {
-      _symbol = "sCLAM";
+      _symbol = "sCOON";
     }
 
     function initialize( address stakingContract_ ) external returns ( bool ) {
@@ -80,7 +80,7 @@ contract StakedOtterClamERC20V2 is ERC20Permit, Ownable {
     }
 
     /**
-        @notice increases sCLAM supply to increase staking balances relative to profit_
+        @notice increases sCOON supply to increase staking balances relative to profit_
         @param profit_ uint256
         @return uint256
      */
@@ -149,7 +149,7 @@ contract StakedOtterClamERC20V2 is ERC20Permit, Ownable {
         return gons.div( _gonsPerFragment );
     }
 
-    // Staking contract holds excess sCLAM
+    // Staking contract holds excess sCOON
     function circulatingSupply() public view returns ( uint ) {
         return _totalSupply.sub( balanceOf( stakingContract ) );
     }

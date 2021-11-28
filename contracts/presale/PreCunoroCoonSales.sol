@@ -9,7 +9,7 @@ import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 
 
-contract PreOtterClamSales is Ownable {
+contract PreCunoroCoonSales is Ownable {
 
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
@@ -20,11 +20,11 @@ contract PreOtterClamSales is Ownable {
 
   IERC20 public dai;
 
-  IERC20 public pClam;
+  IERC20 public pCoon;
 
   address private _saleProceedsAddress;
 
-  uint256 public pClamPrice;
+  uint256 public pCoonPrice;
 
   bool public initialized;
 
@@ -33,22 +33,22 @@ contract PreOtterClamSales is Ownable {
   constructor() {}
 
   function initialize(
-    address pClam_,
+    address pCoon_,
     address dai_,
-    uint256 pClamPrice_,
+    uint256 pCoonPrice_,
     address saleProceedsAddress_
   ) external onlyOwner {
     require( !initialized );
-    pClam = IERC20( pClam_ );
+    pCoon = IERC20( pCoon_ );
     dai = IERC20( dai_ );
-    pClamPrice = pClamPrice_;
+    pCoonPrice = pCoonPrice_;
     _saleProceedsAddress = saleProceedsAddress_;
     initialized = true;
   }
 
-  function setPreClamPrice( uint256 newPreClamPrice_ ) external onlyOwner() returns ( uint256 ) {
-    pClamPrice = newPreClamPrice_;
-    return pClamPrice;
+  function setPreCoonPrice( uint256 newPreCoonPrice_ ) external onlyOwner() returns ( uint256 ) {
+    pCoonPrice = newPreCoonPrice_;
+    return pCoonPrice;
   }
 
   function _approveBuyer( address newBuyer_ ) internal onlyOwner() returns ( bool ) {
@@ -68,14 +68,14 @@ contract PreOtterClamSales is Ownable {
   }
 
   function _calculateAmountPurchased( uint256 amountPaid_ ) internal returns ( uint256 ) {
-    return amountPaid_.mul( pClamPrice );
+    return amountPaid_.mul( pCoonPrice );
   }
 
-  function buyPreClam( uint256 amountPaid_ ) external returns ( bool ) {
+  function buyPreCoon( uint256 amountPaid_ ) external returns ( bool ) {
     require( approvedBuyers[msg.sender], "Buyer not approved." );
-    uint256 pClamAmountPurchased_ = _calculateAmountPurchased( amountPaid_ );
+    uint256 pCoonAmountPurchased_ = _calculateAmountPurchased( amountPaid_ );
     dai.safeTransferFrom( msg.sender, _saleProceedsAddress, amountPaid_ );
-    pClam.safeTransfer( msg.sender, pClamAmountPurchased_ );
+    pCoon.safeTransfer( msg.sender, pCoonAmountPurchased_ );
     return true;
   }
 

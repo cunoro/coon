@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import "./interfaces/IOtterTreasury.sol";
-import "./interfaces/IOtterStaking.sol";
-import "./interfaces/IOtterBondingCalculator.sol";
-import "./interfaces/IsCLAM.sol";
+import "./interfaces/ICunoroTreasury.sol";
+import "./interfaces/ICunoroStaking.sol";
+import "./interfaces/ICunoroBondingCalculator.sol";
+import "./interfaces/IsCOON.sol";
 
 import "./types/Ownable.sol";
 
@@ -13,7 +13,7 @@ import "./libraries/Math.sol";
 import "./libraries/FixedPoint.sol";
 import "./libraries/SafeERC20.sol";
 
-contract OtterBondStakeDepository is Ownable {
+contract CunoroBondStakeDepository is Ownable {
     using FixedPoint for *;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -45,10 +45,10 @@ contract OtterBondStakeDepository is Ownable {
 
     /* ======== STATE VARIABLES ======== */
 
-    address public immutable CLAM; // intermediate reward token from treasury
-    address public immutable sCLAM; // token given as payment for bond
+    address public immutable COON; // intermediate reward token from treasury
+    address public immutable sCOON; // token given as payment for bond
     address public immutable principle; // token used to create bond
-    address public immutable treasury; // mints CLAM when receives principle
+    address public immutable treasury; // mints COON when receives principle
     address public immutable DAO; // receives profit share from bond
 
     bool public immutable isLiquidityBond; // LP and Reserve bonds are treated slightly different
@@ -82,7 +82,7 @@ contract OtterBondStakeDepository is Ownable {
         uint256 vesting; // Blocks left to vest
         uint256 lastTimestamp; // Last interaction
         uint256 pricePaid; // In DAI, for front end viewing
-        uint256 gonsPayout; // sCLAM gons remaining to be paid
+        uint256 gonsPayout; // sCOON gons remaining to be paid
     }
 
     // Info for incremental adjustments to control variable
@@ -97,17 +97,17 @@ contract OtterBondStakeDepository is Ownable {
     /* ======== INITIALIZATION ======== */
 
     constructor(
-        address _CLAM,
-        address _sCLAM,
+        address _COON,
+        address _sCOON,
         address _principle,
         address _treasury,
         address _DAO,
         address _bondCalculator
     ) {
-        require(_CLAM != address(0));
-        CLAM = _CLAM;
-        require(_sCLAM != address(0));
-        sCLAM = _sCLAM;
+        require(_COON != address(0));
+        COON = _COON;
+        require(_sCOON != address(0));
+        sCOON = _sCOON;
         require(_principle != address(0));
         principle = _principle;
         require(_treasury != address(0));
@@ -249,13 +249,13 @@ contract OtterBondStakeDepository is Ownable {
             "Slippage limit: more than max price"
         ); // slippage protection
 
-        uint256 value = IOtterTreasury(treasury).valueOfToken(
+        uint256 value = ICunoroTreasury(treasury).valueOfToken(
             principle,
             _amount
         );
         uint256 payout = payoutFor(value); // payout to bonder is computed
 
-        require(payout >= 10000000, "Bond too small"); // must be > 0.01 CLAM ( underflow protection )
+        require(payout >= 10000000, "Bond too small"); // must be > 0.01 COON ( underflow protection )
         require(payout <= maxPayout(), "Bond too large"); // size protection because there is no slippage
 
         // profits are calculated
@@ -264,21 +264,21 @@ contract OtterBondStakeDepository is Ownable {
 
         IERC20(principle).safeTransferFrom(msg.sender, address(this), _amount);
         IERC20(principle).approve(address(treasury), _amount);
-        IOtterTreasury(treasury).deposit(_amount, principle, profit);
+        ICunoroTreasury(treasury).deposit(_amount, principle, profit);
 
         if (fee != 0) {
             // fee is transferred to dao
-            IERC20(CLAM).safeTransfer(DAO, fee);
+            IERC20(COON).safeTransfer(DAO, fee);
         }
 
         // total debt is increased
         totalDebt = totalDebt.add(value);
 
-        IERC20(CLAM).approve(staking, payout);
-        IOtterStaking(staking).stake(payout, address(this));
-        IOtterStaking(staking).claim(address(this));
+        IERC20(COON).approve(staking, payout);
+        ICunoroStaking(staking).stake(payout, address(this));
+        ICunoroStaking(staking).claim(address(this));
 
-        uint256 stakeGons = IsCLAM(sCLAM).gonsForBalance(payout);
+        uint256 stakeGons = IsCOON(sCOON).gonsForBalance(payout);
         // depositor info is stored
         bondInfo[_depositor] = Bond({
             gonsPayout: bondInfo[_depositor].gonsPayout.add(stakeGons),
@@ -316,9 +316,9 @@ contract OtterBondStakeDepository is Ownable {
 
         require(percentVested >= 10000, "not fully vested"); // if fully vested
         delete bondInfo[_recipient]; // delete user info
-        uint256 _amount = IsCLAM(sCLAM).balanceForGons(info.gonsPayout);
+        uint256 _amount = IsCOON(sCOON).balanceForGons(info.gonsPayout);
         emit BondRedeemed(_recipient, _amount, 0); // emit bond data
-        IERC20(sCLAM).transfer(_recipient, _amount); // pay user everything due
+        IERC20(sCOON).transfer(_recipient, _amount); // pay user everything due
         return _amount;
     }
 
@@ -371,7 +371,7 @@ contract OtterBondStakeDepository is Ownable {
      *  @return uint
      */
     function maxPayout() public view returns (uint256) {
-        return IERC20(CLAM).totalSupply().mul(terms.maxPayout).div(100000);
+        return IERC20(COON).totalSupply().mul(terms.maxPayout).div(100000);
     }
 
     /**
@@ -422,7 +422,7 @@ contract OtterBondStakeDepository is Ownable {
         if (isLiquidityBond) {
             price_ = bondPrice()
                 .mul(
-                    IOtterBondingCalculator(bondCalculator).markdown(principle)
+                    ICunoroBondingCalculator(bondCalculator).markdown(principle)
                 )
                 .div(100);
         } else {
@@ -431,11 +431,11 @@ contract OtterBondStakeDepository is Ownable {
     }
 
     /**
-     *  @notice calculate current ratio of debt to CLAM supply
+     *  @notice calculate current ratio of debt to COON supply
      *  @return debtRatio_ uint
      */
     function debtRatio() public view returns (uint256 debtRatio_) {
-        uint256 supply = IERC20(CLAM).totalSupply();
+        uint256 supply = IERC20(COON).totalSupply();
         debtRatio_ = FixedPoint
             .fraction(currentDebt().mul(1e9), supply)
             .decode112with18()
@@ -451,7 +451,7 @@ contract OtterBondStakeDepository is Ownable {
             return
                 debtRatio()
                     .mul(
-                        IOtterBondingCalculator(bondCalculator).markdown(
+                        ICunoroBondingCalculator(bondCalculator).markdown(
                             principle
                         )
                     )
@@ -503,7 +503,7 @@ contract OtterBondStakeDepository is Ownable {
     }
 
     /**
-     *  @notice calculate amount of CLAM available for claim by depositor
+     *  @notice calculate amount of COON available for claim by depositor
      *  @param _depositor address
      *  @return pendingPayout_ uint
      */
@@ -513,7 +513,7 @@ contract OtterBondStakeDepository is Ownable {
         returns (uint256 pendingPayout_)
     {
         uint256 percentVested = percentVestedFor(_depositor);
-        uint256 payout = IsCLAM(sCLAM).balanceForGons(
+        uint256 payout = IsCOON(sCOON).balanceForGons(
             bondInfo[_depositor].gonsPayout
         );
 
@@ -527,12 +527,12 @@ contract OtterBondStakeDepository is Ownable {
     /* ======= AUXILLIARY ======= */
 
     /**
-     *  @notice allow anyone to send lost tokens (excluding principle or CLAM) to the DAO
+     *  @notice allow anyone to send lost tokens (excluding principle or COON) to the DAO
      *  @return bool
      */
     function recoverLostToken(address _token) external returns (bool) {
-        require(_token != CLAM);
-        require(_token != sCLAM);
+        require(_token != COON);
+        require(_token != sCOON);
         require(_token != principle);
         IERC20(_token).safeTransfer(
             DAO,

@@ -28,14 +28,14 @@ interface IStaking {
     function stake(uint256 _amount, address _recipient) external returns (bool);
 }
 
-contract OtterClamIDO is Ownable {
+contract CunoroCoonIDO is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public CLAM;
+    address public COON;
     address public MAI;
     address public addressToSendMAI;
-    address public maiClamLP;
+    address public maiCoonLP;
     address public staking;
 
     uint256 public totalAmount;
@@ -50,7 +50,7 @@ contract OtterClamIDO is Ownable {
     bool public cancelled;
     bool public finalized;
 
-    mapping(address => bool) public boughtCLAM;
+    mapping(address => bool) public boughtCOON;
     mapping(address => bool) public whiteListed;
 
     address[] buyers;
@@ -59,22 +59,22 @@ contract OtterClamIDO is Ownable {
     address treasury;
 
     constructor(
-        address _CLAM,
+        address _COON,
         address _MAI,
         address _treasury,
         address _staking,
-        address _maiClamLP
+        address _maiCoonLP
     ) {
-        require(_CLAM != address(0));
+        require(_COON != address(0));
         require(_MAI != address(0));
         require(_treasury != address(0));
         require(_staking != address(0));
-        require(_maiClamLP != address(0));
+        require(_maiCoonLP != address(0));
 
-        CLAM = _CLAM;
+        COON = _COON;
         MAI = _MAI;
         treasury = _treasury;
-        maiClamLP = _maiClamLP;
+        maiCoonLP = _maiCoonLP;
         staking = _staking;
         cancelled = false;
         finalized = false;
@@ -124,15 +124,15 @@ contract OtterClamIDO is Ownable {
         }
     }
 
-    function purchaseCLAM(uint256 _amountMAI) external returns (bool) {
+    function purchaseCOON(uint256 _amountMAI) external returns (bool) {
         require(saleStarted() == true, 'Not started');
         require(
             !whiteListEnabled || whiteListed[msg.sender] == true,
             'Not whitelisted'
         );
-        require(boughtCLAM[msg.sender] == false, 'Already participated');
+        require(boughtCOON[msg.sender] == false, 'Already participated');
 
-        boughtCLAM[msg.sender] = true;
+        boughtCOON[msg.sender] = true;
 
         uint256 _purchaseAmount = _calculateSaleQuote(_amountMAI);
 
@@ -201,23 +201,23 @@ contract OtterClamIDO is Ownable {
 
         require(clamMinted == 250000 * 1e9);
 
-        // dev: create lp with 15 MAI per CLAM
-        IERC20(MAI).transfer(maiClamLP, 750000 * 1e18);
-        IERC20(CLAM).transfer(maiClamLP, 50000 * 1e9);
-        uint256 lpBalance = IUniswapV2Pair(maiClamLP).mint(address(this));
+        // dev: create lp with 15 MAI per COON
+        IERC20(MAI).transfer(maiCoonLP, 750000 * 1e18);
+        IERC20(COON).transfer(maiCoonLP, 50000 * 1e9);
+        uint256 lpBalance = IUniswapV2Pair(maiCoonLP).mint(address(this));
         uint256 valueOfToken = ITreasury(treasury).valueOfToken(
-            maiClamLP,
+            maiCoonLP,
             lpBalance
         );
 
-        IUniswapV2Pair(maiClamLP).approve(treasury, lpBalance);
+        IUniswapV2Pair(maiCoonLP).approve(treasury, lpBalance);
         uint256 zeroMinted = ITreasury(treasury).deposit(
             lpBalance,
-            maiClamLP,
+            maiCoonLP,
             valueOfToken
         );
-        require(zeroMinted == 0, 'should not mint any CLAM');
-        IERC20(CLAM).approve(staking, clamMinted);
+        require(zeroMinted == 0, 'should not mint any COON');
+        IERC20(COON).approve(staking, clamMinted);
 
         finalized = true;
 

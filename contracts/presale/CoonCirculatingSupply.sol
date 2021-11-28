@@ -5,14 +5,14 @@ import "../interfaces/IERC20.sol";
 
 import "../libraries/SafeMath.sol";
 
-contract ClamCirculatingSupply {
+contract CoonCirculatingSupply {
     using SafeMath for uint;
 
     bool public isInitialized;
 
-    address public CLAM;
+    address public COON;
     address public owner;
-    address[] public nonCirculatingCLAMAddresses;
+    address[] public nonCirculatingCOONAddresses;
 
     constructor( address _owner ) {
         owner = _owner;
@@ -22,34 +22,34 @@ contract ClamCirculatingSupply {
         require( msg.sender == owner, "caller is not owner" );
         require( isInitialized == false );
 
-        CLAM = _clam;
+        COON = _clam;
 
         isInitialized = true;
 
         return true;
     }
 
-    function CLAMCirculatingSupply() external view returns ( uint ) {
-        uint _totalSupply = IERC20( CLAM ).totalSupply();
+    function COONCirculatingSupply() external view returns ( uint ) {
+        uint _totalSupply = IERC20( COON ).totalSupply();
 
-        uint _circulatingSupply = _totalSupply.sub( getNonCirculatingCLAM() );
+        uint _circulatingSupply = _totalSupply.sub( getNonCirculatingCOON() );
 
         return _circulatingSupply;
     }
 
-    function getNonCirculatingCLAM() public view returns ( uint ) {
-        uint _nonCirculatingCLAM;
+    function getNonCirculatingCOON() public view returns ( uint ) {
+        uint _nonCirculatingCOON;
 
-        for( uint i=0; i < nonCirculatingCLAMAddresses.length; i = i.add( 1 ) ) {
-            _nonCirculatingCLAM = _nonCirculatingCLAM.add( IERC20( CLAM ).balanceOf( nonCirculatingCLAMAddresses[i] ) );
+        for( uint i=0; i < nonCirculatingCOONAddresses.length; i = i.add( 1 ) ) {
+            _nonCirculatingCOON = _nonCirculatingCOON.add( IERC20( COON ).balanceOf( nonCirculatingCOONAddresses[i] ) );
         }
 
-        return _nonCirculatingCLAM;
+        return _nonCirculatingCOON;
     }
 
-    function setNonCirculatingCLAMAddresses( address[] calldata _nonCirculatingAddresses ) external returns ( bool ) {
+    function setNonCirculatingCOONAddresses( address[] calldata _nonCirculatingAddresses ) external returns ( bool ) {
         require( msg.sender == owner, "Sender is not owner" );
-        nonCirculatingCLAMAddresses = _nonCirculatingAddresses;
+        nonCirculatingCOONAddresses = _nonCirculatingAddresses;
 
         return true;
     }

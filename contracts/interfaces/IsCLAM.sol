@@ -3,7 +3,7 @@ pragma solidity >=0.7.5;
 
 import "./IERC20.sol";
 
-interface IsCLAM is IERC20 {
+interface IsCOON is IERC20 {
     function rebase( uint256 clamProfit_, uint epoch_) external returns (uint256);
 
     function circulatingSupply() external view returns (uint256);

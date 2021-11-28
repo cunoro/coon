@@ -5,12 +5,12 @@ const { ContractFactory } = require('ethers')
 const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
 const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 
-describe('OtterBondingCalculator', () => {
+describe('CunoroBondingCalculator', () => {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     depositor,
-    CLAM,
+    COON,
     clam,
     DAI,
     dai,
@@ -25,8 +25,8 @@ describe('OtterBondingCalculator', () => {
   beforeEach(async () => {
     ;[deployer, depositor] = await ethers.getSigners()
 
-    CLAM = await ethers.getContractFactory('OtterClamERC20')
-    clam = await CLAM.connect(deployer).deploy()
+    COON = await ethers.getContractFactory('CunoroCoonERC20')
+    clam = await COON.connect(deployer).deploy()
     await clam.setVault(deployer.address)
 
     DAI = await ethers.getContractFactory('DAI')
@@ -46,7 +46,7 @@ describe('OtterBondingCalculator', () => {
     lp = await UniswapV2Pair.attach(pairAddress)
 
     BondingCalcContract = await ethers.getContractFactory(
-      'OtterBondingCalculator'
+      'CunoroBondingCalculator'
     )
     bondingCalc = await BondingCalcContract.connect(deployer).deploy(
       clam.address

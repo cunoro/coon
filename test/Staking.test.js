@@ -26,7 +26,7 @@ describe('Staking', () => {
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     depositor,
     clam,
-    sClam,
+    sCoon,
     dai,
     treasury,
     stakingDistributor,
@@ -39,17 +39,17 @@ describe('Staking', () => {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
-    const CLAM = await ethers.getContractFactory('OtterClamERC20')
-    clam = await CLAM.deploy()
+    const COON = await ethers.getContractFactory('CunoroCoonERC20')
+    clam = await COON.deploy()
     await clam.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
-    sClam = await StakedCLAM.deploy()
+    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20')
+    sCoon = await StakedCOON.deploy()
 
-    const Treasury = await ethers.getContractFactory('OtterTreasury')
+    const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
       clam.address,
       dai.address,
@@ -59,7 +59,7 @@ describe('Staking', () => {
     )
 
     const StakingDistributor = await ethers.getContractFactory(
-      'OtterStakingDistributor'
+      'CunoroStakingDistributor'
     )
     stakingDistributor = await StakingDistributor.deploy(
       treasury.address,
@@ -68,27 +68,27 @@ describe('Staking', () => {
       firstEpochTime
     )
 
-    const Staking = await ethers.getContractFactory('OtterStaking')
+    const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
       clam.address,
-      sClam.address,
+      sCoon.address,
       epochLength,
       firstEpochNumber,
       firstEpochTime
     )
 
     // Deploy staking helper
-    const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
+    const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
     stakingHelper = await StakingHelper.deploy(staking.address, clam.address)
 
-    const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
+    const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
       staking.address,
-      sClam.address
+      sCoon.address
     )
 
-    await sClam.initialize(staking.address)
-    await sClam.setIndex(initialIndex)
+    await sCoon.initialize(staking.address)
+    await sCoon.setIndex(initialIndex)
 
     await staking.setContract('0', stakingDistributor.address)
     await staking.setContract('1', stakingWarmup.address)
@@ -116,7 +116,7 @@ describe('Staking', () => {
   })
 
   describe('treasury deposit', () => {
-    it('should get CLAM', async () => {
+    it('should get COON', async () => {
       await expect(() =>
         treasury.deposit(
           BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
@@ -132,7 +132,7 @@ describe('Staking', () => {
   })
 
   describe('stake', () => {
-    it('should get equally sClam tokens', async () => {
+    it('should get equally sCoon tokens', async () => {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -145,7 +145,7 @@ describe('Staking', () => {
           deployer.address
         )
       ).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         BigNumber.from(100).mul(BigNumber.from(10).pow(9))
       )
@@ -166,12 +166,12 @@ describe('Staking', () => {
       )
 
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
 
-      expect(await sClam.index()).to.eq('1000000000')
+      expect(await sCoon.index()).to.eq('1000000000')
     })
 
     it('should rebase after epoch end', async () => {
@@ -188,7 +188,7 @@ describe('Staking', () => {
 
       // 0 -> 1: no reward
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -201,11 +201,11 @@ describe('Staking', () => {
 
       // 1 -> 2
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         distribute
       )
-      expect(await sClam.index()).to.eq('8500000000')
+      expect(await sCoon.index()).to.eq('8500000000')
     })
 
     it('should not rebase before epoch end', async () => {
@@ -222,7 +222,7 @@ describe('Staking', () => {
 
       // 0 -> 1: no reward
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -232,7 +232,7 @@ describe('Staking', () => {
 
       // 1 -> 1
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -254,7 +254,7 @@ describe('Staking', () => {
 
       // 0 -> 1: no reward
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -264,11 +264,11 @@ describe('Staking', () => {
 
       // 1 -> 2
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         '750000000000'
       )
-      expect(await sClam.index()).to.eq('8500000000')
+      expect(await sCoon.index()).to.eq('8500000000')
 
       // set distributor to zero
       staking.setContract(0, zeroAddress)
@@ -277,7 +277,7 @@ describe('Staking', () => {
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
 
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         '752250000000'
       )
@@ -285,7 +285,7 @@ describe('Staking', () => {
       // 3 -> 4, no reward
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
       await expect(() => staking.rebase()).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -306,7 +306,7 @@ describe('Staking', () => {
 
       await expect(() =>
         stakingHelper.stake(100 * 1e9, deployer.address)
-      ).to.changeTokenBalance(sClam, deployer, 0)
+      ).to.changeTokenBalance(sCoon, deployer, 0)
 
       const [deposit, gons, expiry, lock] = await staking.warmupInfo(
         deployer.address
@@ -318,7 +318,7 @@ describe('Staking', () => {
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
       await staking.rebase()
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         0
       )
@@ -326,7 +326,7 @@ describe('Staking', () => {
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
       await staking.rebase()
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
-        sClam,
+        sCoon,
         deployer,
         '1602250000000'
       )
@@ -337,7 +337,7 @@ describe('Staking', () => {
 
       await expect(() =>
         stakingHelper.stake(100 * 1e9, deployer.address)
-      ).to.changeTokenBalance(sClam, deployer, 0)
+      ).to.changeTokenBalance(sCoon, deployer, 0)
 
       const [deposit, gons, expiry, lock] = await staking.warmupInfo(
         deployer.address

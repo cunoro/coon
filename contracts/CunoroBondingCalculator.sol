@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import './interfaces/IOtterBondingCalculator.sol';
+import './interfaces/ICunoroBondingCalculator.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Pair.sol';
 
@@ -12,17 +12,17 @@ import './libraries/BitMath.sol';
 import './libraries/FixedPoint.sol';
 
 
-contract OtterBondingCalculator is IOtterBondingCalculator {
+contract CunoroBondingCalculator is ICunoroBondingCalculator {
 
     using FixedPoint for *;
     using SafeMath for uint;
     using SafeMath for uint112;
 
-    address public immutable CLAM;
+    address public immutable COON;
 
-    constructor( address _CLAM ) {
-        require( _CLAM != address(0) );
-        CLAM = _CLAM;
+    constructor( address _COON ) {
+        require( _COON != address(0) );
+        COON = _COON;
     }
 
     function getKValue( address _pair ) public view returns( uint k_ ) {
@@ -49,11 +49,11 @@ contract OtterBondingCalculator is IOtterBondingCalculator {
         ( uint reserve0, uint reserve1, ) = IUniswapV2Pair( _pair ).getReserves();
 
         uint reserve;
-        if ( IUniswapV2Pair( _pair ).token0() == CLAM ) {
+        if ( IUniswapV2Pair( _pair ).token0() == COON ) {
             reserve = reserve1;
         } else {
             reserve = reserve0;
         }
-        return reserve.mul( 2 * ( 10 ** IERC20( CLAM ).decimals() ) ).div( getTotalValue( _pair ) );
+        return reserve.mul( 2 * ( 10 ** IERC20( COON ).decimals() ) ).div( getTotalValue( _pair ) );
     }
 }

@@ -10,7 +10,7 @@ abstract contract Divine is ERC20, Ownable {
     constructor ( string memory name_, string memory symbol_, uint8 decimals_ ) ERC20( name_, symbol_, decimals_ ) {}
 }
 
-contract PreOtterClamERC20 is Divine {
+contract PreCunoroCoonERC20 is Divine {
 
   using SafeMath for uint256;
 
@@ -19,7 +19,7 @@ contract PreOtterClamERC20 is Divine {
 
   mapping( address => bool ) public isApprovedSeller;
 
-  constructor() Divine( "Pre Clam", "pCLAM2", 18 ) {
+  constructor() Divine( "Pre Coon", "pCOON2", 18 ) {
     uint256 initialSupply_ = 1000000000 * 1e18;
     requireSellerApproval = true;
     allowMinting = true;
@@ -73,7 +73,7 @@ contract PreOtterClamERC20 is Divine {
   }
 
   function _beforeTokenTransfer(address from_, address to_, uint256 amount_ ) internal override {
-    require( (_balances[to_] > 0 || isApprovedSeller[from_] == true), "Account not approved to transfer pCLAM." );
+    require( (_balances[to_] > 0 || isApprovedSeller[from_] == true), "Account not approved to transfer pCOON." );
   }
 
   function mint( address recipient_, uint256 amount_) public virtual onlyOwner() {

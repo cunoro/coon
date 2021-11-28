@@ -1,9 +1,9 @@
 const { ethers } = require('hardhat')
 
-function toClamAmount(value) {
+function toCoonAmount(value) {
   return ethers.utils.parseUnits(String(value), 9)
 }
 
 module.exports = {
-  toClamAmount
+  toCoonAmount
 }
