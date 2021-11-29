@@ -6,7 +6,7 @@ require('dotenv').config()
 const { ethers } = require('ethers')
 const dev = process.env.DEV_PRIVATE_KEY
 const deployer = process.env.DEPLOYER_PRIVATE_KEY
-const etherscanApiKey = process.env.ETHERSCAN_API_KEY
+const polygonApiKey = process.env.POLYGON_API_KEY
 const polygonMainnetRPC = process.env.POLYGON_MAINNET_RPC
 const polygonMumbaiRPC = process.env.POLYGON_MUMBAI_RPC
 
@@ -53,7 +53,7 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: etherscanApiKey,
+    apiKey: polygonApiKey,
   },
   mocha: {
     timeout: 5 * 60 * 10000,

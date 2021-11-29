@@ -2,15 +2,15 @@ const { ethers } = require('hardhat')
 
 async function main() {
   const signer = await ethers.getSigner()
-  const OtterBondDepository = await ethers.getContractFactory(
-    'OtterBondDepository'
+  const CunoroBondDepository = await ethers.getContractFactory(
+    'CunoroBondDepository'
   )
   const bondType = 'lp'
 
   const bond =
     bondType == 'mai'
-      ? OtterBondDepository.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
-      : OtterBondDepository.attach('0x64c766f9A4936c3a4b51C55Ea5C4854E19766035')
+      ? CunoroBondDepository.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
+      : CunoroBondDepository.attach('0x64c766f9A4936c3a4b51C55Ea5C4854E19766035')
 
   const bcvCurrent = (await bond.terms())[0].toNumber()
 

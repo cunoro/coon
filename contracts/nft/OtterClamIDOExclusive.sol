@@ -5,23 +5,23 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
-contract OtterClamIDOExclusive is ERC721, ERC721URIStorage, Ownable {
-    constructor() ERC721('OtterClam IDO Exclusive', 'OTTERIDO') {
-        // Stream Otter
+contract CunoroCoonIDOExclusive is ERC721, ERC721URIStorage, Ownable {
+    constructor() ERC721('CunoroCoon IDO Exclusive', 'OTTERIDO') {
+        // Stream Cunoro
         _mint(msg.sender, 1);
         _setTokenURI(
             1,
             'ipfs://QmfX3AoM1jAMXGhyW9Zu5uRp5kUffpPAKentcqeLF9BEHV'
         );
 
-        // Ocean Otter
+        // Ocean Cunoro
         _mint(msg.sender, 2);
         _setTokenURI(
             2,
             'ipfs://QmSmcSnYHNNKoxEGKYJ47Q78j2i48EHJ8aHd39pQ4xCwBQ'
         );
 
-        // Otter of the Clam
+        // Cunoro of the Coon
         _mint(msg.sender, 3);
         _setTokenURI(
             3,

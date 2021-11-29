@@ -26,7 +26,7 @@ describe('Bonding', () => {
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     depositor,
     clam,
-    sClam,
+    sCoon,
     dai,
     treasury,
     staking,
@@ -39,17 +39,17 @@ describe('Bonding', () => {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
-    const CLAM = await ethers.getContractFactory('OtterClamERC20')
-    clam = await CLAM.deploy()
+    const COON = await ethers.getContractFactory('CunoroCoonERC20')
+    clam = await COON.deploy()
     await clam.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
-    sClam = await StakedCLAM.deploy()
+    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20')
+    sCoon = await StakedCOON.deploy()
 
-    const Treasury = await ethers.getContractFactory('OtterTreasury')
+    const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
       clam.address,
       dai.address,
@@ -58,7 +58,7 @@ describe('Bonding', () => {
       0
     )
 
-    const DAIBond = await ethers.getContractFactory('OtterBondDepository')
+    const DAIBond = await ethers.getContractFactory('CunoroBondDepository')
     daiBond = await DAIBond.deploy(
       clam.address,
       dai.address,
@@ -67,27 +67,27 @@ describe('Bonding', () => {
       zeroAddress
     )
 
-    const Staking = await ethers.getContractFactory('OtterStaking')
+    const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
       clam.address,
-      sClam.address,
+      sCoon.address,
       epochLength,
       firstEpochNumber,
       firstEpochTime
     )
 
     // Deploy staking helper
-    const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
+    const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
     stakingHelper = await StakingHelper.deploy(staking.address, clam.address)
 
-    const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
+    const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
       staking.address,
-      sClam.address
+      sCoon.address
     )
 
-    await sClam.initialize(staking.address)
-    await sClam.setIndex(initialIndex)
+    await sCoon.initialize(staking.address)
+    await sCoon.setIndex(initialIndex)
 
     await staking.setContract('1', stakingWarmup.address)
 
@@ -118,7 +118,7 @@ describe('Bonding', () => {
       const bcv = 38
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -144,7 +144,7 @@ describe('Bonding', () => {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -167,7 +167,7 @@ describe('Bonding', () => {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -201,7 +201,7 @@ describe('Bonding', () => {
       const bcv = 300
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -265,7 +265,7 @@ describe('Bonding', () => {
       const bcv = 300
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -282,7 +282,7 @@ describe('Bonding', () => {
       const bondPrice = await daiBond.bondPriceInUSD()
 
       const depositAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(18))
-      const totalClam = depositAmount
+      const totalCoon = depositAmount
         .div(bondPrice)
         .mul(BigNumber.from(10).pow(9))
       await daiBond.deposit(depositAmount, largeApproval, deployer.address)
@@ -291,13 +291,13 @@ describe('Bonding', () => {
       await timeAndMine.setTimeIncrease(2)
       await expect(() =>
         daiBond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(clam, deployer, totalClam.div(5))
+      ).to.changeTokenBalance(clam, deployer, totalCoon.div(5))
 
       // fully vested, get rest 80%
       await timeAndMine.setTimeIncrease(10)
       await expect(() =>
         daiBond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(clam, deployer, totalClam - totalClam.div(5))
+      ).to.changeTokenBalance(clam, deployer, totalCoon - totalCoon.div(5))
     })
 
     it('should staked directly', async () => {
@@ -310,7 +310,7 @@ describe('Bonding', () => {
       const bcv = 300
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
       const daoFee = 10000 // DAO fee for bond
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
@@ -340,7 +340,7 @@ describe('Bonding', () => {
 
       await daiBond.redeem(deployer.address, true)
 
-      expect(await sClam.balanceOf(deployer.address)).to.eq('5000000000')
+      expect(await sCoon.balanceOf(deployer.address)).to.eq('5000000000')
     })
   })
 })

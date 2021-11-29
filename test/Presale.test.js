@@ -14,8 +14,8 @@ describe('Presale', () => {
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     depositor,
     clam,
-    pClam,
-    exercisePreClam,
+    pCoon,
+    exercisePreCoon,
     dai,
     treasury
 
@@ -24,19 +24,19 @@ describe('Presale', () => {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
-    const CLAM = await ethers.getContractFactory('OtterClamERC20')
-    clam = await CLAM.deploy()
+    const COON = await ethers.getContractFactory('CunoroCoonERC20')
+    clam = await COON.deploy()
     await clam.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const PreOtterClamERC20 = await ethers.getContractFactory(
-      'PreOtterClamERC20'
+    const PreCunoroCoonERC20 = await ethers.getContractFactory(
+      'PreCunoroCoonERC20'
     )
-    pClam = await PreOtterClamERC20.deploy()
+    pCoon = await PreCunoroCoonERC20.deploy()
 
-    const Treasury = await ethers.getContractFactory('OtterTreasury')
+    const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
       clam.address,
       dai.address,
@@ -45,17 +45,17 @@ describe('Presale', () => {
       0
     )
 
-    const ClamCirculatingSupply = await ethers.getContractFactory(
-      'ClamCirculatingSupply'
+    const CoonCirculatingSupply = await ethers.getContractFactory(
+      'CoonCirculatingSupply'
     )
-    const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
+    const clamCirculatingSupply = await CoonCirculatingSupply.deploy(
       deployer.address
     )
     await clamCirculatingSupply.initialize(clam.address)
 
-    const ExercisePreClam = await ethers.getContractFactory('ExercisePreClam')
-    exercisePreClam = await ExercisePreClam.deploy(
-      pClam.address,
+    const ExercisePreCoon = await ethers.getContractFactory('ExercisePreCoon')
+    exercisePreCoon = await ExercisePreCoon.deploy(
+      pCoon.address,
       clam.address,
       dai.address,
       treasury.address,
@@ -68,12 +68,12 @@ describe('Presale', () => {
     await treasury.queue('0', deployer.address)
     await treasury.toggle('0', deployer.address, zeroAddress)
 
-    await treasury.queue('0', exercisePreClam.address)
-    await treasury.toggle('0', exercisePreClam.address, zeroAddress)
+    await treasury.queue('0', exercisePreCoon.address)
+    await treasury.toggle('0', exercisePreCoon.address, zeroAddress)
 
     await dai.approve(treasury.address, largeApproval)
-    await dai.approve(exercisePreClam.address, largeApproval)
-    await pClam.approve(exercisePreClam.address, largeApproval)
+    await dai.approve(exercisePreCoon.address, largeApproval)
+    await pCoon.approve(exercisePreCoon.address, largeApproval)
 
     // mint 1,000,000 DAI for testing
     await dai.mint(
@@ -81,7 +81,7 @@ describe('Presale', () => {
       BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18))
     )
 
-    // mint 250,000 CLAM for testing
+    // mint 250,000 COON for testing
     treasury.deposit(
       BigNumber.from(50 * 10000).mul(BigNumber.from(10).pow(18)),
       dai.address,
@@ -91,28 +91,28 @@ describe('Presale', () => {
 
   describe('exercise', () => {
     it('should get reverted', async () => {
-      await exercisePreClam.setTerms(
+      await exercisePreCoon.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
         10 * 10000 // 10%
       )
 
       await expect(
-        exercisePreClam.exercise(
+        exercisePreCoon.exercise(
           BigNumber.from(30000).mul(BigNumber.from(10).pow(18))
         )
       ).to.be.revertedWith('Not enough vested')
     })
 
     it('should get clam', async () => {
-      await exercisePreClam.setTerms(
+      await exercisePreCoon.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
         10 * 10000 // 10%
       )
 
       await expect(() =>
-        exercisePreClam.exercise(
+        exercisePreCoon.exercise(
           BigNumber.from(10000).mul(BigNumber.from(10).pow(18))
         )
       ).to.changeTokenBalance(
@@ -123,7 +123,7 @@ describe('Presale', () => {
       expect(await dai.balanceOf(deployer.address)).to.eq(
         BigNumber.from(490000).mul(BigNumber.from(10).pow(18))
       )
-      expect(await pClam.balanceOf(deployer.address)).to.eq(
+      expect(await pCoon.balanceOf(deployer.address)).to.eq(
         '999990000000000000000000000'
       )
     })

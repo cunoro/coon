@@ -1,23 +1,23 @@
 const { ethers } = require('hardhat')
 const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
 
-const CLAM_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
+const COON_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
 const priceFormatter = Intl.NumberFormat('en', {
   style: 'currency',
   currency: 'usd',
 })
 
 async function main() {
-  const OtterBondDepository = await ethers.getContractFactory(
-    'OtterBondDepository'
+  const CunoroBondDepository = await ethers.getContractFactory(
+    'CunoroBondDepository'
   )
   const bonds = [
     { name: 'MAI', address: '0x603A74Fd527b85E0A1e205517c1f24aC71f5C263' },
-    { name: 'CLAM-MAI', address: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E' },
+    { name: 'COON-MAI', address: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E' },
   ]
 
   for (const { name, address } of bonds) {
-    const bond = OtterBondDepository.attach(address)
+    const bond = CunoroBondDepository.attach(address)
     await fetchBondInfo(name, bond)
     bond.on('BondCreated', async (deposit, payout, _, priceInUSD) => {
       console.log(`==== New Bond ${name} created! ==== ` + new Date())
@@ -43,7 +43,7 @@ async function main() {
   setInterval(async () => {
     console.log('==== ' + new Date())
     for (const { name, address } of bonds) {
-      const bond = OtterBondDepository.attach(address)
+      const bond = CunoroBondDepository.attach(address)
       await fetchBondInfo(name, bond)
     }
   }, 60 * 1000)
@@ -87,7 +87,7 @@ async function fetchBondInfo(name, bond) {
 
 async function getMarketPrice() {
   const signer = await ethers.getSigner()
-  const lp = new ethers.Contract(CLAM_MAI_LP, IUniswapV2Pair, signer)
+  const lp = new ethers.Contract(COON_MAI_LP, IUniswapV2Pair, signer)
   const reserves = await lp.getReserves()
   const marketPrice = reserves[0].div(reserves[1])
   return marketPrice
