@@ -8,7 +8,7 @@ Required:
 
 
 Local Setup Steps:
-1. git clone https://github.com/OlympusDAO/olympus-contracts.git
+1. git clone https://github.com/cunoro/coon.git
 1. Install dependencies: `npm install`
     - Installs [Hardhat](https://hardhat.org/getting-started/) & [OpenZepplin](https://docs.openzeppelin.com/contracts/4.x/) dependencies
 1. Compile Solidity: `npm run compile`
@@ -18,7 +18,7 @@ Local Setup Steps:
 ## 🤨 How it all works
 ![High Level Contract Interactions](./docs/box-diagram.png)
 
-## Mainnet Contracts & Addresses
+<!-- ## Mainnet Contracts & Addresses
 
 |Contract       | Addresss                                                                                                            | Notes   |
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
@@ -28,18 +28,18 @@ Local Setup Steps:
 |Staking |[0xC8B0243F350AA5F8B979b228fAe522DAFC61221a](https://polygonscan.com/address/0xC8B0243F350AA5F8B979b228fAe522DAFC61221a/)| Main Staking contract responsible for calling rebases every 28800 seconds|
 |StakingHelper  |[0x76B38319483b570B4BCFeD2D35d191d3c9E01691](https://polygonscan.com/address/0x76B38319483b570B4BCFeD2D35d191d3c9E01691)| Helper Contract to Stake with 0 warmup |
 |DAO            |[0x929A27c46041196e1a49C7B459d63eC9A20cd879](https://polygonscan.com/address/0x929A27c46041196e1a49C7B459d63eC9A20cd879)|Storage Wallet for DAO under MS |
-|Staking Warm Up|[0x8b2943667957ec2ce851fd449b7a870f253ca1e7](https://polygonscan.com/address/0x8b2943667957ec2ce851fd449b7a870f253ca1e7)| Instructs the Staking contract when a user can claim sCOON |
+|Staking Warm Up|[0x8b2943667957ec2ce851fd449b7a870f253ca1e7](https://polygonscan.com/address/0x8b2943667957ec2ce851fd449b7a870f253ca1e7)| Instructs the Staking contract when a user can claim sCOON | -->
 
 
 **Bonds**
 - **_TODO_**: What are the requirements for creating a Bond Contract?
 All LP bonds use the Bonding Calculator contract which is used to compute RFV.
 
-|Contract       | Addresss                                                                                                            | Notes   |
+<!-- |Contract       | Addresss                                                                                                            | Notes   |
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
 |Bond Calculator|[0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E](https://polygonscan.com/address/0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E)| |
 |MAI bond|[0x603A74Fd527b85E0A1e205517c1f24aC71f5C263](https://polygonscan.com/address/0x603A74Fd527b85E0A1e205517c1f24aC71f5C263)| Main bond managing serve mechanics for COON/MAI|
-|MAI/COON LP Bond|[0x706587BD39322A6a78ddD5491cDbb783F8FD983E](https://polygonscan.com/address/0x706587BD39322A6a78ddD5491cDbb783F8FD983E)| Manages mechhanism for thhe protocol to buy back its own liquidity from the pair. |
+|MAI/COON LP Bond|[0x706587BD39322A6a78ddD5491cDbb783F8FD983E](https://polygonscan.com/address/0x706587BD39322A6a78ddD5491cDbb783F8FD983E)| Manages mechhanism for thhe protocol to buy back its own liquidity from the pair. | -->
 
 
 ## Allocator Guide
@@ -48,7 +48,7 @@ The following is a guide for interacting with the treasury as a reserve allocato
 
 A reserve allocator is a contract that deploys funds into external strategies, such as Aave, Curve, etc.
 
-Treasury Address: `0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C`
+<!-- Treasury Address: `0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C` -->
 
 **Managing**:
 The first step is withdraw funds from the treasury via the "manage" function. "Manage" allows an approved address to withdraw excess reserves from the treasury.
