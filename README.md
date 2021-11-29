@@ -1,4 +1,4 @@
-# 🦦CunoroCoon Smart Contracts
+# COON Smart Contracts
 
 
 ##  🔧 Setting up Local Development
