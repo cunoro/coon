@@ -1,7 +1,7 @@
 {
-  "name": "otterclam-contracts",
+  "name": "cunoro-contracts",
   "version": "1.0.0",
-  "description": "Smart Contracts for CunoroCoon",
+  "description": "Smart Contracts for Cunoro",
   "directories": {
     "test": "test"
   },
@@ -36,11 +36,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CunoroCoon/otter-contracts.git"
+    "url": "git+https://github.com/cunoro/coon.git"
   },
   "author": "",
   "bugs": {
-    "url": "https://github.com/CunoroCoon/otter-contracts/issues"
+    "url": "https://github.com/cunoro/coon/issues"
   },
-  "homepage": "https://github.com/CunoroCoon/otter-contracts#readme"
+  "homepage": "https://github.com/cunoro/coon#readme"
 }
