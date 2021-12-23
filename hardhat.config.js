@@ -6,7 +6,7 @@ require('dotenv').config()
 const { ethers } = require('ethers')
 const dev = process.env.DEV_PRIVATE_KEY
 const deployer = process.env.DEPLOYER_PRIVATE_KEY
-const polygonApiKey = process.env.POLYGON_API_KEY
+const etherscanApiKey = process.env.ETHERSCAN_API_KEY
 const polygonMainnetRPC = process.env.POLYGON_MAINNET_RPC
 const polygonMumbaiRPC = process.env.POLYGON_MUMBAI_RPC
 
@@ -31,17 +31,17 @@ module.exports = {
     ],
   },
   networks: {
-    'polygon-mainnet': {
-      url: 'https://polygon-rpc.com',
-      accounts: [deployer],
-      gasPrice: 35000000000,
-    },
-    'polygon-mumbai': {
-      url: polygonMumbaiRPC,
-      accounts: [dev],
-      gas: 'auto',
-      gasPrice: ethers.utils.parseUnits('1.2', 'gwei').toNumber(),
-    },
+    // 'polygon-mainnet': {
+    //   url: 'https://polygon-rpc.com',
+    //   accounts: [deployer],
+    //   gasPrice: 35000000000,
+    // },
+    // 'polygon-mumbai': {
+    //   url: polygonMumbaiRPC,
+    //   accounts: [dev],
+    //   gas: 'auto',
+    //   gasPrice: ethers.utils.parseUnits('1.2', 'gwei').toNumber(),
+    // },
     hardhat: {
       gas: 'auto',
       forking:
@@ -53,7 +53,7 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: polygonApiKey,
+    apiKey: etherscanApiKey,
   },
   mocha: {
     timeout: 5 * 60 * 10000,

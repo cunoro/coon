@@ -2,6 +2,7 @@ node_modules/
 artifacts/
 cache/
 
+yarn-error.log
 .secret*
 whitelist.txt
 .vscode/settings.json

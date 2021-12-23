@@ -2,7 +2,6 @@
 pragma solidity 0.7.5;
 
 library Babylonian {
-
     function sqrt(uint256 x) internal pure returns (uint256) {
         if (x == 0) return 0;
 

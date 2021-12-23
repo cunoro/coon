@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import "./interfaces/ICunoroTreasury.sol";
-import "./interfaces/ICunoroStaking.sol";
-import "./interfaces/ICunoroBondingCalculator.sol";
-import "./interfaces/IsCOON.sol";
+import './interfaces/ICunoroTreasury.sol';
+import './interfaces/ICunoroStaking.sol';
+import './interfaces/ICunoroBondingCalculator.sol';
+import './interfaces/IsCoon.sol';
 
-import "./types/Ownable.sol";
+import './types/Ownable.sol';
 
-import "./libraries/SafeMath.sol";
-import "./libraries/Math.sol";
-import "./libraries/FixedPoint.sol";
-import "./libraries/SafeERC20.sol";
+import './libraries/SafeMath.sol';
+import './libraries/Math.sol';
+import './libraries/FixedPoint.sol';
+import './libraries/SafeERC20.sol';
 
 contract CunoroBondStakeDepository is Ownable {
     using FixedPoint for *;
@@ -171,15 +171,15 @@ contract CunoroBondStakeDepository is Ownable {
     {
         if (_parameter == PARAMETER.VESTING) {
             // 0
-            require(_input >= 10000, "Vesting must be longer than 3 hours");
+            require(_input >= 10000, 'Vesting must be longer than 3 hours');
             terms.vestingTerm = _input;
         } else if (_parameter == PARAMETER.PAYOUT) {
             // 1
-            require(_input <= 1000, "Payout cannot be above 1 percent");
+            require(_input <= 1000, 'Payout cannot be above 1 percent');
             terms.maxPayout = _input;
         } else if (_parameter == PARAMETER.FEE) {
             // 2
-            require(_input <= 10000, "DAO fee cannot exceed payout");
+            require(_input <= 10000, 'DAO fee cannot exceed payout');
             terms.fee = _input;
         } else if (_parameter == PARAMETER.DEBT) {
             // 3
@@ -203,7 +203,10 @@ contract CunoroBondStakeDepository is Ownable {
         uint256 _target,
         uint256 _buffer
     ) external onlyOwner {
-        require( _increment <= Math.max(terms.controlVariable.mul( 25 ).div( 1000 ), 1), "Increment too large" );
+        require(
+            _increment <= Math.max(terms.controlVariable.mul(25).div(1000), 1),
+            'Increment too large'
+        );
         adjustment = Adjust({
             add: _addition,
             rate: _increment,
@@ -236,17 +239,17 @@ contract CunoroBondStakeDepository is Ownable {
         uint256 _maxPrice,
         address _depositor
     ) external returns (uint256) {
-        require(_depositor != address(0), "Invalid address");
+        require(_depositor != address(0), 'Invalid address');
 
         decayDebt();
-        require(totalDebt <= terms.maxDebt, "Max capacity reached");
+        require(totalDebt <= terms.maxDebt, 'Max capacity reached');
 
         uint256 priceInUSD = bondPriceInUSD(); // Stored in bond info
         //uint nativePrice = _bondPrice();
 
         require(
             _maxPrice >= _bondPrice(),
-            "Slippage limit: more than max price"
+            'Slippage limit: more than max price'
         ); // slippage protection
 
         uint256 value = ICunoroTreasury(treasury).valueOfToken(
@@ -255,8 +258,8 @@ contract CunoroBondStakeDepository is Ownable {
         );
         uint256 payout = payoutFor(value); // payout to bonder is computed
 
-        require(payout >= 10000000, "Bond too small"); // must be > 0.01 COON ( underflow protection )
-        require(payout <= maxPayout(), "Bond too large"); // size protection because there is no slippage
+        require(payout >= 10000000, 'Bond too small'); // must be > 0.01 COON ( underflow protection )
+        require(payout <= maxPayout(), 'Bond too large'); // size protection because there is no slippage
 
         // profits are calculated
         uint256 fee = payout.mul(terms.fee).div(10000);
@@ -278,7 +281,7 @@ contract CunoroBondStakeDepository is Ownable {
         ICunoroStaking(staking).stake(payout, address(this));
         ICunoroStaking(staking).claim(address(this));
 
-        uint256 stakeGons = IsCOON(sCOON).gonsForBalance(payout);
+        uint256 stakeGons = IsCoon(sCOON).gonsForBalance(payout);
         // depositor info is stored
         bondInfo[_depositor] = Bond({
             gonsPayout: bondInfo[_depositor].gonsPayout.add(stakeGons),
@@ -314,9 +317,9 @@ contract CunoroBondStakeDepository is Ownable {
         Bond memory info = bondInfo[_recipient];
         uint256 percentVested = percentVestedFor(_recipient); // (timestamp since last interaction / vesting term remaining)
 
-        require(percentVested >= 10000, "not fully vested"); // if fully vested
+        require(percentVested >= 10000, 'not fully vested'); // if fully vested
         delete bondInfo[_recipient]; // delete user info
-        uint256 _amount = IsCOON(sCOON).balanceForGons(info.gonsPayout);
+        uint256 _amount = IsCoon(sCOON).balanceForGons(info.gonsPayout);
         emit BondRedeemed(_recipient, _amount, 0); // emit bond data
         IERC20(sCOON).transfer(_recipient, _amount); // pay user everything due
         return _amount;
@@ -513,7 +516,7 @@ contract CunoroBondStakeDepository is Ownable {
         returns (uint256 pendingPayout_)
     {
         uint256 percentVested = percentVestedFor(_depositor);
-        uint256 payout = IsCOON(sCOON).balanceForGons(
+        uint256 payout = IsCoon(sCOON).balanceForGons(
             bondInfo[_depositor].gonsPayout
         );
 

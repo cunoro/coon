@@ -20,7 +20,8 @@ library FixedPoint {
 
     uint8 private constant RESOLUTION = 112;
     uint256 private constant Q112 = 0x10000000000000000000000000000;
-    uint256 private constant Q224 = 0x100000000000000000000000000000000000000000000000000000000;
+    uint256 private constant Q224 =
+        0x100000000000000000000000000000000000000000000000000000000;
     uint256 private constant LOWER_MASK = 0xffffffffffffffffffffffffffff; // decimal of UQ*x112 (lower 112 bits)
 
     // decode a UQ112x112 into a uint112 by truncating after the radix point
@@ -29,11 +30,19 @@ library FixedPoint {
     }
 
     // decode a uq112x112 into a uint with 18 decimals of precision
-    function decode112with18(uq112x112 memory self) internal pure returns (uint) {
-        return uint(self._x) / 5192296858534827;
+    function decode112with18(uq112x112 memory self)
+        internal
+        pure
+        returns (uint256)
+    {
+        return uint256(self._x) / 5192296858534827;
     }
 
-    function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq112x112 memory) {
+    function fraction(uint256 numerator, uint256 denominator)
+        internal
+        pure
+        returns (uq112x112 memory)
+    {
         require(denominator > 0, 'FixedPoint::fraction: division by zero');
         if (numerator == 0) return FixedPoint.uq112x112(0);
 
@@ -50,13 +59,23 @@ library FixedPoint {
 
     // square root of a UQ112x112
     // lossy between 0/1 and 40 bits
-    function sqrt(uq112x112 memory self) internal pure returns (uq112x112 memory) {
+    function sqrt(uq112x112 memory self)
+        internal
+        pure
+        returns (uq112x112 memory)
+    {
         if (self._x <= uint144(-1)) {
             return uq112x112(uint224(Babylonian.sqrt(uint256(self._x) << 112)));
         }
 
         uint8 safeShiftBits = 255 - BitMath.mostSignificantBit(self._x);
         safeShiftBits -= safeShiftBits % 2;
-        return uq112x112(uint224(Babylonian.sqrt(uint256(self._x) << safeShiftBits) << ((112 - safeShiftBits) / 2)));
+        return
+            uq112x112(
+                uint224(
+                    Babylonian.sqrt(uint256(self._x) << safeShiftBits) <<
+                        ((112 - safeShiftBits) / 2)
+                )
+            );
     }
 }

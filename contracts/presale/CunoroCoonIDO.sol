@@ -9,7 +9,7 @@ import '../types/ERC20.sol';
 
 import '../libraries/SafeMath.sol';
 import '../libraries/Math.sol';
-import "../libraries/SafeERC20.sol";
+import '../libraries/SafeERC20.sol';
 
 interface ITreasury {
     function deposit(
@@ -192,14 +192,14 @@ contract CunoroCoonIDO is Ownable {
     }
 
     function finalize(address _receipt) external onlyOwner {
-        require(totalAmount == 0, 'need all clams to be sold');
+        require(totalAmount == 0, 'need all coons to be sold');
 
         uint256 maiInTreasure = 250000 * 1e18;
 
         IERC20(MAI).approve(treasury, maiInTreasure);
-        uint256 clamMinted = ITreasury(treasury).deposit(maiInTreasure, MAI, 0);
+        uint256 coonMinted = ITreasury(treasury).deposit(maiInTreasure, MAI, 0);
 
-        require(clamMinted == 250000 * 1e9);
+        require(coonMinted == 250000 * 1e9);
 
         // dev: create lp with 15 MAI per COON
         IERC20(MAI).transfer(maiCoonLP, 750000 * 1e18);
@@ -217,7 +217,7 @@ contract CunoroCoonIDO is Ownable {
             valueOfToken
         );
         require(zeroMinted == 0, 'should not mint any COON');
-        IERC20(COON).approve(staking, clamMinted);
+        IERC20(COON).approve(staking, coonMinted);
 
         finalized = true;
 
