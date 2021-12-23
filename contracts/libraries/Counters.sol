@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import "./SafeMath.sol";
+import './SafeMath.sol';
 
 library Counters {
     using SafeMath for uint256;
 
     struct Counter {
-
         uint256 _value; // default: 0
     }
 

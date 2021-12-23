@@ -3,7 +3,7 @@ const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 const { formatUnits, formatEther } = require('@ethersproject/units')
 
-describe('Bonding', () => {
+describe('Bonding', function () {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -24,8 +24,7 @@ describe('Bonding', () => {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    depositor,
-    clam,
+    coon,
     sCoon,
     dai,
     treasury,
@@ -34,14 +33,14 @@ describe('Bonding', () => {
     daiBond,
     firstEpochTime
 
-  beforeEach(async () => {
-    ;[deployer, depositor] = await ethers.getSigners()
+  beforeEach(async function () {
+    deployer = await ethers.getSigner()
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
     const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    clam = await COON.deploy()
-    await clam.setVault(deployer.address)
+    coon = await COON.deploy()
+    await coon.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
@@ -51,7 +50,7 @@ describe('Bonding', () => {
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      clam.address,
+      coon.address,
       dai.address,
       zeroAddress,
       zeroAddress,
@@ -60,7 +59,7 @@ describe('Bonding', () => {
 
     const DAIBond = await ethers.getContractFactory('CunoroBondDepository')
     daiBond = await DAIBond.deploy(
-      clam.address,
+      coon.address,
       dai.address,
       treasury.address,
       daoAddr,
@@ -69,7 +68,7 @@ describe('Bonding', () => {
 
     const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
-      clam.address,
+      coon.address,
       sCoon.address,
       epochLength,
       firstEpochNumber,
@@ -78,7 +77,7 @@ describe('Bonding', () => {
 
     // Deploy staking helper
     const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
-    stakingHelper = await StakingHelper.deploy(staking.address, clam.address)
+    stakingHelper = await StakingHelper.deploy(staking.address, coon.address)
 
     const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
@@ -91,7 +90,7 @@ describe('Bonding', () => {
 
     await staking.setContract('1', stakingWarmup.address)
 
-    await clam.setVault(treasury.address)
+    await coon.setVault(treasury.address)
 
     // queue and toggle deployer reserve depositor
     await treasury.queue('0', deployer.address)
@@ -102,7 +101,7 @@ describe('Bonding', () => {
 
     await daiBond.setStaking(stakingHelper.address, true)
 
-    await clam.approve(stakingHelper.address, largeApproval)
+    await coon.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
     await dai.approve(daiBond.address, largeApproval)
 
@@ -113,8 +112,8 @@ describe('Bonding', () => {
     )
   })
 
-  describe('adjust', () => {
-    it('should able to adjust with bcv <= 40', async () => {
+  describe('adjust', function () {
+    it('should able to adjust with bcv <= 40', async function () {
       const bcv = 38
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
@@ -140,7 +139,7 @@ describe('Bonding', () => {
       expect(adjustment[3]).to.eq(0)
     })
 
-    it('should failed to adjust with too large increment', async () => {
+    it('should failed to adjust with too large increment', async function () {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
@@ -163,7 +162,7 @@ describe('Bonding', () => {
       )
     })
 
-    it('should be able to adjust with normal increment', async () => {
+    it('should be able to adjust with normal increment', async function () {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
@@ -190,8 +189,8 @@ describe('Bonding', () => {
     })
   })
 
-  describe('deposit', () => {
-    it('should get vested fully', async () => {
+  describe('deposit', function () {
+    it('should get vested fully', async function () {
       await treasury.deposit(
         BigNumber.from(10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -221,7 +220,7 @@ describe('Bonding', () => {
       let depositAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(18))
       await daiBond.deposit(depositAmount, largeApproval, deployer.address)
 
-      const prevDAOReserve = await clam.balanceOf(daoAddr)
+      const prevDAOReserve = await coon.balanceOf(daoAddr)
       expect(prevDAOReserve).to.eq(
         BigNumber.from(25).mul(BigNumber.from(10).pow(9))
       )
@@ -232,7 +231,7 @@ describe('Bonding', () => {
       await expect(() =>
         daiBond.redeem(deployer.address, false)
       ).to.changeTokenBalance(
-        clam,
+        coon,
         deployer,
         BigNumber.from(5).mul(BigNumber.from(10).pow(9))
       )
@@ -245,17 +244,17 @@ describe('Bonding', () => {
 
       await daiBond.deposit(depositAmount, largeApproval, deployer.address)
       console.log(
-        'dao balance: ' + formatUnits(await clam.balanceOf(daoAddr), 9)
+        'dao balance: ' + formatUnits(await coon.balanceOf(daoAddr), 9)
       )
-      expect(await clam.balanceOf(daoAddr)).to.eq('35834236186')
+      expect(await coon.balanceOf(daoAddr)).to.eq('35834236186')
 
       await timeAndMine.setTimeIncrease(20)
       await expect(() =>
         daiBond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(clam, deployer, '30834236186')
+      ).to.changeTokenBalance(coon, deployer, '30834236186')
     })
 
-    it('should get vested partially', async () => {
+    it('should get vested partially', async function () {
       await treasury.deposit(
         BigNumber.from(10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -291,16 +290,16 @@ describe('Bonding', () => {
       await timeAndMine.setTimeIncrease(2)
       await expect(() =>
         daiBond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(clam, deployer, totalCoon.div(5))
+      ).to.changeTokenBalance(coon, deployer, totalCoon.div(5))
 
       // fully vested, get rest 80%
       await timeAndMine.setTimeIncrease(10)
       await expect(() =>
         daiBond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(clam, deployer, totalCoon - totalCoon.div(5))
+      ).to.changeTokenBalance(coon, deployer, totalCoon - totalCoon.div(5))
     })
 
-    it('should staked directly', async () => {
+    it('should staked directly', async function () {
       await treasury.deposit(
         BigNumber.from(10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -330,7 +329,7 @@ describe('Bonding', () => {
       let depositAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(18))
       await daiBond.deposit(depositAmount, largeApproval, deployer.address)
 
-      const prevDAOReserve = await clam.balanceOf(daoAddr)
+      const prevDAOReserve = await coon.balanceOf(daoAddr)
       expect(prevDAOReserve).to.eq(
         BigNumber.from(25).mul(BigNumber.from(10).pow(9))
       )

@@ -2,7 +2,7 @@ const { ethers } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 
-describe('Presale', () => {
+describe('Presale', function () {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -12,21 +12,18 @@ describe('Presale', () => {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    depositor,
-    clam,
+    coon,
     pCoon,
     exercisePreCoon,
     dai,
     treasury
 
-  beforeEach(async () => {
-    ;[deployer, depositor] = await ethers.getSigners()
-
-    firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
+  beforeEach(async function () {
+    deployer = await ethers.getSigner()
 
     const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    clam = await COON.deploy()
-    await clam.setVault(deployer.address)
+    coon = await COON.deploy()
+    await coon.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
@@ -38,7 +35,7 @@ describe('Presale', () => {
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      clam.address,
+      coon.address,
       dai.address,
       zeroAddress,
       zeroAddress,
@@ -48,21 +45,21 @@ describe('Presale', () => {
     const CoonCirculatingSupply = await ethers.getContractFactory(
       'CoonCirculatingSupply'
     )
-    const clamCirculatingSupply = await CoonCirculatingSupply.deploy(
+    const coonCirculatingSupply = await CoonCirculatingSupply.deploy(
       deployer.address
     )
-    await clamCirculatingSupply.initialize(clam.address)
+    await coonCirculatingSupply.initialize(coon.address)
 
     const ExercisePreCoon = await ethers.getContractFactory('ExercisePreCoon')
     exercisePreCoon = await ExercisePreCoon.deploy(
       pCoon.address,
-      clam.address,
+      coon.address,
       dai.address,
       treasury.address,
-      clamCirculatingSupply.address
+      coonCirculatingSupply.address
     )
 
-    await clam.setVault(treasury.address)
+    await coon.setVault(treasury.address)
 
     // queue and toggle deployer reserve depositor
     await treasury.queue('0', deployer.address)
@@ -89,8 +86,8 @@ describe('Presale', () => {
     )
   })
 
-  describe('exercise', () => {
-    it('should get reverted', async () => {
+  describe('exercise', function () {
+    it('should get reverted', async function () {
       await exercisePreCoon.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
@@ -104,7 +101,7 @@ describe('Presale', () => {
       ).to.be.revertedWith('Not enough vested')
     })
 
-    it('should get clam', async () => {
+    it('should get coon', async function () {
       await exercisePreCoon.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
@@ -116,7 +113,7 @@ describe('Presale', () => {
           BigNumber.from(10000).mul(BigNumber.from(10).pow(18))
         )
       ).to.changeTokenBalance(
-        clam,
+        coon,
         deployer,
         BigNumber.from(10000).mul(BigNumber.from(10).pow(9))
       )

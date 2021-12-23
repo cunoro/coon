@@ -1,7 +1,7 @@
 {
-  "name": "otterclam-contracts",
+  "name": "cunoro-contracts",
   "version": "1.0.0",
-  "description": "Smart Contracts for CunoroCoon",
+  "description": "Smart Contracts for Cunoro",
   "directories": {
     "test": "test"
   },
@@ -10,11 +10,12 @@
     "compile": "npx hardhat compile",
     "clean": "npx hardhat clean",
     "lint:sol": "solhint -f table contracts/**/*.sol",
+    "format:sol": "./node_modules/.bin/prettier --write **/*.sol",
     "bonds:monitor": "npx hardhat run ./scripts/monitorBonds.js --network polygon-mainnet",
     "bonds:adjust": "npx hardhat run ./scripts/adjustBonds.js --network polygon-mainnet"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.2",
+    "@openzeppelin/contracts": "^3.4.0",
     "dotenv": "^10.0.0"
   },
   "devDependencies": {
@@ -23,24 +24,30 @@
     "@nomiclabs/hardhat-etherscan": "^2.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/test-helpers": "^0.5.12",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.11.12",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "chai": "^4.3.4",
+    "eslint": "^8.4.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-mocha": "^10.0.2",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.1",
-    "hardhat": "^2.6.5",
-    "prettier": "^2.3.2",
+    "hardhat": "^2.5.0",
+    "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.17",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "0.0.5"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CunoroCoon/otter-contracts.git"
+    "url": "git+https://github.com/Cunoro/coon-contracts.git"
   },
   "author": "",
   "bugs": {
-    "url": "https://github.com/CunoroCoon/otter-contracts/issues"
+    "url": "https://github.com/Cunoro/coon-contracts/issues"
   },
-  "homepage": "https://github.com/CunoroCoon/otter-contracts#readme"
+  "homepage": "https://github.com/Cunoro/coon-contracts#readme"
 }

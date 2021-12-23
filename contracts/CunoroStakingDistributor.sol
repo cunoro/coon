@@ -2,17 +2,15 @@
 
 pragma solidity 0.7.5;
 
-import "./interfaces/ICunoroTreasury.sol";
+import './interfaces/ICunoroTreasury.sol';
 
-import "./types/ERC20.sol";
-import "./types/Ownable.sol";
+import './types/ERC20.sol';
+import './types/Ownable.sol';
 
-import "./libraries/SafeERC20.sol";
-
+import './libraries/SafeERC20.sol';
 
 contract CunoroStakingDistributor is Ownable {
-
-    using SafeMath for uint;
+    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ====== VARIABLES ====== */
@@ -20,58 +18,58 @@ contract CunoroStakingDistributor is Ownable {
     address public immutable COON;
     address public immutable treasury;
 
-    uint public immutable epochLength; // seconds
-    uint public nextEpochTime; // unix epoch time in seconds
+    uint256 public immutable epochLength; // seconds
+    uint256 public nextEpochTime; // unix epoch time in seconds
 
-    mapping( uint => Adjust ) public adjustments;
-
+    mapping(uint256 => Adjust) public adjustments;
 
     /* ====== STRUCTS ====== */
 
     struct Info {
-        uint rate; // in ten-thousandths ( 5000 = 0.5% )
+        uint256 rate; // in ten-thousandths ( 5000 = 0.5% )
         address recipient;
     }
     Info[] public info;
 
     struct Adjust {
         bool add;
-        uint rate;
-        uint target;
+        uint256 rate;
+        uint256 target;
     }
-
-
 
     /* ====== CONSTRUCTOR ====== */
 
-    constructor( address _treasury, address _clam, uint _epochLength, uint _nextEpochTime ) {
-        require( _treasury != address(0) );
+    constructor(
+        address _treasury,
+        address _clam,
+        uint256 _epochLength,
+        uint256 _nextEpochTime
+    ) {
+        require(_treasury != address(0));
         treasury = _treasury;
-        require( _clam != address(0) );
+        require(_clam != address(0));
         COON = _clam;
         epochLength = _epochLength;
         nextEpochTime = _nextEpochTime;
     }
-
-
 
     /* ====== PUBLIC FUNCTIONS ====== */
 
     /**
         @notice send epoch reward to staking contract
      */
-    function distribute() external returns ( bool ) {
-        if ( nextEpochTime <= block.timestamp ) {
-            nextEpochTime = nextEpochTime.add( epochLength ); // set next epoch time
+    function distribute() external returns (bool) {
+        if (nextEpochTime <= block.timestamp) {
+            nextEpochTime = nextEpochTime.add(epochLength); // set next epoch time
 
             // distribute rewards to each recipient
-            for ( uint i = 0; i < info.length; i++ ) {
-                if ( info[ i ].rate > 0 ) {
-                    ICunoroTreasury( treasury ).mintRewards( // mint and send from treasury
-                        info[ i ].recipient,
-                        nextRewardAt( info[ i ].rate )
+            for (uint256 i = 0; i < info.length; i++) {
+                if (info[i].rate > 0) {
+                    ICunoroTreasury(treasury).mintRewards( // mint and send from treasury
+                        info[i].recipient,
+                        nextRewardAt(info[i].rate)
                     );
-                    adjust( i ); // check for adjustment
+                    adjust(i); // check for adjustment
                 }
             }
             return true;
@@ -80,31 +78,31 @@ contract CunoroStakingDistributor is Ownable {
         }
     }
 
-
-
     /* ====== INTERNAL FUNCTIONS ====== */
 
     /**
         @notice increment reward rate for collector
      */
-    function adjust( uint _index ) internal {
-        Adjust memory adjustment = adjustments[ _index ];
-        if ( adjustment.rate != 0 ) {
-            if ( adjustment.add ) { // if rate should increase
-                info[ _index ].rate = info[ _index ].rate.add( adjustment.rate ); // raise rate
-                if ( info[ _index ].rate >= adjustment.target ) { // if target met
-                    adjustments[ _index ].rate = 0; // turn off adjustment
+    function adjust(uint256 _index) internal {
+        Adjust memory adjustment = adjustments[_index];
+        if (adjustment.rate != 0) {
+            if (adjustment.add) {
+                // if rate should increase
+                info[_index].rate = info[_index].rate.add(adjustment.rate); // raise rate
+                if (info[_index].rate >= adjustment.target) {
+                    // if target met
+                    adjustments[_index].rate = 0; // turn off adjustment
                 }
-            } else { // if rate should decrease
-                info[ _index ].rate = info[ _index ].rate.sub( adjustment.rate ); // lower rate
-                if ( info[ _index ].rate <= adjustment.target ) { // if target met
-                    adjustments[ _index ].rate = 0; // turn off adjustment
+            } else {
+                // if rate should decrease
+                info[_index].rate = info[_index].rate.sub(adjustment.rate); // lower rate
+                if (info[_index].rate <= adjustment.target) {
+                    // if target met
+                    adjustments[_index].rate = 0; // turn off adjustment
                 }
             }
         }
     }
-
-
 
     /* ====== VIEW FUNCTIONS ====== */
 
@@ -113,8 +111,8 @@ contract CunoroStakingDistributor is Ownable {
         @param _rate uint
         @return uint
      */
-    function nextRewardAt( uint _rate ) public view returns ( uint ) {
-        return IERC20( COON ).totalSupply().mul( _rate ).div( 1000000 );
+    function nextRewardAt(uint256 _rate) public view returns (uint256) {
+        return IERC20(COON).totalSupply().mul(_rate).div(1000000);
     }
 
     /**
@@ -122,17 +120,15 @@ contract CunoroStakingDistributor is Ownable {
         @param _recipient address
         @return uint
      */
-    function nextRewardFor( address _recipient ) public view returns ( uint ) {
-        uint reward;
-        for ( uint i = 0; i < info.length; i++ ) {
-            if ( info[ i ].recipient == _recipient ) {
-                reward = nextRewardAt( info[ i ].rate );
+    function nextRewardFor(address _recipient) public view returns (uint256) {
+        uint256 reward;
+        for (uint256 i = 0; i < info.length; i++) {
+            if (info[i].recipient == _recipient) {
+                reward = nextRewardAt(info[i].rate);
             }
         }
         return reward;
     }
-
-
 
     /* ====== POLICY FUNCTIONS ====== */
 
@@ -141,12 +137,12 @@ contract CunoroStakingDistributor is Ownable {
         @param _recipient address
         @param _rewardRate uint
      */
-    function addRecipient( address _recipient, uint _rewardRate ) external onlyOwner() {
-        require( _recipient != address(0) );
-        info.push( Info({
-            recipient: _recipient,
-            rate: _rewardRate
-        }));
+    function addRecipient(address _recipient, uint256 _rewardRate)
+        external
+        onlyOwner
+    {
+        require(_recipient != address(0));
+        info.push(Info({recipient: _recipient, rate: _rewardRate}));
     }
 
     /**
@@ -154,10 +150,13 @@ contract CunoroStakingDistributor is Ownable {
         @param _index uint
         @param _recipient address
      */
-    function removeRecipient( uint _index, address _recipient ) external onlyOwner() {
-        require( _recipient == info[ _index ].recipient );
-        info[ _index ].recipient = address(0);
-        info[ _index ].rate = 0;
+    function removeRecipient(uint256 _index, address _recipient)
+        external
+        onlyOwner
+    {
+        require(_recipient == info[_index].recipient);
+        info[_index].recipient = address(0);
+        info[_index].rate = 0;
     }
 
     /**
@@ -167,11 +166,12 @@ contract CunoroStakingDistributor is Ownable {
         @param _rate uint
         @param _target uint
      */
-    function setAdjustment( uint _index, bool _add, uint _rate, uint _target ) external onlyOwner() {
-        adjustments[ _index ] = Adjust({
-            add: _add,
-            rate: _rate,
-            target: _target
-        });
+    function setAdjustment(
+        uint256 _index,
+        bool _add,
+        uint256 _rate,
+        uint256 _target
+    ) external onlyOwner {
+        adjustments[_index] = Adjust({add: _add, rate: _rate, target: _target});
     }
 }

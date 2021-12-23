@@ -2,13 +2,13 @@ const { ethers } = require('hardhat')
 
 async function main() {
   const signer = await ethers.getSigner()
-  const CunoroBondDepository = await ethers.getContractFactory(
-    'CunoroBondDepository'
+  const OtterBondDepository = await ethers.getContractFactory(
+    'OtterBondDepository'
   )
-  const bondV1 = CunoroBondDepository.attach(
+  const bondV1 = OtterBondDepository.attach(
     '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   )
-  const bondV2 = CunoroBondDepository.attach(
+  const bondV2 = OtterBondDepository.attach(
     '0x64c766f9A4936c3a4b51C55Ea5C4854E19766035'
   )
 

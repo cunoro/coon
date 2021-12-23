@@ -2,7 +2,7 @@ const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 
-describe('Staking', () => {
+describe('Staking', function () {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -24,8 +24,7 @@ describe('Staking', () => {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    depositor,
-    clam,
+    coon,
     sCoon,
     dai,
     treasury,
@@ -34,14 +33,14 @@ describe('Staking', () => {
     stakingHelper,
     firstEpochTime
 
-  beforeEach(async () => {
-    ;[deployer, depositor] = await ethers.getSigners()
+  beforeEach(async function () {
+    deployer = await ethers.getSigner()
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
     const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    clam = await COON.deploy()
-    await clam.setVault(deployer.address)
+    coon = await COON.deploy()
+    await coon.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
@@ -51,7 +50,7 @@ describe('Staking', () => {
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      clam.address,
+      coon.address,
       dai.address,
       zeroAddress,
       zeroAddress,
@@ -63,14 +62,14 @@ describe('Staking', () => {
     )
     stakingDistributor = await StakingDistributor.deploy(
       treasury.address,
-      clam.address,
+      coon.address,
       epochLength,
       firstEpochTime
     )
 
     const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
-      clam.address,
+      coon.address,
       sCoon.address,
       epochLength,
       firstEpochNumber,
@@ -79,7 +78,7 @@ describe('Staking', () => {
 
     // Deploy staking helper
     const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
-    stakingHelper = await StakingHelper.deploy(staking.address, clam.address)
+    stakingHelper = await StakingHelper.deploy(staking.address, coon.address)
 
     const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
@@ -95,7 +94,7 @@ describe('Staking', () => {
 
     await stakingDistributor.addRecipient(staking.address, initialRewardRate)
 
-    await clam.setVault(treasury.address)
+    await coon.setVault(treasury.address)
 
     // queue and toggle reward manager
     await treasury.queue('8', stakingDistributor.address)
@@ -105,7 +104,7 @@ describe('Staking', () => {
     await treasury.queue('0', deployer.address)
     await treasury.toggle('0', deployer.address, zeroAddress)
 
-    await clam.approve(stakingHelper.address, largeApproval)
+    await coon.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
 
     // mint 1,000,000 DAI for testing
@@ -115,8 +114,8 @@ describe('Staking', () => {
     )
   })
 
-  describe('treasury deposit', () => {
-    it('should get COON', async () => {
+  describe('treasury deposit', function () {
+    it('should get COON', async function () {
       await expect(() =>
         treasury.deposit(
           BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
@@ -124,15 +123,15 @@ describe('Staking', () => {
           BigNumber.from(750000).mul(BigNumber.from(10).pow(9))
         )
       ).to.changeTokenBalance(
-        clam,
+        coon,
         deployer,
         BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
       )
     })
   })
 
-  describe('stake', () => {
-    it('should get equally sCoon tokens', async () => {
+  describe('stake', function () {
+    it('should get equally sCoon tokens', async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -152,8 +151,8 @@ describe('Staking', () => {
     })
   })
 
-  describe('rebase', () => {
-    it('distribute 0 for first block', async () => {
+  describe('rebase', function () {
+    it('distribute 0 for first block', async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -174,7 +173,7 @@ describe('Staking', () => {
       expect(await sCoon.index()).to.eq('1000000000')
     })
 
-    it('should rebase after epoch end', async () => {
+    it('should rebase after epoch end', async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -208,7 +207,7 @@ describe('Staking', () => {
       expect(await sCoon.index()).to.eq('8500000000')
     })
 
-    it('should not rebase before epoch end', async () => {
+    it('should not rebase before epoch end', async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -243,7 +242,7 @@ describe('Staking', () => {
       expect(distribute).to.eq('750000000000')
     })
 
-    it('should not receive reward', async () => {
+    it('should not receive reward', async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -292,8 +291,8 @@ describe('Staking', () => {
     })
   })
 
-  describe('warmup', () => {
-    beforeEach(async () => {
+  describe('warmup', function () {
+    beforeEach(async function () {
       await treasury.deposit(
         BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
         dai.address,
@@ -301,14 +300,14 @@ describe('Staking', () => {
       )
     })
 
-    it('in stay in warmup after 1 epoch', async () => {
+    it('in stay in warmup after 1 epoch', async function () {
       await staking.setWarmup(2)
 
       await expect(() =>
         stakingHelper.stake(100 * 1e9, deployer.address)
       ).to.changeTokenBalance(sCoon, deployer, 0)
 
-      const [deposit, gons, expiry, lock] = await staking.warmupInfo(
+      const [deposit, _, expiry, lock] = await staking.warmupInfo(
         deployer.address
       )
       expect(deposit).to.eq(100 * 1e9)
@@ -332,14 +331,14 @@ describe('Staking', () => {
       )
     })
 
-    it('should be able to forfeit without reward', async () => {
+    it('should be able to forfeit without reward', async function () {
       await staking.setWarmup(2)
 
       await expect(() =>
         stakingHelper.stake(100 * 1e9, deployer.address)
       ).to.changeTokenBalance(sCoon, deployer, 0)
 
-      const [deposit, gons, expiry, lock] = await staking.warmupInfo(
+      const [deposit, _, expiry, lock] = await staking.warmupInfo(
         deployer.address
       )
       expect(deposit).to.eq(100 * 1e9)
@@ -349,7 +348,7 @@ describe('Staking', () => {
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
       await staking.rebase()
       await expect(() => staking.forfeit()).to.changeTokenBalance(
-        clam,
+        coon,
         deployer,
         100 * 1e9
       )
