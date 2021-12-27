@@ -37,12 +37,12 @@ let deployer = await ethers.getSigner('0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462
 const Treasury = await ethers.getContractFactory('CunoroTreasury')
 let treasury = Treasury.attach('0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C').connect(multisig)
 
-const ERC20 = await ethers.getContractFactory('CunoroClamERC20V2')
+const ERC20 = await ethers.getContractFactory('CunoroNoroERC20V2')
 let noro = ERC20.attach(addresses.NORO_ADDRESS)
 let mai = ERC20.attach(addresses.MAI_ADDRESS)
 
-const StakedCunoroClamERC20V2 = await ethers.getContractFactory('StakedCunoroClamERC20V2')
-let sClam = StakedCunoroClamERC20V2.attach(addresses.sNORO_ADDRESS).connect(deployer)
+const StakedCunoroNoroERC20V2 = await ethers.getContractFactory('StakedCunoroNoroERC20V2')
+let sNoro = StakedCunoroNoroERC20V2.attach(addresses.sNORO_ADDRESS).connect(deployer)
 
 const Staking = await ethers.getContractFactory('CunoroStaking')
 let staking = Staking.attach(addresses.STAKING_ADDRESS).connect(deployer)

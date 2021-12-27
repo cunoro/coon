@@ -1,21 +1,21 @@
 const { ContractFactory } = require('ethers')
-const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
-const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
-const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
+const JoeFactoryJson = require('../../scripts/JoeFactory.json')
+const UniswapV2PairJson = require('../../scripts/IUniswapV2Pair.json')
+const JoeRouter02Json = require('../../scripts/JoeRouter02.json')
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'
 
-async function deployUniswap(deployer) {
-  const UniswapV2FactoryContract = ContractFactory.fromSolidity(
-    UniswapV2FactoryJson,
+async function deployTraderJoe(deployer) {
+  const JoeFactoryContract = ContractFactory.fromSolidity(
+    JoeFactoryJson,
     deployer
   )
-  const UniswapV2Router = ContractFactory.fromSolidity(
-    UniswapV2RouterJson,
+  const JoeRouter02 = ContractFactory.fromSolidity(
+    JoeRouter02Json,
     deployer
   )
-  const factory = await UniswapV2FactoryContract.deploy(deployer.address)
-  const router = await UniswapV2Router.deploy(factory.address, zeroAddress)
+  const factory = await JoeFactoryContract.deploy(deployer.address)
+  const router = await JoeRouter02.deploy(factory.address, zeroAddress)
   return { factory, router }
 }
 
@@ -25,6 +25,6 @@ function getPair(address, signer) {
 }
 
 module.exports = {
-  deployUniswap,
+  deployTraderJoe,
   getPair,
 }

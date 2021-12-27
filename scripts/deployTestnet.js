@@ -2,8 +2,8 @@
 
 const { ethers } = require('hardhat')
 const { BigNumber, ContractFactory } = ethers
-const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
-const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
+const TraderJoeABI = require('./JoeFactory.json').abi
+const IUniswapV2Pair = require('./ITraderJoePair.json').abi
 const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 const { getQuickSwapAddresses } = require('./addresses')
 
@@ -85,14 +85,14 @@ async function main() {
   console.log('DAI addr: ' + dai.address)
 
   // Deploy NORO
-  const NORO = await ethers.getContractFactory('CunoroClamERC20')
+  const NORO = await ethers.getContractFactory('CunoroNoroERC20')
   const noro = await NORO.deploy()
   console.log('NORO deployed: ' + noro.address)
 
-  const ClamCirculatingSupply = await ethers.getContractFactory(
-    'ClamCirculatingSupply'
+  const NoroCirculatingSupply = await ethers.getContractFactory(
+    'NoroCirculatingSupply'
   )
-  const noroCirculatingSupply = await ClamCirculatingSupply.deploy(
+  const noroCirculatingSupply = await NoroCirculatingSupply.deploy(
     deployer.address
   )
   await noroCirculatingSupply.deployTransaction.wait()
@@ -100,7 +100,7 @@ async function main() {
 
   const uniswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
-    UniswapV2ABI,
+    TraderJoeABI,
     deployer
   )
   await (await uniswapFactory.createPair(noro.address, dai.address)).wait()
@@ -136,7 +136,7 @@ async function main() {
   )
 
   // Deploy sNORO
-  const StakedNORO = await ethers.getContractFactory('StakedCunoroClamERC20')
+  const StakedNORO = await ethers.getContractFactory('StakedCunoroNoroERC20')
   const sNORO = await StakedNORO.deploy()
 
   // Deploy Staking
@@ -173,15 +173,15 @@ async function main() {
     zeroAddress
   )
 
-  const DaiClamBond = await ethers.getContractFactory('CunoroBondDepository')
-  const daiClamBond = await DaiClamBond.deploy(
+  const DaiNoroBond = await ethers.getContractFactory('CunoroBondDepository')
+  const daiNoroBond = await DaiNoroBond.deploy(
     noro.address,
     lpAddress,
     treasury.address,
     daoAddr,
     bondingCalculator.address
   )
-  const IDO = await ethers.getContractFactory('CunoroClamIDO')
+  const IDO = await ethers.getContractFactory('CunoroNoroIDO')
   const ido = await IDO.deploy(
     noro.address,
     daiAddr,
@@ -205,7 +205,7 @@ async function main() {
       },
       BONDS: {
         MAI: daiBond.address,
-        MAI_NORO: daiClamBond.address,
+        MAI_NORO: daiNoroBond.address,
       },
       IDO: ido.address,
       NORO_CIRCULATING_SUPPLY: noroCirculatingSupply.address,
@@ -220,8 +220,8 @@ async function main() {
   await treasury.toggle('0', deployer.address, zeroAddress)
 
   // queue and toggle DAI-NORO liquidity depositor
-  await (await treasury.queue('4', daiClamBond.address)).wait()
-  await treasury.toggle('4', daiClamBond.address, zeroAddress)
+  await (await treasury.queue('4', daiNoroBond.address)).wait()
+  await treasury.toggle('4', daiNoroBond.address, zeroAddress)
 
   await (await treasury.queue('4', deployer.address)).wait()
   await treasury.toggle('4', deployer.address, zeroAddress)
@@ -236,7 +236,7 @@ async function main() {
     maxBondDebt,
     initialBondDebt
   )
-  await daiClamBond.initializeBondTerms(
+  await daiNoroBond.initializeBondTerms(
     '100',
     bondVestingLength,
     minBondPrice,
@@ -248,7 +248,7 @@ async function main() {
 
   // Set staking for bonds
   await daiBond.setStaking(staking.address, stakingHelper.address)
-  await daiClamBond.setStaking(staking.address, stakingHelper.address)
+  await daiNoroBond.setStaking(staking.address, stakingHelper.address)
 
   // Initialize sNORO and set the index
   await sNORO.initialize(staking.address)
@@ -272,7 +272,7 @@ async function main() {
   // const Treasury = await ethers.getContractFactory('CunoroTreasury')
   // const treasury = Treasury.attach('0x12239Ec193A208343F7FEa8410b7a10cb7DFf9A6')
 
-  // const IDO = await ethers.getContractFactory('CunoroClamIDO')
+  // const IDO = await ethers.getContractFactory('CunoroNoroIDO')
   // const ido = await IDO.deploy(
   //   '0xcf2cf9Aee9A2b93a7AF9F2444843AFfDd8C435eb',
   //   '0x19907af68A173080c3e05bb53932B0ED541f6d20',
@@ -301,7 +301,7 @@ async function main() {
   // await (await treasury.queue('4', ido.address)).wait(1)
   // await treasury.toggle('4', ido.address, zeroAddress)
 
-  // const IDO = await ethers.getContractFactory('CunoroClamIDO')
+  // const IDO = await ethers.getContractFactory('CunoroNoroIDO')
   // const ido = IDO.attach('0xC4d9801372e6800D5dBb03eC907CbdDE437bE627')
   // await (await ido.disableWhiteList()).wait()
   // const wallets = []
@@ -327,10 +327,10 @@ async function main() {
 
   const totalIDODaiAmount = 100 * 10000
   const noroMinted = 200000
-  const lpClamAmount = 50000
-  const initialClamPriceInLP = 15
-  const daiInTreasury = totalIDODaiAmount - initialClamPriceInLP * lpClamAmount
-  const profit = daiInTreasury - noroMinted - lpClamAmount
+  const lpNoroAmount = 50000
+  const initialNoroPriceInLP = 15
+  const daiInTreasury = totalIDODaiAmount - initialNoroPriceInLP * lpNoroAmount
+  const profit = daiInTreasury - noroMinted - lpNoroAmount
   console.log({ daiInTreasury, profit })
 
   await (
@@ -346,10 +346,10 @@ async function main() {
     await quickRouter.addLiquidity(
       dai.address,
       noro.address,
-      ethers.utils.parseEther(String(lpClamAmount * initialClamPriceInLP)),
-      ethers.utils.parseUnits(String(lpClamAmount), 9),
-      ethers.utils.parseEther(String(lpClamAmount * initialClamPriceInLP)),
-      ethers.utils.parseUnits(String(lpClamAmount), 9),
+      ethers.utils.parseEther(String(lpNoroAmount * initialNoroPriceInLP)),
+      ethers.utils.parseUnits(String(lpNoroAmount), 9),
+      ethers.utils.parseEther(String(lpNoroAmount * initialNoroPriceInLP)),
+      ethers.utils.parseUnits(String(lpNoroAmount), 9),
       deployer.address,
       1000000000000
     )

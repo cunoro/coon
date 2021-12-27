@@ -2,7 +2,7 @@
 pragma solidity 0.7.5;
 
 import '../interfaces/IERC20.sol';
-import '../interfaces/IUniswapV2Pair.sol';
+import '../interfaces/IPair.sol';
 
 import '../types/Ownable.sol';
 import '../types/ERC20.sol';
@@ -204,13 +204,13 @@ contract CunoroNoroIDO is Ownable {
         // dev: create lp with 15 MAI per NORO
         IERC20(MAI).transfer(maiNoroLP, 750000 * 1e18);
         IERC20(NORO).transfer(maiNoroLP, 50000 * 1e9);
-        uint256 lpBalance = IUniswapV2Pair(maiNoroLP).mint(address(this));
+        uint256 lpBalance = IPair(maiNoroLP).mint(address(this));
         uint256 valueOfToken = ITreasury(treasury).valueOfToken(
             maiNoroLP,
             lpBalance
         );
 
-        IUniswapV2Pair(maiNoroLP).approve(treasury, lpBalance);
+        IPair(maiNoroLP).approve(treasury, lpBalance);
         uint256 zeroMinted = ITreasury(treasury).deposit(
             lpBalance,
             maiNoroLP,

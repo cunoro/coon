@@ -13,6 +13,10 @@ interface INOROERC20 {
     function burnFrom(address account_, uint256 amount_) external;
 }
 
+interface IERC20Mintable {
+  function mint(address _to, uint256 _value) external returns (bool _success);
+}
+
 interface IBondCalculator {
     function valuation(address pair_, uint256 amount_)
         external
