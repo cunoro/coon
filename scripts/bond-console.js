@@ -1,27 +1,27 @@
 let addresses = {
-  sCLAM_ADDRESS: '0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67',
-  CLAM_ADDRESS: '0xC250e9987A032ACAC293d838726C511E6E1C029d',
-  OLD_CLAM_ADDRESS: '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
-  OLD_SCLAM_ADDRESS: '0x3949F058238563803b5971711Ad19551930C8209',
+  sNORO_ADDRESS: '0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67',
+  NORO_ADDRESS: '0xC250e9987A032ACAC293d838726C511E6E1C029d',
+  OLD_NORO_ADDRESS: '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
+  OLD_SNORO_ADDRESS: '0x3949F058238563803b5971711Ad19551930C8209',
   MAI_ADDRESS: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
   TREASURY_ADDRESS: '0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C',
-  CLAM_BONDING_CALC_ADDRESS: '0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E',
+  NORO_BONDING_CALC_ADDRESS: '0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E',
   STAKING_ADDRESS: '0xC8B0243F350AA5F8B979b228fAe522DAFC61221a',
   OLD_STAKING_ADDRESS: '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf',
   STAKING_HELPER_ADDRESS: '0x76B38319483b570B4BCFeD2D35d191d3c9E01691',
   MIGRATOR: '0xDaa1f5036eC158fca9E5ce791ab3e213cD1c41df',
   RESERVES: {
     MAI: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
-    OLD_MAI_CLAM: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
-    MAI_CLAM: '0x1581802317f32A2665005109444233ca6E3e2D68',
+    OLD_MAI_NORO: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
+    MAI_NORO: '0x1581802317f32A2665005109444233ca6E3e2D68',
   },
   BONDS: {
     OLD_MAI: '0x28077992bFA9609Ae27458A766470b03D43dEe8A',
-    OLD_MAI_CLAM: '0x64c766f9A4936c3a4b51C55Ea5C4854E19766035',
+    OLD_MAI_NORO: '0x64c766f9A4936c3a4b51C55Ea5C4854E19766035',
     MAI: '0x603A74Fd527b85E0A1e205517c1f24aC71f5C263',
-    MAI_CLAM: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E',
+    MAI_NORO: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E',
   },
-  CLAM_CIRCULATING_SUPPLY: '0x99ee91871cf39A44E3Fc842541274d7eA05AE4b3',
+  NORO_CIRCULATING_SUPPLY: '0x99ee91871cf39A44E3Fc842541274d7eA05AE4b3',
 }
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'
@@ -34,26 +34,26 @@ let multisig = await ethers.getSigner( '0x929A27c46041196e1a49C7B459d63eC9A20cd8
 await hre.network.provider.request({ method: 'hardhat_impersonateAccount', params: ['0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B'] })
 let deployer = await ethers.getSigner('0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B')
 
-const Treasury = await ethers.getContractFactory('OtterTreasury')
+const Treasury = await ethers.getContractFactory('CunoroTreasury')
 let treasury = Treasury.attach('0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C').connect(multisig)
 
-const ERC20 = await ethers.getContractFactory('OtterClamERC20V2')
-let clam = ERC20.attach(addresses.CLAM_ADDRESS)
+const ERC20 = await ethers.getContractFactory('CunoroClamERC20V2')
+let noro = ERC20.attach(addresses.NORO_ADDRESS)
 let mai = ERC20.attach(addresses.MAI_ADDRESS)
 
-const StakedOtterClamERC20V2 = await ethers.getContractFactory('StakedOtterClamERC20V2')
-let sClam = StakedOtterClamERC20V2.attach(addresses.sCLAM_ADDRESS).connect(deployer)
+const StakedCunoroClamERC20V2 = await ethers.getContractFactory('StakedCunoroClamERC20V2')
+let sClam = StakedCunoroClamERC20V2.attach(addresses.sNORO_ADDRESS).connect(deployer)
 
-const Staking = await ethers.getContractFactory('OtterStaking')
+const Staking = await ethers.getContractFactory('CunoroStaking')
 let staking = Staking.attach(addresses.STAKING_ADDRESS).connect(deployer)
 
 const DAI = await ethers.getContractFactory("DAI");
 const dai = await DAI.deploy(0)
 await dai.mint('', ethers.utils.parseEther('10000'))
 
-let Bond = await ethers.getContractFactory('OtterMaticLPBondDepository')
+let Bond = await ethers.getContractFactory('CunoroAvaxLPBondDepository')
 let bond = Bond.attach('0x1dAc605bDD4e8F3ab23da9B360e672f4e973A196').connect(deployer)
-// let bond = await Bond.deploy( addresses.CLAM_ADDRESS, addresses.sCLAM_ADDRESS, fraxAddr, addresses.TREASURY_ADDRESS, '0x929a27c46041196e1a49c7b459d63ec9a20cd879', zeroAddress)
+// let bond = await Bond.deploy( addresses.NORO_ADDRESS, addresses.sNORO_ADDRESS, fraxAddr, addresses.TREASURY_ADDRESS, '0x929a27c46041196e1a49c7b459d63ec9a20cd879', zeroAddress)
 // await bond.setStaking(staking.address)
 
 // await treasury.queue('0', bond.address)
@@ -74,6 +74,6 @@ await hre.network.provider.request({ method: 'evm_mine' });
 let deployer = await ethers.getSigner('0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B')
 await hre.network.provider.request({ method: 'hardhat_impersonateAccount', params: ['0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B'] })
 let deployer = await ethers.getSigner('0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B')
-let Bond = await ethers.getContractFactory('OtterBondStakeDepository')
+let Bond = await ethers.getContractFactory('CunoroBondStakeDepository')
 let bond = Bond.attach('0x1dAc605bDD4e8F3ab23da9B360e672f4e973A196').connect( deployer)
 await bond.initializeBondTerms( '300', 5 * 86400, '370', '100', '8000000000000000','0')

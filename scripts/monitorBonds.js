@@ -1,32 +1,32 @@
 const { ethers } = require('hardhat')
 const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
 
-const CLAM_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
+const NORO_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
 const priceFormatter = Intl.NumberFormat('en', {
   style: 'currency',
   currency: 'usd',
 })
 
 async function main() {
-  const OtterBondDepository = await ethers.getContractFactory(
-    'OtterBondDepository'
+  const CunoroBondDepository = await ethers.getContractFactory(
+    'CunoroBondDepository'
   )
-  const MaticBondDepository = await ethers.getContractFactory(
-    'OtterMaticBondDepository'
+  const AvaxBondDepository = await ethers.getContractFactory(
+    'CunoroAvaxBondDepository'
   )
   const bonds = [
     { name: 'MAI', address: '0x779CB532e289CbaA3d0692Ae989C63C2B4fBd4d0' },
-    { name: 'CLAM-MAI', address: '0xda0d7c3d751d00a1ec1c495eF7Cf3db1a202B0B9' },
+    { name: 'NORO-MAI', address: '0xda0d7c3d751d00a1ec1c495eF7Cf3db1a202B0B9' },
     { name: 'FRAX', address: '0x9e1430EB3b56e8953a342BFBBdD2DDC3b6E84d9D' },
-    { name: 'CLAM-FRAX', address: '0xd99c8aF24c5E7fd6E292b1682Ec0f0cB3535e002', },
-    { name: 'MATIC', address: '0xf57Fb38f57D2a4Fca0ee074A3F3b4e5C570959E4' },
+    { name: 'NORO-FRAX', address: '0xd99c8aF24c5E7fd6E292b1682Ec0f0cB3535e002', },
+    { name: 'AVAX', address: '0xf57Fb38f57D2a4Fca0ee074A3F3b4e5C570959E4' },
   ]
 
   for (const { name, address } of bonds) {
     const bond =
-      name === 'MATIC'
-        ? MaticBondDepository.attach(address)
-        : OtterBondDepository.attach(address)
+      name === 'AVAX'
+        ? AvaxBondDepository.attach(address)
+        : CunoroBondDepository.attach(address)
     await fetchBondInfo(name, bond)
     bond.on('BondCreated', async (deposit, payout, _, priceInUSD) => {
       const [terms, debtRatio, adjustment] = await Promise.all([
@@ -57,7 +57,7 @@ async function main() {
             }).format((marketPrice - Number(priceInUSD / 1e18)) / priceInUSD),
             minPrice: terms[2].toString(),
             debtRatio:
-              name === 'MAI' || name === 'FRAX' || name === 'MATIC'
+              name === 'MAI' || name === 'FRAX' || name === 'AVAX'
                 ? ethers.utils.formatUnits(debtRatio, 7) + '%'
                 : ethers.utils.formatUnits(debtRatio, 16) + '%',
             adjustment: `${
@@ -74,7 +74,7 @@ async function main() {
   // setInterval(async () => {
   //   console.log('==== ' + new Date())
   //   for (const { name, address } of bonds) {
-  //     const bond = OtterBondDepository.attach(address)
+  //     const bond = CunoroBondDepository.attach(address)
   //     await fetchBondInfo(name, bond)
   //   }
   // }, 60 * 1000)
@@ -102,7 +102,7 @@ async function fetchBondInfo(name, bond) {
           adjustment[0] ? '+' : '-'
         }${adjustment[1].toString()} target: ${adjustment[2].toString()} buffer: ${adjustment[3].toString()}`,
         debtRatio:
-          name === 'MAI' || name === 'FRAX' || name === 'MATIC'
+          name === 'MAI' || name === 'FRAX' || name === 'AVAX'
             ? ethers.utils.formatUnits(debtRatio, 7) + '%'
             : ethers.utils.formatUnits(debtRatio, 16) + '%',
         ROI: Intl.NumberFormat('en', {
@@ -119,7 +119,7 @@ async function fetchBondInfo(name, bond) {
 
 async function getMarketPrice() {
   const signer = await ethers.getSigner()
-  const lp = new ethers.Contract(CLAM_MAI_LP, IUniswapV2Pair, signer)
+  const lp = new ethers.Contract(NORO_MAI_LP, IUniswapV2Pair, signer)
   const reserves = await lp.getReserves()
   const marketPrice = reserves[0].div(reserves[1])
   return marketPrice

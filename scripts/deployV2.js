@@ -1,4 +1,4 @@
-// @dev. This script will deploy v2 of Otter. It will deploy the whole ecosystem.
+// @dev. This script will deploy v2 of Cunoro. It will deploy the whole ecosystem.
 
 const { ethers } = require('hardhat')
 const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
@@ -42,7 +42,7 @@ async function main() {
   // Min bond price
   const minBondPrice = '12000'
 
-  // Max bond payout, 1000 = 1% of CLAM total supply
+  // Max bond payout, 1000 = 1% of NORO total supply
   const maxBondPayout = '50'
 
   // DAO fee for bond
@@ -62,24 +62,24 @@ async function main() {
     getQuickSwapAddresses(chainId)
   const maiAddr = oldContractAddresses.MAI_ADDRESS
 
-  // Deploy CLAM v2
-  const CLAM2 = await ethers.getContractFactory('OtterClamERC20V2')
-  // const newClam = CLAM2.attach('0xC250e9987A032ACAC293d838726C511E6E1C029d')
-  const newClam = await CLAM2.deploy()
+  // Deploy NORO v2
+  const NORO2 = await ethers.getContractFactory('CunoroClamERC20V2')
+  // const newClam = NORO2.attach('0xC250e9987A032ACAC293d838726C511E6E1C029d')
+  const newClam = await NORO2.deploy()
   await newClam.deployTransaction.wait()
-  console.log('CLAM deployed: ' + newClam.address)
+  console.log('NORO deployed: ' + newClam.address)
 
   const ClamCirculatingSupply = await ethers.getContractFactory(
     'ClamCirculatingSupply'
   )
-  // const clamCirculatingSupply = ClamCirculatingSupply.attach(
+  // const noroCirculatingSupply = ClamCirculatingSupply.attach(
   //   '0x99ee91871cf39A44E3Fc842541274d7eA05AE4b3'
   // )
-  const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
+  const noroCirculatingSupply = await ClamCirculatingSupply.deploy(
     deployer.address
   )
-  await clamCirculatingSupply.deployTransaction.wait()
-  await (await clamCirculatingSupply.initialize(newClam.address)).wait()
+  await noroCirculatingSupply.deployTransaction.wait()
+  await (await noroCirculatingSupply.initialize(newClam.address)).wait()
 
   const quickswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
@@ -92,13 +92,13 @@ async function main() {
 
   // Deploy bonding calc
   const BondingCalculator = await ethers.getContractFactory(
-    'OtterBondingCalculator'
+    'CunoroBondingCalculator'
   )
   const bondingCalculator = await BondingCalculator.deploy(newClam.address)
   await bondingCalculator.deployTransaction.wait()
 
   // Deploy newTreasury
-  const Treasury = await ethers.getContractFactory('OtterTreasury')
+  const Treasury = await ethers.getContractFactory('CunoroTreasury')
   const newTreasury = await Treasury.deploy(
     newClam.address,
     maiAddr,
@@ -111,7 +111,7 @@ async function main() {
 
   // Deploy staking distributor
   const StakingDistributor = await ethers.getContractFactory(
-    'OtterStakingDistributor'
+    'CunoroStakingDistributor'
   )
   // const stakingDistributor = StakingDistributor.attach(
   //   '0xD42938418E648b981bA2814b0C8b4F6f35CE61B8'
@@ -125,21 +125,21 @@ async function main() {
   await stakingDistributor.deployTransaction.wait()
   console.log('staking distributor: ' + stakingDistributor.address)
 
-  // Deploy sCLAM
-  const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20V2')
-  // const sCLAM = StakedCLAM.attach('0x3949F058238563803b5971711Ad19551930C8209')
-  const sCLAM = await StakedCLAM.deploy()
-  await sCLAM.deployTransaction.wait()
-  console.log('sCLAMv2: ' + sCLAM.address)
+  // Deploy sNORO
+  const StakedNORO = await ethers.getContractFactory('StakedCunoroClamERC20V2')
+  // const sNORO = StakedNORO.attach('0x3949F058238563803b5971711Ad19551930C8209')
+  const sNORO = await StakedNORO.deploy()
+  await sNORO.deployTransaction.wait()
+  console.log('sNOROv2: ' + sNORO.address)
 
   // Deploy Staking
-  const Staking = await ethers.getContractFactory('OtterStaking')
+  const Staking = await ethers.getContractFactory('CunoroStaking')
   // const staking = await Staking.attach(
   //   '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf'
   // )
   const staking = await Staking.deploy(
     newClam.address,
-    sCLAM.address,
+    sNORO.address,
     epochLengthInSeconds,
     firstEpochNumber,
     firstEpochEndTime
@@ -148,19 +148,19 @@ async function main() {
   console.log('staking: ' + staking.address)
 
   // Deploy staking warmpup
-  const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
+  const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
   // const stakingWarmup = StakingWarmup.attach(
   //   '0x314de54E2B64E36F4B0c75079C7FB7f894750014'
   // )
   const stakingWarmup = await StakingWarmup.deploy(
     staking.address,
-    sCLAM.address
+    sNORO.address
   )
   await stakingWarmup.deployTransaction.wait()
   console.log('staking warmup: ' + staking.address)
 
   // Deploy staking helper
-  const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
+  const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
   // const stakingHelper = StakingHelper.attach(
   //   '0x22F587EcF472670c61aa4715d0b76D2fa40A9798'
   // )
@@ -172,7 +172,7 @@ async function main() {
   console.log('staking helper: ' + stakingHelper.address)
 
   // Deploy MAI bond
-  const MAIBond = await ethers.getContractFactory('OtterBondDepository')
+  const MAIBond = await ethers.getContractFactory('CunoroBondDepository')
   // const maiBond = MAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
   const maiBond = await MAIBond.deploy(
     newClam.address,
@@ -184,7 +184,7 @@ async function main() {
   await maiBond.deployTransaction.wait()
   console.log('mai bond: ' + maiBond.address)
 
-  const MaiClamBond = await ethers.getContractFactory('OtterBondDepository')
+  const MaiClamBond = await ethers.getContractFactory('CunoroBondDepository')
   // const maiClamBond = MaiClamBond.attach(
   //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
@@ -196,11 +196,11 @@ async function main() {
     bondingCalculator.address
   )
   await maiClamBond.deployTransaction.wait()
-  console.log('clam/mai bond: ' + maiClamBond.address)
+  console.log('noro/mai bond: ' + maiClamBond.address)
 
   const Migrator = await ethers.getContractFactory('ClamTokenMigrator')
   const migrator = await Migrator.deploy(
-    oldContractAddresses.CLAM_ADDRESS,
+    oldContractAddresses.NORO_ADDRESS,
     oldContractAddresses.TREASURY_ADDRESS,
     quickswapRouterAddr,
     quickswapFactoryAddr,
@@ -213,33 +213,33 @@ async function main() {
 
   console.log(
     JSON.stringify({
-      sCLAM_ADDRESS: sCLAM.address,
-      CLAM_ADDRESS: newClam.address,
-      OLD_CLAM_ADDRESS: oldContractAddresses.CLAM_ADDRESS,
-      OLD_SCLAM_ADDRESS: oldContractAddresses.sCLAM_ADDRESS,
+      sNORO_ADDRESS: sNORO.address,
+      NORO_ADDRESS: newClam.address,
+      OLD_NORO_ADDRESS: oldContractAddresses.NORO_ADDRESS,
+      OLD_SNORO_ADDRESS: oldContractAddresses.sNORO_ADDRESS,
       MAI_ADDRESS: maiAddr,
       TREASURY_ADDRESS: newTreasury.address,
-      CLAM_BONDING_CALC_ADDRESS: bondingCalculator.address,
+      NORO_BONDING_CALC_ADDRESS: bondingCalculator.address,
       STAKING_ADDRESS: staking.address,
       OLD_STAKING_ADDRESS: oldContractAddresses.STAKING_ADDRESS,
       STAKING_HELPER_ADDRESS: stakingHelper.address,
       MIGRATOR: migrator.address,
       RESERVES: {
         MAI: maiAddr,
-        OLD_MAI_CLAM: oldContractAddresses.RESERVES.MAI_CLAM,
-        MAI_CLAM: lpAddress,
+        OLD_MAI_NORO: oldContractAddresses.RESERVES.MAI_NORO,
+        MAI_NORO: lpAddress,
       },
       BONDS: {
         OLD_MAI: oldContractAddresses.BONDS.MAI,
         MAI: maiBond.address,
-        OLD_MAI_CLAM: oldContractAddresses.BONDS.MAI_CLAM_V2,
-        MAI_CLAM: maiClamBond.address,
+        OLD_MAI_NORO: oldContractAddresses.BONDS.MAI_NORO_V2,
+        MAI_NORO: maiClamBond.address,
       },
-      CLAM_CIRCULATING_SUPPLY: clamCirculatingSupply.address,
+      NORO_CIRCULATING_SUPPLY: noroCirculatingSupply.address,
     })
   )
 
-  await (await sCLAM.initialize(staking.address)).wait()
+  await (await sNORO.initialize(staking.address)).wait()
 
   await (await newTreasury.queue('0', maiBond.address)).wait()
   await (await newTreasury.queue('4', maiClamBond.address)).wait()
@@ -269,9 +269,9 @@ async function main() {
   await (await staking.setContract('1', stakingWarmup.address)).wait()
   console.log('set distributor / warmup for staking ')
 
-  // Set newTreasury for CLAM token
+  // Set newTreasury for NORO token
   await (await newClam.setVault(newTreasury.address)).wait()
-  console.log('set vault for clam')
+  console.log('set vault for noro')
 
   // Add staking contract as distributor recipient
   await (
@@ -305,8 +305,8 @@ async function main() {
   }
 
   await verify(newClam.address, [])
-  await verify(sCLAM.address, [])
-  await verify(clamCirculatingSupply.address, [deployer.address])
+  await verify(sNORO.address, [])
+  await verify(noroCirculatingSupply.address, [deployer.address])
   await verify(newTreasury.address, [
     newClam.address,
     maiAddr,
@@ -322,12 +322,12 @@ async function main() {
   ])
   await verify(staking.address, [
     newClam.address,
-    sCLAM.address,
+    sNORO.address,
     epochLengthInSeconds,
     firstEpochNumber,
     firstEpochEndTime,
   ])
-  await verify(stakingWarmup.address, [staking.address, sCLAM.address])
+  await verify(stakingWarmup.address, [staking.address, sNORO.address])
   await verify(stakingHelper.address, [staking.address, newClam.address])
   await verify(maiBond.address, [
     newClam.address,
@@ -344,7 +344,7 @@ async function main() {
     bondingCalculator.address,
   ])
   await verify(migrator.address, [
-    oldContractAddresses.CLAM_ADDRESS,
+    oldContractAddresses.NORO_ADDRESS,
     oldContractAddresses.TREASURY_ADDRESS,
     quickswapRouterAddr,
     quickswapFactoryAddr,
@@ -373,8 +373,8 @@ async function main() {
   //   initialBondDebt
   // )).wait()
 
-  // Initialize sCLAM and set the index
-  // await (await sCLAM.setIndex(initialIndex)).wait()
+  // Initialize sNORO and set the index
+  // await (await sNORO.setIndex(initialIndex)).wait()
 }
 
 async function verify(address, constructorArguments) {

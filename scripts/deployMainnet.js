@@ -1,4 +1,4 @@
-// @dev. This script will deploy this V1.1 of Otter. It will deploy the whole ecosystem.
+// @dev. This script will deploy this V1.1 of Cunoro. It will deploy the whole ecosystem.
 
 const { ethers } = require('hardhat')
 const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
@@ -38,7 +38,7 @@ async function main() {
   // Min bond price
   const minBondPrice = '600'
 
-  // Max bond payout, 1000 = 1% of CLAM total supply
+  // Max bond payout, 1000 = 1% of NORO total supply
   const maxBondPayout = '1000'
 
   // DAO fee for bond
@@ -59,37 +59,37 @@ async function main() {
       : '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'
   const maiAddr = '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1'
 
-  // Deploy CLAM
-  const CLAM = await ethers.getContractFactory('OtterClamERC20')
-  const clam = CLAM.attach('0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465')
-  // const clam = await CLAM.deploy()
-  // console.log('CLAM deployed: ' + clam.address)
+  // Deploy NORO
+  const NORO = await ethers.getContractFactory('CunoroClamERC20')
+  const noro = NORO.attach('0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465')
+  // const noro = await NORO.deploy()
+  // console.log('NORO deployed: ' + noro.address)
 
   const uniswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
     UniswapV2ABI,
     deployer
   )
-  // await (await uniswapFactory.createPair(clam.address, maiAddr)).wait()
-  const lpAddress = await uniswapFactory.getPair(clam.address, maiAddr)
+  // await (await uniswapFactory.createPair(noro.address, maiAddr)).wait()
+  const lpAddress = await uniswapFactory.getPair(noro.address, maiAddr)
   console.log('LP: ' + lpAddress)
 
   // Deploy bonding calc
   const BondingCalculator = await ethers.getContractFactory(
-    'OtterBondingCalculator'
+    'CunoroBondingCalculator'
   )
-  // const bondingCalculator = await BondingCalculator.deploy(clam.address)
+  // const bondingCalculator = await BondingCalculator.deploy(noro.address)
   const bondingCalculator = BondingCalculator.attach(
     '0x47655e27667E5B4EC9EB70799f281524d031381c'
   )
 
   // Deploy treasury
-  const Treasury = await ethers.getContractFactory('OtterTreasury')
+  const Treasury = await ethers.getContractFactory('CunoroTreasury')
   const treasury = await Treasury.attach(
     '0xab328Ca61599974b0f577d1F8AB0129f2842d765'
   )
   // const treasury = await Treasury.deploy(
-  //   clam.address,
+  //   noro.address,
   //   maiAddr,
   //   lpAddress,
   //   bondingCalculator.address,
@@ -99,33 +99,33 @@ async function main() {
 
   // Deploy staking distributor
   const StakingDistributor = await ethers.getContractFactory(
-    'OtterStakingDistributor'
+    'CunoroStakingDistributor'
   )
   const stakingDistributor = StakingDistributor.attach(
     '0xD42938418E648b981bA2814b0C8b4F6f35CE61B8'
   )
   // const stakingDistributor = await StakingDistributor.deploy(
   //   treasury.address,
-  //   clam.address,
+  //   noro.address,
   //   epochLengthInSeconds,
   //   firstEpochTime
   // )
   // await stakingDistributor.deployTransaction.wait()
 
-  // Deploy sCLAM
-  const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
-  const sCLAM = StakedCLAM.attach('0x3949F058238563803b5971711Ad19551930C8209')
-  // const sCLAM = await StakedCLAM.deploy()
-  // await sCLAM.deployTransaction.wait()
+  // Deploy sNORO
+  const StakedNORO = await ethers.getContractFactory('StakedCunoroClamERC20')
+  const sNORO = StakedNORO.attach('0x3949F058238563803b5971711Ad19551930C8209')
+  // const sNORO = await StakedNORO.deploy()
+  // await sNORO.deployTransaction.wait()
 
   // Deploy Staking
-  const Staking = await ethers.getContractFactory('OtterStaking')
+  const Staking = await ethers.getContractFactory('CunoroStaking')
   const staking = await Staking.attach(
     '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf'
   )
   // const staking = await Staking.deploy(
-  //   clam.address,
-  //   sCLAM.address,
+  //   noro.address,
+  //   sNORO.address,
   //   epochLengthInSeconds,
   //   firstEpochNumber,
   //   firstEpochTime
@@ -133,32 +133,32 @@ async function main() {
   // await staking.deployTransaction.wait()
 
   // Deploy staking warmpup
-  const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
+  const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
   const stakingWarmup = StakingWarmup.attach(
     '0x314de54E2B64E36F4B0c75079C7FB7f894750014'
   )
   // const stakingWarmup = await StakingWarmup.deploy(
   //   staking.address,
-  //   sCLAM.address
+  //   sNORO.address
   // )
   // await stakingWarmup.deployTransaction.wait()
 
   // Deploy staking helper
-  const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
+  const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
   const stakingHelper = StakingHelper.attach(
     '0x22F587EcF472670c61aa4715d0b76D2fa40A9798'
   )
   // const stakingHelper = await StakingHelper.deploy(
   //   staking.address,
-  //   clam.address
+  //   noro.address
   // )
   // await stakingHelper.deployTransaction.wait()
 
   // Deploy MAI bond
-  const MAIBond = await ethers.getContractFactory('OtterBondDepository')
+  const MAIBond = await ethers.getContractFactory('CunoroBondDepository')
   const maiBond = MAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
   // const maiBond = await MAIBond.deploy(
-  //   clam.address,
+  //   noro.address,
   //   maiAddr,
   //   treasury.address,
   //   daoAddr,
@@ -166,12 +166,12 @@ async function main() {
   // )
   // await maiBond.deployTransaction.wait()
 
-  const MaiClamBond = await ethers.getContractFactory('OtterBondDepository')
+  const MaiClamBond = await ethers.getContractFactory('CunoroBondDepository')
   // const maiClamBond = MaiClamBond.attach(
   //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
   const maiClamBond = await MaiClamBond.deploy(
-    clam.address,
+    noro.address,
     lpAddress,
     treasury.address,
     daoAddr,
@@ -181,20 +181,20 @@ async function main() {
 
   console.log(
     JSON.stringify({
-      sCLAM_ADDRESS: sCLAM.address,
-      CLAM_ADDRESS: clam.address,
+      sNORO_ADDRESS: sNORO.address,
+      NORO_ADDRESS: noro.address,
       MAI_ADDRESS: maiAddr,
       TREASURY_ADDRESS: treasury.address,
-      CLAM_BONDING_CALC_ADDRESS: bondingCalculator.address,
+      NORO_BONDING_CALC_ADDRESS: bondingCalculator.address,
       STAKING_ADDRESS: staking.address,
       STAKING_HELPER_ADDRESS: stakingHelper.address,
       RESERVES: {
         MAI: maiAddr,
-        MAI_CLAM: lpAddress,
+        MAI_NORO: lpAddress,
       },
       BONDS: {
         MAI: maiBond.address,
-        MAI_CLAM: maiClamBond.address,
+        MAI_NORO: maiClamBond.address,
       },
     })
   )
@@ -202,7 +202,7 @@ async function main() {
   // queue and toggle MAI reserve depositor
   // await (await treasury.queue('0', maiBond.address)).wait()
 
-  // queue and toggle MAI-CLAM liquidity depositor
+  // queue and toggle MAI-NORO liquidity depositor
   // await (await treasury.queue('4', maiClamBond.address)).wait()
 
   // Set bond terms
@@ -229,17 +229,17 @@ async function main() {
   // await (await maiBond.setStaking(stakingHelper.address, true)).wait()
   await (await maiClamBond.setStaking(stakingHelper.address, true)).wait()
 
-  // Initialize sCLAM and set the index
-  // await (await sCLAM.initialize(staking.address)).wait()
-  // await (await sCLAM.setIndex(initialIndex)).wait()
+  // Initialize sNORO and set the index
+  // await (await sNORO.initialize(staking.address)).wait()
+  // await (await sNORO.setIndex(initialIndex)).wait()
 
   // set distributor contract and warmup contract
   // await (await staking.setContract('0', stakingDistributor.address)).wait()
   // await (await staking.setContract('1', stakingWarmup.address)).wait()
   // await (await staking.setWarmup(warmupPeriod)).wait()
 
-  // Set treasury for CLAM token
-  // await (await clam.setVault(treasury.address)).wait()
+  // Set treasury for NORO token
+  // await (await noro.setVault(treasury.address)).wait()
 
   // Add staking contract as distributor recipient
   // await (await stakingDistributor.addRecipient(staking.address, initialRewardRate)).wait()
@@ -251,7 +251,7 @@ async function main() {
   //  await treasury.toggle('0', maiBond.address, zeroAddress)
   //  await (await treasury.toggle('4', maiClamBond.address, zeroAddress)).wait()
   //  await treasury.toggle('8', stakingDistributor.address, zeroAddress)
-  // await treasury.queue('9', sCLAM.address)
+  // await treasury.queue('9', sNORO.address)
 }
 
 main()
