@@ -28,14 +28,14 @@ interface IStaking {
     function stake(uint256 _amount, address _recipient) external returns (bool);
 }
 
-contract CunoroCoonIDO is Ownable {
+contract CunoroNoroIDO is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public COON;
+    address public NORO;
     address public MAI;
     address public addressToSendMAI;
-    address public maiCoonLP;
+    address public maiNoroLP;
     address public staking;
 
     uint256 public totalAmount;
@@ -50,7 +50,7 @@ contract CunoroCoonIDO is Ownable {
     bool public cancelled;
     bool public finalized;
 
-    mapping(address => bool) public boughtCOON;
+    mapping(address => bool) public boughtNORO;
     mapping(address => bool) public whiteListed;
 
     address[] buyers;
@@ -59,22 +59,22 @@ contract CunoroCoonIDO is Ownable {
     address treasury;
 
     constructor(
-        address _COON,
+        address _NORO,
         address _MAI,
         address _treasury,
         address _staking,
-        address _maiCoonLP
+        address _maiNoroLP
     ) {
-        require(_COON != address(0));
+        require(_NORO != address(0));
         require(_MAI != address(0));
         require(_treasury != address(0));
         require(_staking != address(0));
-        require(_maiCoonLP != address(0));
+        require(_maiNoroLP != address(0));
 
-        COON = _COON;
+        NORO = _NORO;
         MAI = _MAI;
         treasury = _treasury;
-        maiCoonLP = _maiCoonLP;
+        maiNoroLP = _maiNoroLP;
         staking = _staking;
         cancelled = false;
         finalized = false;
@@ -124,15 +124,15 @@ contract CunoroCoonIDO is Ownable {
         }
     }
 
-    function purchaseCOON(uint256 _amountMAI) external returns (bool) {
+    function purchaseNORO(uint256 _amountMAI) external returns (bool) {
         require(saleStarted() == true, 'Not started');
         require(
             !whiteListEnabled || whiteListed[msg.sender] == true,
             'Not whitelisted'
         );
-        require(boughtCOON[msg.sender] == false, 'Already participated');
+        require(boughtNORO[msg.sender] == false, 'Already participated');
 
-        boughtCOON[msg.sender] = true;
+        boughtNORO[msg.sender] = true;
 
         uint256 _purchaseAmount = _calculateSaleQuote(_amountMAI);
 
@@ -192,32 +192,32 @@ contract CunoroCoonIDO is Ownable {
     }
 
     function finalize(address _receipt) external onlyOwner {
-        require(totalAmount == 0, 'need all coons to be sold');
+        require(totalAmount == 0, 'need all noros to be sold');
 
         uint256 maiInTreasure = 250000 * 1e18;
 
         IERC20(MAI).approve(treasury, maiInTreasure);
-        uint256 coonMinted = ITreasury(treasury).deposit(maiInTreasure, MAI, 0);
+        uint256 noroMinted = ITreasury(treasury).deposit(maiInTreasure, MAI, 0);
 
-        require(coonMinted == 250000 * 1e9);
+        require(noroMinted == 250000 * 1e9);
 
-        // dev: create lp with 15 MAI per COON
-        IERC20(MAI).transfer(maiCoonLP, 750000 * 1e18);
-        IERC20(COON).transfer(maiCoonLP, 50000 * 1e9);
-        uint256 lpBalance = IUniswapV2Pair(maiCoonLP).mint(address(this));
+        // dev: create lp with 15 MAI per NORO
+        IERC20(MAI).transfer(maiNoroLP, 750000 * 1e18);
+        IERC20(NORO).transfer(maiNoroLP, 50000 * 1e9);
+        uint256 lpBalance = IUniswapV2Pair(maiNoroLP).mint(address(this));
         uint256 valueOfToken = ITreasury(treasury).valueOfToken(
-            maiCoonLP,
+            maiNoroLP,
             lpBalance
         );
 
-        IUniswapV2Pair(maiCoonLP).approve(treasury, lpBalance);
+        IUniswapV2Pair(maiNoroLP).approve(treasury, lpBalance);
         uint256 zeroMinted = ITreasury(treasury).deposit(
             lpBalance,
-            maiCoonLP,
+            maiNoroLP,
             valueOfToken
         );
-        require(zeroMinted == 0, 'should not mint any COON');
-        IERC20(COON).approve(staking, coonMinted);
+        require(zeroMinted == 0, 'should not mint any NORO');
+        IERC20(NORO).approve(staking, noroMinted);
 
         finalized = true;
 

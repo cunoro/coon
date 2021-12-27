@@ -16,11 +16,11 @@ contract CunoroBondingCalculator is ICunoroBondingCalculator {
     using SafeMath for uint256;
     using SafeMath for uint112;
 
-    address public immutable COON;
+    address public immutable NORO;
 
-    constructor(address _COON) {
-        require(_COON != address(0));
-        COON = _COON;
+    constructor(address _NORO) {
+        require(_NORO != address(0));
+        NORO = _NORO;
     }
 
     function getKValue(address _pair) public view returns (uint256 k_) {
@@ -56,13 +56,13 @@ contract CunoroBondingCalculator is ICunoroBondingCalculator {
             .getReserves();
 
         uint256 reserve;
-        if (IUniswapV2Pair(_pair).token0() == COON) {
+        if (IUniswapV2Pair(_pair).token0() == NORO) {
             reserve = reserve1;
         } else {
             reserve = reserve0;
         }
         return
-            reserve.mul(2 * (10**IERC20(COON).decimals())).div(
+            reserve.mul(2 * (10**IERC20(NORO).decimals())).div(
                 getTotalValue(_pair)
             );
     }

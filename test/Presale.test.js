@@ -12,65 +12,65 @@ describe('Presale', function () {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    coon,
-    pCoon,
-    exercisePreCoon,
+    noro,
+    pNoro,
+    exercisePreNoro,
     dai,
     treasury
 
   beforeEach(async function () {
     deployer = await ethers.getSigner()
 
-    const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    coon = await COON.deploy()
-    await coon.setVault(deployer.address)
+    const NORO = await ethers.getContractFactory('CunoroNoroERC20')
+    noro = await NORO.deploy()
+    await noro.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const PreCunoroCoonERC20 = await ethers.getContractFactory(
-      'PreCunoroCoonERC20'
+    const PreCunoroNoroERC20 = await ethers.getContractFactory(
+      'PreCunoroNoroERC20'
     )
-    pCoon = await PreCunoroCoonERC20.deploy()
+    pNoro = await PreCunoroNoroERC20.deploy()
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      coon.address,
+      noro.address,
       dai.address,
       zeroAddress,
       zeroAddress,
       0
     )
 
-    const CoonCirculatingSupply = await ethers.getContractFactory(
-      'CoonCirculatingSupply'
+    const NoroCirculatingSupply = await ethers.getContractFactory(
+      'NoroCirculatingSupply'
     )
-    const coonCirculatingSupply = await CoonCirculatingSupply.deploy(
+    const noroCirculatingSupply = await NoroCirculatingSupply.deploy(
       deployer.address
     )
-    await coonCirculatingSupply.initialize(coon.address)
+    await noroCirculatingSupply.initialize(noro.address)
 
-    const ExercisePreCoon = await ethers.getContractFactory('ExercisePreCoon')
-    exercisePreCoon = await ExercisePreCoon.deploy(
-      pCoon.address,
-      coon.address,
+    const ExercisePreNoro = await ethers.getContractFactory('ExercisePreNoro')
+    exercisePreNoro = await ExercisePreNoro.deploy(
+      pNoro.address,
+      noro.address,
       dai.address,
       treasury.address,
-      coonCirculatingSupply.address
+      noroCirculatingSupply.address
     )
 
-    await coon.setVault(treasury.address)
+    await noro.setVault(treasury.address)
 
     // queue and toggle deployer reserve depositor
     await treasury.queue('0', deployer.address)
     await treasury.toggle('0', deployer.address, zeroAddress)
 
-    await treasury.queue('0', exercisePreCoon.address)
-    await treasury.toggle('0', exercisePreCoon.address, zeroAddress)
+    await treasury.queue('0', exercisePreNoro.address)
+    await treasury.toggle('0', exercisePreNoro.address, zeroAddress)
 
     await dai.approve(treasury.address, largeApproval)
-    await dai.approve(exercisePreCoon.address, largeApproval)
-    await pCoon.approve(exercisePreCoon.address, largeApproval)
+    await dai.approve(exercisePreNoro.address, largeApproval)
+    await pNoro.approve(exercisePreNoro.address, largeApproval)
 
     // mint 1,000,000 DAI for testing
     await dai.mint(
@@ -78,7 +78,7 @@ describe('Presale', function () {
       BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18))
     )
 
-    // mint 250,000 COON for testing
+    // mint 250,000 NORO for testing
     treasury.deposit(
       BigNumber.from(50 * 10000).mul(BigNumber.from(10).pow(18)),
       dai.address,
@@ -88,39 +88,39 @@ describe('Presale', function () {
 
   describe('exercise', function () {
     it('should get reverted', async function () {
-      await exercisePreCoon.setTerms(
+      await exercisePreNoro.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
         10 * 10000 // 10%
       )
 
       await expect(
-        exercisePreCoon.exercise(
+        exercisePreNoro.exercise(
           BigNumber.from(30000).mul(BigNumber.from(10).pow(18))
         )
       ).to.be.revertedWith('Not enough vested')
     })
 
-    it('should get coon', async function () {
-      await exercisePreCoon.setTerms(
+    it('should get noro', async function () {
+      await exercisePreNoro.setTerms(
         deployer.address,
         BigNumber.from(30000).mul(BigNumber.from(10).pow(18)),
         10 * 10000 // 10%
       )
 
       await expect(() =>
-        exercisePreCoon.exercise(
+        exercisePreNoro.exercise(
           BigNumber.from(10000).mul(BigNumber.from(10).pow(18))
         )
       ).to.changeTokenBalance(
-        coon,
+        noro,
         deployer,
         BigNumber.from(10000).mul(BigNumber.from(10).pow(9))
       )
       expect(await dai.balanceOf(deployer.address)).to.eq(
         BigNumber.from(490000).mul(BigNumber.from(10).pow(18))
       )
-      expect(await pCoon.balanceOf(deployer.address)).to.eq(
+      expect(await pNoro.balanceOf(deployer.address)).to.eq(
         '999990000000000000000000000'
       )
     })

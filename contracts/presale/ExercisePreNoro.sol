@@ -15,23 +15,23 @@ interface ITreasury {
     ) external returns (uint256);
 }
 
-interface IPreCunoroCoon {
+interface IPreCunoroNoro {
     function burnFrom(address account_, uint256 amount_) external;
 }
 
-interface ICirculatingCOON {
-    function COONCirculatingSupply() external view returns (uint256);
+interface ICirculatingNORO {
+    function NOROCirculatingSupply() external view returns (uint256);
 }
 
-contract ExercisePreCoon is Ownable {
+contract ExercisePreNoro is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public immutable pCOON;
-    address public immutable COON;
+    address public immutable pNORO;
+    address public immutable NORO;
     address public immutable DAI;
     address public immutable treasury;
-    address public immutable circulatingCOONContract;
+    address public immutable circulatingNOROContract;
 
     struct Term {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
@@ -43,22 +43,22 @@ contract ExercisePreCoon is Ownable {
     mapping(address => address) public walletChange;
 
     constructor(
-        address _pCOON,
-        address _coon,
+        address _pNORO,
+        address _noro,
         address _dai,
         address _treasury,
-        address _circulatingCOONContract
+        address _circulatingNOROContract
     ) {
-        require(_pCOON != address(0));
-        pCOON = _pCOON;
-        require(_coon != address(0));
-        COON = _coon;
+        require(_pNORO != address(0));
+        pNORO = _pNORO;
+        require(_noro != address(0));
+        NORO = _noro;
         require(_dai != address(0));
         DAI = _dai;
         require(_treasury != address(0));
         treasury = _treasury;
-        require(_circulatingCOONContract != address(0));
-        circulatingCOONContract = _circulatingCOONContract;
+        require(_circulatingNOROContract != address(0));
+        circulatingNOROContract = _circulatingNOROContract;
     }
 
     // Sets terms for a new wallet
@@ -79,21 +79,21 @@ contract ExercisePreCoon is Ownable {
         return true;
     }
 
-    // Allows wallet to redeem pCOON for COON
+    // Allows wallet to redeem pNORO for NORO
     function exercise(uint256 _amount) external returns (bool) {
         Term memory info = terms[msg.sender];
         require(redeemable(info) >= _amount, 'Not enough vested');
         require(info.max.sub(info.claimed) >= _amount, 'Claimed over max');
 
         IERC20(DAI).safeTransferFrom(msg.sender, address(this), _amount);
-        IPreCunoroCoon(pCOON).burnFrom(msg.sender, _amount);
+        IPreCunoroNoro(pNORO).burnFrom(msg.sender, _amount);
 
         IERC20(DAI).approve(treasury, _amount);
-        uint256 COONToSend = ITreasury(treasury).deposit(_amount, DAI, 0);
+        uint256 NOROToSend = ITreasury(treasury).deposit(_amount, DAI, 0);
 
         terms[msg.sender].claimed = info.claimed.add(_amount);
 
-        IERC20(COON).safeTransfer(msg.sender, COONToSend);
+        IERC20(NORO).safeTransfer(msg.sender, NOROToSend);
 
         return true;
     }
@@ -124,8 +124,8 @@ contract ExercisePreCoon is Ownable {
     function redeemable(Term memory _info) internal view returns (uint256) {
         return
             (
-                ICirculatingCOON(circulatingCOONContract)
-                    .COONCirculatingSupply()
+                ICirculatingNORO(circulatingNOROContract)
+                    .NOROCirculatingSupply()
                     .mul(_info.percent)
                     .mul(1000)
             ).sub(_info.claimed);

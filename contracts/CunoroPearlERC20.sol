@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import './interfaces/IsCoon.sol';
+import './interfaces/IsNoro.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeERC20.sol';
 import './libraries/Address.sol';
@@ -12,54 +12,54 @@ contract CunoroPearlERC20 is ERC20 {
     using Address for address;
     using SafeMath for uint256;
 
-    address public immutable sCOON;
+    address public immutable sNORO;
 
-    constructor(address _sCOON) ERC20('Wrapped sCOON', 'PEARL', 18) {
-        require(_sCOON != address(0));
-        sCOON = _sCOON;
+    constructor(address _sNORO) ERC20('Wrapped sNORO', 'PEARL', 18) {
+        require(_sNORO != address(0));
+        sNORO = _sNORO;
     }
 
     /**
-        @notice wrap sCOON
+        @notice wrap sNORO
         @param _amount uint
         @return uint
      */
     function wrap(uint256 _amount) external returns (uint256) {
-        IERC20(sCOON).transferFrom(msg.sender, address(this), _amount);
+        IERC20(sNORO).transferFrom(msg.sender, address(this), _amount);
 
-        uint256 value = sCOONTowsCOON(_amount);
+        uint256 value = sNOROTowsNORO(_amount);
         _mint(msg.sender, value);
         return value;
     }
 
     /**
-        @notice unwrap sCOON
+        @notice unwrap sNORO
         @param _amount uint
         @return uint
      */
     function unwrap(uint256 _amount) external returns (uint256) {
         _burn(msg.sender, _amount);
 
-        uint256 value = pearlTosCOON(_amount);
-        IERC20(sCOON).transfer(msg.sender, value);
+        uint256 value = pearlTosNORO(_amount);
+        IERC20(sNORO).transfer(msg.sender, value);
         return value;
     }
 
     /**
-        @notice converts wsCOON amount to sCOON
+        @notice converts wsNORO amount to sNORO
         @param _amount uint
         @return uint
      */
-    function pearlTosCOON(uint256 _amount) public view returns (uint256) {
-        return _amount.mul(IsCoon(sCOON).index()).div(10**decimals());
+    function pearlTosNORO(uint256 _amount) public view returns (uint256) {
+        return _amount.mul(IsNoro(sNORO).index()).div(10**decimals());
     }
 
     /**
-        @notice converts sCOON amount to wsCOON
+        @notice converts sNORO amount to wsNORO
         @param _amount uint
         @return uint
      */
-    function sCOONTowsCOON(uint256 _amount) public view returns (uint256) {
-        return _amount.mul(10**decimals()).div(IsCoon(sCOON).index());
+    function sNOROTowsNORO(uint256 _amount) public view returns (uint256) {
+        return _amount.mul(10**decimals()).div(IsNoro(sNORO).index());
     }
 }

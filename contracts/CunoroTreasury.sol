@@ -9,7 +9,7 @@ import './types/ERC20.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeERC20.sol';
 
-interface ICOONERC20 {
+interface INOROERC20 {
     function burnFrom(address account_, uint256 amount_) external;
 }
 
@@ -63,10 +63,10 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         LIQUIDITYMANAGER,
         DEBTOR,
         REWARDMANAGER,
-        SCOON
+        SNORO
     }
 
-    address public immutable COON;
+    address public immutable NORO;
     uint256 public immutable blocksNeededForQueue;
 
     address[] public reserveTokens; // Push only, beware false-positives.
@@ -108,34 +108,34 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
     mapping(address => bool) public isRewardManager;
     mapping(address => uint256) public rewardManagerQueue; // Delays changes to mapping.
 
-    address public sCOON;
-    uint256 public sCOONQueue; // Delays change to sCOON address
+    address public sNORO;
+    uint256 public sNOROQueue; // Delays change to sNORO address
 
     uint256 public totalReserves; // Risk-free value of all assets
     uint256 public totalDebt;
 
     constructor(
-        address _COON,
+        address _NORO,
         address _DAI,
-        address _COONDAI,
+        address _NORODAI,
         address _bondCalculator,
         uint256 _blocksNeededForQueue
     ) {
-        require(_COON != address(0));
-        COON = _COON;
+        require(_NORO != address(0));
+        NORO = _NORO;
 
         isReserveToken[_DAI] = true;
         reserveTokens.push(_DAI);
 
-        isLiquidityToken[_COONDAI] = true;
-        liquidityTokens.push(_COONDAI);
-        bondCalculator[_COONDAI] = _bondCalculator;
+        isLiquidityToken[_NORODAI] = true;
+        liquidityTokens.push(_NORODAI);
+        bondCalculator[_NORODAI] = _bondCalculator;
 
         blocksNeededForQueue = _blocksNeededForQueue;
     }
 
     /**
-        @notice allow approved address to deposit an asset for COON
+        @notice allow approved address to deposit an asset for NORO
         @param _amount uint
         @param _token address
         @param _profit uint
@@ -159,9 +159,9 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         }
 
         uint256 value = valueOfToken(_token, _amount);
-        // mint COON needed and store amount of rewards for distribution
+        // mint NORO needed and store amount of rewards for distribution
         send_ = value.sub(_profit);
-        IERC20Mintable(COON).mint(msg.sender, send_);
+        IERC20Mintable(NORO).mint(msg.sender, send_);
 
         totalReserves = totalReserves.add(value);
         emit ReservesUpdated(totalReserves);
@@ -170,7 +170,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
     }
 
     /**
-        @notice allow approved address to burn COON for reserves
+        @notice allow approved address to burn NORO for reserves
         @param _amount uint
         @param _token address
      */
@@ -179,7 +179,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         require(isReserveSpender[msg.sender] == true, 'Not approved');
 
         uint256 value = valueOfToken(_token, _amount);
-        ICOONERC20(COON).burnFrom(msg.sender, value);
+        INOROERC20(NORO).burnFrom(msg.sender, value);
 
         totalReserves = totalReserves.sub(value);
         emit ReservesUpdated(totalReserves);
@@ -200,7 +200,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
 
         uint256 value = valueOfToken(_token, _amount);
 
-        uint256 maximumDebt = IERC20(sCOON).balanceOf(msg.sender); // Can only borrow against sCOON held
+        uint256 maximumDebt = IERC20(sNORO).balanceOf(msg.sender); // Can only borrow against sNORO held
         uint256 availableDebt = maximumDebt.sub(debtorBalance[msg.sender]);
         require(value <= availableDebt, 'Exceeds debt limit');
 
@@ -237,18 +237,18 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
     }
 
     /**
-        @notice allow approved address to repay borrowed reserves with COON
+        @notice allow approved address to repay borrowed reserves with NORO
         @param _amount uint
      */
-    function repayDebtWithCOON(uint256 _amount) external {
+    function repayDebtWithNORO(uint256 _amount) external {
         require(isDebtor[msg.sender], 'Not approved');
 
-        ICOONERC20(COON).burnFrom(msg.sender, _amount);
+        INOROERC20(NORO).burnFrom(msg.sender, _amount);
 
         debtorBalance[msg.sender] = debtorBalance[msg.sender].sub(_amount);
         totalDebt = totalDebt.sub(_amount);
 
-        emit RepayDebt(msg.sender, COON, _amount, _amount);
+        emit RepayDebt(msg.sender, NORO, _amount, _amount);
     }
 
     /**
@@ -284,7 +284,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         require(isRewardManager[msg.sender], 'Not approved');
         require(_amount <= excessReserves(), 'Insufficient reserves');
 
-        IERC20Mintable(COON).mint(_recipient, _amount);
+        IERC20Mintable(NORO).mint(_recipient, _amount);
 
         emit RewardsMinted(msg.sender, _recipient, _amount);
     }
@@ -294,7 +294,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         @return uint
      */
     function excessReserves() public view override returns (uint256) {
-        return totalReserves.sub(IERC20(COON).totalSupply().sub(totalDebt));
+        return totalReserves.sub(IERC20(NORO).totalSupply().sub(totalDebt));
     }
 
     /**
@@ -325,7 +325,7 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
     }
 
     /**
-        @notice returns COON valuation of asset
+        @notice returns NORO valuation of asset
         @param _token address
         @param _amount uint
         @return value_ uint
@@ -337,8 +337,8 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
         returns (uint256 value_)
     {
         if (isReserveToken[_token]) {
-            // convert amount to match COON decimals
-            value_ = _amount.mul(10**IERC20(COON).decimals()).div(
+            // convert amount to match NORO decimals
+            value_ = _amount.mul(10**IERC20(NORO).decimals()).div(
                 10**IERC20(_token).decimals()
             );
         } else if (isLiquidityToken[_token]) {
@@ -404,9 +404,9 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
             rewardManagerQueue[_address] = block.number.add(
                 blocksNeededForQueue
             );
-        } else if (_managing == MANAGING.SCOON) {
+        } else if (_managing == MANAGING.SNORO) {
             // 9
-            sCOONQueue = block.number.add(blocksNeededForQueue);
+            sNOROQueue = block.number.add(blocksNeededForQueue);
         } else return false;
 
         emit ChangeQueued(_managing, _address);
@@ -538,10 +538,10 @@ contract CunoroTreasury is Ownable, ICunoroTreasury {
             }
             result = !isRewardManager[_address];
             isRewardManager[_address] = result;
-        } else if (_managing == MANAGING.SCOON) {
+        } else if (_managing == MANAGING.SNORO) {
             // 9
-            sCOONQueue = 0;
-            sCOON = _address;
+            sNOROQueue = 0;
+            sNORO = _address;
             result = true;
         } else return false;
 

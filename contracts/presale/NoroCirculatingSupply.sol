@@ -5,59 +5,59 @@ import '../interfaces/IERC20.sol';
 
 import '../libraries/SafeMath.sol';
 
-contract CoonCirculatingSupply {
+contract NoroCirculatingSupply {
     using SafeMath for uint256;
 
     bool public isInitialized;
 
-    address public COON;
+    address public NORO;
     address public owner;
-    address[] public nonCirculatingCOONAddresses;
+    address[] public nonCirculatingNOROAddresses;
 
     constructor(address _owner) {
         owner = _owner;
     }
 
-    function initialize(address _coon) external returns (bool) {
+    function initialize(address _noro) external returns (bool) {
         require(msg.sender == owner, 'caller is not owner');
         require(isInitialized == false);
 
-        COON = _coon;
+        NORO = _noro;
 
         isInitialized = true;
 
         return true;
     }
 
-    function COONCirculatingSupply() external view returns (uint256) {
-        uint256 _totalSupply = IERC20(COON).totalSupply();
+    function NOROCirculatingSupply() external view returns (uint256) {
+        uint256 _totalSupply = IERC20(NORO).totalSupply();
 
-        uint256 _circulatingSupply = _totalSupply.sub(getNonCirculatingCOON());
+        uint256 _circulatingSupply = _totalSupply.sub(getNonCirculatingNORO());
 
         return _circulatingSupply;
     }
 
-    function getNonCirculatingCOON() public view returns (uint256) {
-        uint256 _nonCirculatingCOON;
+    function getNonCirculatingNORO() public view returns (uint256) {
+        uint256 _nonCirculatingNORO;
 
         for (
             uint256 i = 0;
-            i < nonCirculatingCOONAddresses.length;
+            i < nonCirculatingNOROAddresses.length;
             i = i.add(1)
         ) {
-            _nonCirculatingCOON = _nonCirculatingCOON.add(
-                IERC20(COON).balanceOf(nonCirculatingCOONAddresses[i])
+            _nonCirculatingNORO = _nonCirculatingNORO.add(
+                IERC20(NORO).balanceOf(nonCirculatingNOROAddresses[i])
             );
         }
 
-        return _nonCirculatingCOON;
+        return _nonCirculatingNORO;
     }
 
-    function setNonCirculatingCOONAddresses(
+    function setNonCirculatingNOROAddresses(
         address[] calldata _nonCirculatingAddresses
     ) external returns (bool) {
         require(msg.sender == owner, 'Sender is not owner');
-        nonCirculatingCOONAddresses = _nonCirculatingAddresses;
+        nonCirculatingNOROAddresses = _nonCirculatingAddresses;
 
         return true;
     }

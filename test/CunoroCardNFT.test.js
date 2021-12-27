@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat')
 const { expect } = require('chai')
 
-describe('CunoroCoon2021Q4ERC721', function () {
+describe('CunoroNoro2021Q4ERC721', function () {
   let nft, deployer, cunoro
 
   beforeEach(async function () {

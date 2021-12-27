@@ -4,7 +4,7 @@ pragma solidity 0.7.5;
 import './interfaces/ICunoroTreasury.sol';
 import './interfaces/ICunoroStaking.sol';
 import './interfaces/ICunoroBondingCalculator.sol';
-import './interfaces/IsCoon.sol';
+import './interfaces/IsNoro.sol';
 
 import './types/Ownable.sol';
 import './types/ERC20.sol';
@@ -66,10 +66,10 @@ contract CunoroMaticLPBondDepository is Ownable {
 
     /* ======== STATE VARIABLES ======== */
 
-    address public immutable COON; // token given as payment for bond
-    address public immutable sCOON; // token given as payment for bond
+    address public immutable NORO; // token given as payment for bond
+    address public immutable sNORO; // token given as payment for bond
     address public immutable principle; // token used to create bond
-    address public immutable treasury; // mints COON when receives principle
+    address public immutable treasury; // mints NORO when receives principle
     address public immutable staking; // to auto-stake payout
     address public immutable bondCalculator; // calculates value of LP tokens
     address public immutable DAO; // receives loss share from bond
@@ -97,11 +97,11 @@ contract CunoroMaticLPBondDepository is Ownable {
 
     // Info for bond holder
     struct Bond {
-        uint256 payout; // COON remaining to be paid
+        uint256 payout; // NORO remaining to be paid
         uint256 vesting; // Blocks left to vest
         uint256 lastTimestamp; // Last interaction
         uint256 pricePaid; // In DAI, for front end viewing
-        uint256 gonsPayout; // sCOON gons remaining to be paid
+        uint256 gonsPayout; // sNORO gons remaining to be paid
     }
 
     // Info for incremental adjustments to control variable
@@ -116,8 +116,8 @@ contract CunoroMaticLPBondDepository is Ownable {
     /* ======== INITIALIZATION ======== */
 
     constructor(
-        address _COON,
-        address _sCOON,
+        address _NORO,
+        address _sNORO,
         address _principle,
         address _treasury,
         address _staking,
@@ -125,10 +125,10 @@ contract CunoroMaticLPBondDepository is Ownable {
         address _DAO,
         address _feed
     ) {
-        require(_COON != address(0));
-        COON = _COON;
-        require(_sCOON != address(0));
-        sCOON = _sCOON;
+        require(_NORO != address(0));
+        NORO = _NORO;
+        require(_sNORO != address(0));
+        sNORO = _sNORO;
         require(_principle != address(0));
         principle = _principle;
         require(_treasury != address(0));
@@ -266,7 +266,7 @@ contract CunoroMaticLPBondDepository is Ownable {
         );
         uint256 payout = payoutFor(value); // payout to bonder is computed
 
-        require(payout >= 10000000, 'Bond too small'); // must be > 0.01 COON ( underflow protection )
+        require(payout >= 10000000, 'Bond too small'); // must be > 0.01 NORO ( underflow protection )
         require(payout <= maxPayout(), 'Bond too large'); // size protection because there is no slippage
 
         /**
@@ -279,13 +279,13 @@ contract CunoroMaticLPBondDepository is Ownable {
         // total debt is increased
         totalDebt = totalDebt.add(value);
 
-        // stake COON
-        IERC20(COON).approve(staking, payout);
+        // stake NORO
+        IERC20(NORO).approve(staking, payout);
         ICunoroStaking(staking).stake(payout, address(this));
         ICunoroStaking(staking).claim(address(this));
 
         // depositor info is stored
-        uint256 stakeGons = IsCoon(sCOON).gonsForBalance(payout);
+        uint256 stakeGons = IsNoro(sNORO).gonsForBalance(payout);
         bondInfo[_depositor] = Bond({
             payout: bondInfo[_depositor].payout.add(payout),
             vesting: terms.vestingTerm,
@@ -324,9 +324,9 @@ contract CunoroMaticLPBondDepository is Ownable {
         require(percentVested >= 10000, 'not fully vested'); // if fully vested
 
         delete bondInfo[_recipient]; // delete user info
-        uint256 _amount = IsCoon(sCOON).balanceForGons(info.gonsPayout);
+        uint256 _amount = IsNoro(sNORO).balanceForGons(info.gonsPayout);
         emit BondRedeemed(_recipient, _amount, 0); // emit bond data
-        IERC20(sCOON).transfer(_recipient, _amount); // pay user everything due
+        IERC20(sNORO).transfer(_recipient, _amount); // pay user everything due
         return _amount;
     }
 
@@ -379,7 +379,7 @@ contract CunoroMaticLPBondDepository is Ownable {
      *  @return uint
      */
     function maxPayout() public view returns (uint256) {
-        return IERC20(COON).totalSupply().mul(terms.maxPayout).div(100000);
+        return IERC20(NORO).totalSupply().mul(terms.maxPayout).div(100000);
     }
 
     /**
@@ -442,11 +442,11 @@ contract CunoroMaticLPBondDepository is Ownable {
     }
 
     /**
-     *  @notice calculate current ratio of debt to COON supply
+     *  @notice calculate current ratio of debt to NORO supply
      *  @return debtRatio_ uint
      */
     function debtRatio() public view returns (uint256 debtRatio_) {
-        uint256 supply = IERC20(COON).totalSupply();
+        uint256 supply = IERC20(NORO).totalSupply();
         debtRatio_ = FixedPoint
             .fraction(currentDebt().mul(1e9), supply)
             .decode112with18()
@@ -508,7 +508,7 @@ contract CunoroMaticLPBondDepository is Ownable {
     }
 
     /**
-     *  @notice calculate amount of COON available for claim by depositor
+     *  @notice calculate amount of NORO available for claim by depositor
      *  @param _depositor address
      *  @return pendingPayout_ uint
      */
@@ -530,12 +530,12 @@ contract CunoroMaticLPBondDepository is Ownable {
     /* ======= AUXILLIARY ======= */
 
     /**
-     *  @notice allow anyone to send lost tokens (excluding principle or COON) to the DAO
+     *  @notice allow anyone to send lost tokens (excluding principle or NORO) to the DAO
      *  @return bool
      */
     function recoverLostToken(address _token) external returns (bool) {
-        require(_token != COON);
-        require(_token != sCOON);
+        require(_token != NORO);
+        require(_token != sNORO);
         IERC20(_token).safeTransfer(
             DAO,
             IERC20(_token).balanceOf(address(this))

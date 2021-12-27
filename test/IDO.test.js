@@ -27,8 +27,8 @@ describe.skip('IDO', function () {
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     buyer1,
-    coon,
-    sCoon,
+    noro,
+    sNoro,
     dai,
     treasury,
     uniFactory,
@@ -43,29 +43,29 @@ describe.skip('IDO', function () {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp + 100
 
-    const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    coon = await COON.deploy()
-    await coon.setVault(deployer.address)
+    const NORO = await ethers.getContractFactory('CunoroNoroERC20')
+    noro = await NORO.deploy()
+    await noro.setVault(deployer.address)
 
-    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20')
-    sCoon = await StakedCOON.deploy()
+    const StakedNORO = await ethers.getContractFactory('StakedCunoroNoroERC20')
+    sNoro = await StakedNORO.deploy()
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
     uniFactory = (await deployUniswap(deployer)).factory
-    await uniFactory.createPair(coon.address, dai.address)
+    await uniFactory.createPair(noro.address, dai.address)
 
-    pairAddress = await uniFactory.getPair(coon.address, dai.address)
+    pairAddress = await uniFactory.getPair(noro.address, dai.address)
 
     const BondingCalculator = await ethers.getContractFactory(
       'CunoroBondingCalculator'
     )
-    const bondingCalculator = await BondingCalculator.deploy(coon.address)
+    const bondingCalculator = await BondingCalculator.deploy(noro.address)
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      coon.address,
+      noro.address,
       dai.address,
       pairAddress,
       bondingCalculator.address,
@@ -77,15 +77,15 @@ describe.skip('IDO', function () {
     )
     stakingDistributor = await StakingDistributor.deploy(
       treasury.address,
-      coon.address,
+      noro.address,
       epochLength,
       firstEpochTime
     )
 
     const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
-      coon.address,
-      sCoon.address,
+      noro.address,
+      sNoro.address,
       epochLength,
       firstEpochNumber,
       firstEpochTime
@@ -94,26 +94,26 @@ describe.skip('IDO', function () {
     const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
       staking.address,
-      sCoon.address
+      sNoro.address
     )
 
-    await sCoon.initialize(staking.address)
-    await sCoon.setIndex(initialIndex)
+    await sNoro.initialize(staking.address)
+    await sNoro.setIndex(initialIndex)
 
     await staking.setContract('0', stakingDistributor.address)
     await staking.setContract('1', stakingWarmup.address)
 
     await stakingDistributor.addRecipient(staking.address, initialRewardRate)
 
-    await coon.setVault(treasury.address)
+    await noro.setVault(treasury.address)
 
     // queue and toggle reward manager
     await treasury.queue('8', stakingDistributor.address)
     await treasury.toggle('8', stakingDistributor.address, zeroAddress)
 
-    const IDO = await ethers.getContractFactory('CunoroCoonIDO')
+    const IDO = await ethers.getContractFactory('CunoroNoroIDO')
     ido = await IDO.deploy(
-      coon.address,
+      noro.address,
       dai.address,
       treasury.address,
       staking.address,
@@ -147,7 +147,7 @@ describe.skip('IDO', function () {
     it('should be blocked by whitelist', async function () {
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
@@ -155,7 +155,7 @@ describe.skip('IDO', function () {
       )
 
       await expect(
-        ido.purchaseCOON(BigNumber.from(1000).mul(BigNumber.from(10).pow(18)))
+        ido.purchaseNORO(BigNumber.from(1000).mul(BigNumber.from(10).pow(18)))
       ).to.be.revertedWith('Not whitelisted')
     })
     it('should return false', async function () {
@@ -174,7 +174,7 @@ describe.skip('IDO', function () {
       await ido.whiteListBuyers(whitelist)
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
@@ -183,38 +183,38 @@ describe.skip('IDO', function () {
     })
 
     it('able to purchase first time', async function () {
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
       expect(await ido.totalAmount()).to.eq(
-        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountCOON)
+        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountNORO)
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
     })
 
     it('failed to purchase second time', async function () {
-      await ido.purchaseCOON(
+      await ido.purchaseNORO(
         BigNumber.from(1000).mul(BigNumber.from(10).pow(18))
       )
       await expect(
-        ido.purchaseCOON(BigNumber.from(1000).mul(BigNumber.from(10).pow(18)))
+        ido.purchaseNORO(BigNumber.from(1000).mul(BigNumber.from(10).pow(18)))
       ).to.be.revertedWith('Already participated')
     })
 
     it('able to purchase more for others', async function () {
       let buyerIdo = ido.connect(buyer1)
-      await buyerIdo.purchaseCOON(
+      await buyerIdo.purchaseNORO(
         BigNumber.from(1000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
@@ -238,9 +238,9 @@ describe.skip('IDO', function () {
     })
 
     it('should able to purchase', async function () {
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
@@ -248,7 +248,7 @@ describe.skip('IDO', function () {
       expect(await ido.totalAmount()).to.eq(
         BigNumber.from(1).mul(BigNumber.from(10).pow(9))
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
       const secondBuyAmount = await ido.getAllotmentPerBuyer()
@@ -257,7 +257,7 @@ describe.skip('IDO', function () {
         .mul(await ido.salePrice())
       const buyerIdo = ido.connect(buyer1)
       await expect(() =>
-        buyerIdo.purchaseCOON(secondAmountDAI)
+        buyerIdo.purchaseNORO(secondAmountDAI)
       ).to.changeTokenBalance(dai, buyer1, secondAmountDAI.mul(-1))
       expect(await ido.totalAmount()).to.eq(0)
       expect(await ido.purchasedAmounts(buyer1.address)).to.eq(
@@ -269,9 +269,9 @@ describe.skip('IDO', function () {
     })
 
     it('should failed to purchase more then total amount', async function () {
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
@@ -279,7 +279,7 @@ describe.skip('IDO', function () {
       expect(await ido.totalAmount()).to.eq(
         BigNumber.from(1).mul(BigNumber.from(10).pow(9))
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
       const secondBuyDAIAmount = BigNumber.from(6).mul(
@@ -287,7 +287,7 @@ describe.skip('IDO', function () {
       )
       const buyerIdo = ido.connect(buyer1)
       await expect(
-        buyerIdo.purchaseCOON(secondBuyDAIAmount)
+        buyerIdo.purchaseNORO(secondBuyDAIAmount)
       ).to.be.revertedWith('More than alloted')
     })
   })
@@ -299,7 +299,7 @@ describe.skip('IDO', function () {
       await ido.whiteListBuyers(whitelist)
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
@@ -313,20 +313,20 @@ describe.skip('IDO', function () {
         BigNumber.from(500000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
       expect(await ido.totalAmount()).to.eq(
-        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountCOON)
+        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountNORO)
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
-      await ido.connect(buyer1).purchaseCOON(amountDAI)
+      await ido.connect(buyer1).purchaseNORO(amountDAI)
 
       await ido.finalize(deployer.address)
       await ido.claim(buyer1.address)
@@ -356,12 +356,12 @@ describe.skip('IDO', function () {
       await staking.rebase()
 
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         deployer,
         '100375000000000'
       )
       await expect(() => staking.claim(buyer1.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         buyer1,
         '100375000000000'
       )
@@ -373,20 +373,20 @@ describe.skip('IDO', function () {
         BigNumber.from(500000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
       expect(await ido.totalAmount()).to.eq(
-        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountCOON)
+        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountNORO)
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
-      await ido.connect(buyer1).purchaseCOON(amountDAI)
+      await ido.connect(buyer1).purchaseNORO(amountDAI)
 
       await timeAndMine.setTimeIncrease(150)
 
@@ -417,12 +417,12 @@ describe.skip('IDO', function () {
       await staking.rebase()
 
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         deployer,
         '100375000000000'
       )
       await expect(() => staking.claim(buyer1.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         buyer1,
         '100375000000000'
       )
@@ -434,20 +434,20 @@ describe.skip('IDO', function () {
         BigNumber.from(500000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
       expect(await ido.totalAmount()).to.eq(
-        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountCOON)
+        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountNORO)
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
-      await ido.connect(buyer1).purchaseCOON(amountDAI)
+      await ido.connect(buyer1).purchaseNORO(amountDAI)
 
       await ido.finalize(deployer.address)
 
@@ -476,12 +476,12 @@ describe.skip('IDO', function () {
       await staking.rebase()
 
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         deployer,
         '100375000000000'
       )
       await expect(() => staking.claim(buyer1.address)).to.changeTokenBalance(
-        sCoon,
+        sNoro,
         buyer1,
         '100375000000000'
       )
@@ -499,20 +499,20 @@ describe.skip('IDO', function () {
         BigNumber.from(500000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
       expect(await ido.totalAmount()).to.eq(
-        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountCOON)
+        BigNumber.from(200000).mul(BigNumber.from(10).pow(9)).sub(maxAmountNORO)
       )
-      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountCOON)
+      expect(await ido.purchasedAmounts(deployer.address)).to.eq(maxAmountNORO)
       expect(await dai.balanceOf(ido.address)).to.eq(amountDAI)
 
-      await ido.connect(buyer1).purchaseCOON(amountDAI)
+      await ido.connect(buyer1).purchaseNORO(amountDAI)
 
       await ido.finalize(deployer.address)
       await expect(ido.claim(deployer.address)).to.be.revertedWith(
@@ -522,13 +522,13 @@ describe.skip('IDO', function () {
   })
 
   describe('1000 buyer', function () {
-    let totalAmount, pricePerCoon
+    let totalAmount, pricePerNoro
     beforeEach(function () {
       totalAmount = BigNumber.from(200000).mul(BigNumber.from(10).pow(9))
-      pricePerCoon = BigNumber.from(5).mul(BigNumber.from(10).pow(18))
+      pricePerNoro = BigNumber.from(5).mul(BigNumber.from(10).pow(18))
     })
 
-    it('buy all coon and finalize', async function () {
+    it('buy all noro and finalize', async function () {
       const wallets = []
       const totalBuyer = 999
       for (let i = 0; i < totalBuyer; i++) {
@@ -539,14 +539,14 @@ describe.skip('IDO', function () {
       await ido.whiteListBuyers([deployer.address])
       await ido.initialize(
         totalAmount,
-        pricePerCoon,
+        pricePerNoro,
         100,
         Math.round(Date.now() / 1000 - 1000)
       )
 
       const daiAmount = BigNumber.from(1000).mul(BigNumber.from(10).pow(18))
       await (await dai.approve(ido.address, largeApproval)).wait()
-      await (await ido.purchaseCOON(daiAmount)).wait()
+      await (await ido.purchaseNORO(daiAmount)).wait()
 
       let nonce = await deployer.getTransactionCount()
       await Promise.all(
@@ -578,7 +578,7 @@ describe.skip('IDO', function () {
             let buyerIDO = ido.connect(wallet)
 
             await (await buyerDAI.approve(ido.address, largeApproval)).wait()
-            await (await buyerIDO.purchaseCOON(daiAmount)).wait()
+            await (await buyerIDO.purchaseNORO(daiAmount)).wait()
             console.log(`${i + j} ${wallet.address} purchased`)
           })
         )
@@ -589,7 +589,7 @@ describe.skip('IDO', function () {
       await (await ido.finalize(deployer.address)).wait()
 
       nonce = await deployer.getTransactionCount()
-      console.log('claim coons')
+      console.log('claim noros')
       step = 50
       for (let i = 0; i < totalBuyer; i += step) {
         await Promise.all(
@@ -614,7 +614,7 @@ describe.skip('IDO', function () {
       await ido.whiteListBuyers(whitelist)
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
@@ -634,14 +634,14 @@ describe.skip('IDO', function () {
         BigNumber.from(500000).mul(BigNumber.from(10).pow(18))
       )
 
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)
       )
-      await ido.connect(buyer1).purchaseCOON(amountDAI)
+      await ido.connect(buyer1).purchaseNORO(amountDAI)
 
       await ido.cancel()
       await ido.withdraw()
@@ -663,9 +663,9 @@ describe.skip('IDO', function () {
     })
 
     it('should failed to purchase if not initialized', async function () {
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(ido.purchaseCOON(amountDAI)).to.be.revertedWith(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(ido.purchaseNORO(amountDAI)).to.be.revertedWith(
         'Not started'
       )
     })
@@ -673,15 +673,15 @@ describe.skip('IDO', function () {
     it('should failed to purchase before start', async function () {
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
         Math.round(Date.now() / 1000 + 1000000)
       )
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(ido.purchaseCOON(amountDAI)).to.be.revertedWith(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(ido.purchaseNORO(amountDAI)).to.be.revertedWith(
         'Not started'
       )
     })
@@ -689,15 +689,15 @@ describe.skip('IDO', function () {
     it('should able to purchase after start', async function () {
       await ido.initialize(
         BigNumber.from(200000).mul(
-          BigNumber.from(10).pow(await coon.decimals())
+          BigNumber.from(10).pow(await noro.decimals())
         ),
         BigNumber.from(5).mul(BigNumber.from(10).pow(18)),
         100,
         Math.round(Date.now() / 1000 - 1000)
       )
-      const maxAmountCOON = await ido.getAllotmentPerBuyer()
-      const amountDAI = maxAmountCOON.div(1e9).mul(await ido.salePrice())
-      await expect(() => ido.purchaseCOON(amountDAI)).to.changeTokenBalance(
+      const maxAmountNORO = await ido.getAllotmentPerBuyer()
+      const amountDAI = maxAmountNORO.div(1e9).mul(await ido.salePrice())
+      await expect(() => ido.purchaseNORO(amountDAI)).to.changeTokenBalance(
         dai,
         deployer,
         amountDAI.mul(-1)

@@ -25,8 +25,8 @@ describe('CunoroMaticBondDepository', function () {
     // Used as the default user for deposits and trade. Intended to be the default regular user.
     depositor,
     dao,
-    coon,
-    sCoon,
+    noro,
+    sNoro,
     dai,
     treasury,
     staking,
@@ -42,19 +42,19 @@ describe('CunoroMaticBondDepository', function () {
     const Oracle = await ethers.getContractFactory('AggregatorV3Mock')
     oracle = await Oracle.deploy()
 
-    const COON = await ethers.getContractFactory('CunoroCoonERC20')
-    coon = await COON.deploy()
-    await coon.setVault(deployer.address)
+    const NORO = await ethers.getContractFactory('CunoroNoroERC20')
+    noro = await NORO.deploy()
+    await noro.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20')
-    sCoon = await StakedCOON.deploy()
+    const StakedNORO = await ethers.getContractFactory('StakedCunoroNoroERC20')
+    sNoro = await StakedNORO.deploy()
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      coon.address,
+      noro.address,
       dai.address,
       zeroAddress,
       zeroAddress,
@@ -63,8 +63,8 @@ describe('CunoroMaticBondDepository', function () {
 
     const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
-      coon.address,
-      sCoon.address,
+      noro.address,
+      sNoro.address,
       epochLength,
       firstEpochNumber,
       firstEpochTime
@@ -73,7 +73,7 @@ describe('CunoroMaticBondDepository', function () {
     const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
       staking.address,
-      sCoon.address
+      sNoro.address
     )
 
     const StakingDistributor = await ethers.getContractFactory(
@@ -81,7 +81,7 @@ describe('CunoroMaticBondDepository', function () {
     )
     const stakingDistributor = await StakingDistributor.deploy(
       treasury.address,
-      coon.address,
+      noro.address,
       epochLength,
       firstEpochTime
     )
@@ -89,8 +89,8 @@ describe('CunoroMaticBondDepository', function () {
 
     const Bond = await ethers.getContractFactory('CunoroMaticBondDepository')
     bond = await Bond.deploy(
-      coon.address,
-      sCoon.address,
+      noro.address,
+      sNoro.address,
       dai.address,
       treasury.address,
       dao.address,
@@ -98,13 +98,13 @@ describe('CunoroMaticBondDepository', function () {
       oracle.address
     )
 
-    await sCoon.initialize(staking.address)
-    await sCoon.setIndex(initialIndex)
+    await sNoro.initialize(staking.address)
+    await sNoro.setIndex(initialIndex)
 
     await staking.setContract('0', stakingDistributor.address)
     await staking.setContract('1', stakingWarmup.address)
 
-    await coon.setVault(treasury.address)
+    await noro.setVault(treasury.address)
 
     // queue and toggle deployer reserve depositor
     await treasury.queue('0', deployer.address)
@@ -118,7 +118,7 @@ describe('CunoroMaticBondDepository', function () {
 
     await bond.setStaking(staking.address)
 
-    // await coon.approve(stakingHelper.address, largeApproval)
+    // await noro.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
     await dai.approve(bond.address, largeApproval)
     await dai.connect(depositor).approve(bond.address, largeApproval)
@@ -133,7 +133,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 38
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 1000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -157,7 +157,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 1000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -178,7 +178,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 100
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 1000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -210,7 +210,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 300
       const bondVestingLength = 10
       const minBondPrice = 400 // bond price = $4
-      const maxBondPayout = 1000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 1000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '1000000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -224,7 +224,7 @@ describe('CunoroMaticBondDepository', function () {
 
       await bond.deposit(parseEther('100'), largeApproval, deployer.address)
 
-      const prevDAOReserve = await coon.balanceOf(dao.address)
+      const prevDAOReserve = await noro.balanceOf(dao.address)
       expect(prevDAOReserve).to.eq(0)
       console.log('dao balance: ' + formatUnits(prevDAOReserve, 9))
 
@@ -235,7 +235,7 @@ describe('CunoroMaticBondDepository', function () {
       )
     })
 
-    it('should redeem sCOON when vested fully', async function () {
+    it('should redeem sNORO when vested fully', async function () {
       await treasury.deposit(
         parseEther('10000'),
         dai.address,
@@ -245,7 +245,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 300
       const bondVestingLength = 15
       const minBondPrice = 400 // bond price = 4 MATIC
-      const maxBondPayout = 10000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 10000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -263,17 +263,17 @@ describe('CunoroMaticBondDepository', function () {
 
       await expect(() =>
         bond.deposit(parseEther('1000'), largeApproval, deployer.address)
-      ).to.changeTokenBalance(coon, dao, 0)
+      ).to.changeTokenBalance(noro, dao, 0)
 
       await timeAndMine.setTimeIncrease(432001)
       await staking.rebase()
 
       await expect(() =>
         bond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(sCoon, deployer, parseUnits('263.75', 9))
+      ).to.changeTokenBalance(sNoro, deployer, parseUnits('263.75', 9))
     })
 
-    it('should deploy twice and redeem sCOON when vested fully', async function () {
+    it('should deploy twice and redeem sNORO when vested fully', async function () {
       await treasury.deposit(
         parseEther('100000'),
         dai.address,
@@ -283,7 +283,7 @@ describe('CunoroMaticBondDepository', function () {
       const bcv = 300
       const bondVestingLength = 15
       const minBondPrice = 5000 // bond price = $50
-      const maxBondPayout = 10000 // 1000 = 1% of COON total supply
+      const maxBondPayout = 10000 // 1000 = 1% of NORO total supply
       const maxBondDebt = '8000000000000000'
       const initialBondDebt = 0
       await bond.initializeBondTerms(
@@ -297,30 +297,30 @@ describe('CunoroMaticBondDepository', function () {
 
       await expect(() =>
         bond.deposit(parseEther('50'), largeApproval, deployer.address)
-      ).to.changeTokenBalance(coon, dao, 0)
+      ).to.changeTokenBalance(noro, dao, 0)
       await expect(() =>
         bond
           .connect(depositor)
           .deposit(parseEther('500'), largeApproval, depositor.address)
-      ).to.changeTokenBalance(coon, dao, 0)
+      ).to.changeTokenBalance(noro, dao, 0)
 
       await timeAndMine.setTimeIncrease(86400)
       await staking.rebase()
 
       await expect(() =>
         bond.deposit(parseEther('3000'), largeApproval, deployer.address)
-      ).to.changeTokenBalance(coon, dao, 0)
+      ).to.changeTokenBalance(noro, dao, 0)
 
       await timeAndMine.setTimeIncrease(432001)
       await staking.rebase()
 
       await expect(() =>
         bond.redeem(deployer.address, false)
-      ).to.changeTokenBalance(sCoon, deployer, '116767342325')
+      ).to.changeTokenBalance(sNoro, deployer, '116767342325')
 
       await expect(() =>
         bond.redeem(depositor.address, false)
-      ).to.changeTokenBalance(sCoon, depositor, '331526107799')
+      ).to.changeTokenBalance(sNoro, depositor, '331526107799')
     })
   })
 })

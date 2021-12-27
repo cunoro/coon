@@ -46,9 +46,9 @@ contract CunoroBondDepository is Ownable {
     );
 
     /* ======== STATE VARIABLES ======== */
-    address public immutable COON; // token given as payment for bond
+    address public immutable NORO; // token given as payment for bond
     address public immutable principle; // token used to create bond
-    address public immutable treasury; // mints COON when receives principle
+    address public immutable treasury; // mints NORO when receives principle
     address public immutable DAO; // receives profit share from bond
 
     bool public immutable isLiquidityBond; // LP and Reserve bonds are treated slightly different
@@ -80,7 +80,7 @@ contract CunoroBondDepository is Ownable {
 
     // Info for bond holder
     struct Bond {
-        uint256 payout; // COON remaining to be paid
+        uint256 payout; // NORO remaining to be paid
         uint256 vesting; // Blocks left to vest
         uint256 lastTimestamp; // Last interaction
         uint256 pricePaid; // In DAI, for front end viewing
@@ -98,14 +98,14 @@ contract CunoroBondDepository is Ownable {
     /* ======== INITIALIZATION ======== */
 
     constructor(
-        address _COON,
+        address _NORO,
         address _principle,
         address _treasury,
         address _DAO,
         address _bondCalculator
     ) {
-        require(_COON != address(0));
-        COON = _COON;
+        require(_NORO != address(0));
+        NORO = _NORO;
         require(_principle != address(0));
         principle = _principle;
         require(_treasury != address(0));
@@ -264,7 +264,7 @@ contract CunoroBondDepository is Ownable {
         );
         uint256 payout = payoutFor(value); // payout to bonder is computed
 
-        require(payout >= 10000000, 'Bond too small'); // must be > 0.01 COON ( underflow protection )
+        require(payout >= 10000000, 'Bond too small'); // must be > 0.01 NORO ( underflow protection )
         require(payout <= maxPayout(), 'Bond too large'); // size protection because there is no slippage
 
         // profits are calculated
@@ -274,7 +274,7 @@ contract CunoroBondDepository is Ownable {
         /**
             principle is transferred in
             approved and
-            deposited into the treasury, returning (_amount - profit) COON
+            deposited into the treasury, returning (_amount - profit) NORO
          */
         IERC20(principle).safeTransferFrom(msg.sender, address(this), _amount);
         IERC20(principle).approve(address(treasury), _amount);
@@ -282,7 +282,7 @@ contract CunoroBondDepository is Ownable {
 
         if (fee != 0) {
             // fee is transferred to dao
-            IERC20(COON).safeTransfer(DAO, fee);
+            IERC20(NORO).safeTransfer(DAO, fee);
         }
 
         // total debt is increased
@@ -362,15 +362,15 @@ contract CunoroBondDepository is Ownable {
     ) internal returns (uint256) {
         if (!_stake) {
             // if user does not want to stake
-            IERC20(COON).transfer(_recipient, _amount); // send payout
+            IERC20(NORO).transfer(_recipient, _amount); // send payout
         } else {
             // if user wants to stake
             if (useHelper) {
                 // use if staking warmup is 0
-                IERC20(COON).approve(stakingHelper, _amount);
+                IERC20(NORO).approve(stakingHelper, _amount);
                 IStakingHelper(stakingHelper).stake(_amount, _recipient);
             } else {
-                IERC20(COON).approve(staking, _amount);
+                IERC20(NORO).approve(staking, _amount);
                 ICunoroStaking(staking).stake(_amount, _recipient);
             }
         }
@@ -426,7 +426,7 @@ contract CunoroBondDepository is Ownable {
      *  @return uint
      */
     function maxPayout() public view returns (uint256) {
-        return IERC20(COON).totalSupply().mul(terms.maxPayout).div(100000);
+        return IERC20(NORO).totalSupply().mul(terms.maxPayout).div(100000);
     }
 
     /**
@@ -482,11 +482,11 @@ contract CunoroBondDepository is Ownable {
     }
 
     /**
-     *  @notice calculate current ratio of debt to COON supply
+     *  @notice calculate current ratio of debt to NORO supply
      *  @return debtRatio_ uint
      */
     function debtRatio() public view returns (uint256 debtRatio_) {
-        uint256 supply = IERC20(COON).totalSupply();
+        uint256 supply = IERC20(NORO).totalSupply();
         debtRatio_ = FixedPoint
             .fraction(currentDebt().mul(1e9), supply)
             .decode112with18()
@@ -554,7 +554,7 @@ contract CunoroBondDepository is Ownable {
     }
 
     /**
-     *  @notice calculate amount of COON available for claim by depositor
+     *  @notice calculate amount of NORO available for claim by depositor
      *  @param _depositor address
      *  @return pendingPayout_ uint
      */
@@ -576,11 +576,11 @@ contract CunoroBondDepository is Ownable {
     /* ======= AUXILLIARY ======= */
 
     /**
-     *  @notice allow anyone to send lost tokens (excluding principle or COON) to the DAO
+     *  @notice allow anyone to send lost tokens (excluding principle or NORO) to the DAO
      *  @return bool
      */
     function recoverLostToken(address _token) external returns (bool) {
-        require(_token != COON);
+        require(_token != NORO);
         require(_token != principle);
         IERC20(_token).safeTransfer(
             DAO,

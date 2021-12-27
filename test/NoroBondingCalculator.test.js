@@ -9,8 +9,8 @@ describe('CunoroBondingCalculator', function () {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    COON,
-    coon,
+    NORO,
+    noro,
     DAI,
     dai,
     UniswapV2FactoryContract,
@@ -24,9 +24,9 @@ describe('CunoroBondingCalculator', function () {
   beforeEach(async function () {
     deployer = await ethers.getSigner()
 
-    COON = await ethers.getContractFactory('CunoroCoonERC20')
-    coon = await COON.connect(deployer).deploy()
-    await coon.setVault(deployer.address)
+    NORO = await ethers.getContractFactory('CunoroNoroERC20')
+    noro = await NORO.connect(deployer).deploy()
+    await noro.setVault(deployer.address)
 
     DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.connect(deployer).deploy(0)
@@ -39,8 +39,8 @@ describe('CunoroBondingCalculator', function () {
       deployer.address
     )
 
-    await uniFactory.connect(deployer).createPair(coon.address, dai.address)
-    pairAddress = await uniFactory.getPair(coon.address, dai.address)
+    await uniFactory.connect(deployer).createPair(noro.address, dai.address)
+    pairAddress = await uniFactory.getPair(noro.address, dai.address)
     UniswapV2Pair = ContractFactory.fromSolidity(UniswapV2PairJson, deployer)
     lp = await UniswapV2Pair.attach(pairAddress)
 
@@ -48,18 +48,18 @@ describe('CunoroBondingCalculator', function () {
       'CunoroBondingCalculator'
     )
     bondingCalc = await BondingCalcContract.connect(deployer).deploy(
-      coon.address
+      noro.address
     )
   })
 
   describe('getKValue', function () {
     it('should return x*y', async function () {
-      const coonAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(9))
+      const noroAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(9))
       const daiAmount = BigNumber.from(400).mul(BigNumber.from(10).pow(18))
-      await coon.mint(deployer.address, coonAmount)
+      await noro.mint(deployer.address, noroAmount)
       await dai.mint(deployer.address, daiAmount)
 
-      await coon.transfer(lp.address, coonAmount)
+      await noro.transfer(lp.address, noroAmount)
       await dai.transfer(lp.address, daiAmount)
       await lp.mint(deployer.address)
 
@@ -73,12 +73,12 @@ describe('CunoroBondingCalculator', function () {
 
   describe('getTotalValue', function () {
     it('should return total value in USD', async function () {
-      const coonAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(9))
+      const noroAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(9))
       const daiAmount = BigNumber.from(400).mul(BigNumber.from(10).pow(18))
-      await coon.mint(deployer.address, coonAmount)
+      await noro.mint(deployer.address, noroAmount)
       await dai.mint(deployer.address, daiAmount)
 
-      await coon.transfer(lp.address, coonAmount)
+      await noro.transfer(lp.address, noroAmount)
       await dai.transfer(lp.address, daiAmount)
       await lp.mint(deployer.address)
 

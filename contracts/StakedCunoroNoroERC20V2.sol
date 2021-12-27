@@ -5,7 +5,7 @@ import './types/ERC20.sol';
 
 import './types/Ownable.sol';
 
-contract StakedCunoroCoonERC20V2 is ERC20Permit, Ownable {
+contract StakedCunoroNoroERC20V2 is ERC20Permit, Ownable {
     using SafeMath for uint256;
 
     modifier onlyStakingContract() {
@@ -53,14 +53,14 @@ contract StakedCunoroCoonERC20V2 is ERC20Permit, Ownable {
 
     mapping(address => mapping(address => uint256)) private _allowedValue;
 
-    constructor() ERC20('Staked Coon', 'sCOON2', 9) ERC20Permit() {
+    constructor() ERC20('Staked Noro', 'sNORO2', 9) ERC20Permit() {
         initializer = msg.sender;
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
     }
 
     function completeMigration() external onlyOwner {
-        _symbol = 'sCOON';
+        _symbol = 'sNORO';
     }
 
     function initialize(address stakingContract_) external returns (bool) {
@@ -83,7 +83,7 @@ contract StakedCunoroCoonERC20V2 is ERC20Permit, Ownable {
     }
 
     /**
-        @notice increases sCOON supply to increase staking balances relative to profit_
+        @notice increases sNORO supply to increase staking balances relative to profit_
         @param profit_ uint256
         @return uint256
      */
@@ -162,7 +162,7 @@ contract StakedCunoroCoonERC20V2 is ERC20Permit, Ownable {
         return gons.div(_gonsPerFragment);
     }
 
-    // Staking contract holds excess sCOON
+    // Staking contract holds excess sNORO
     function circulatingSupply() public view returns (uint256) {
         return _totalSupply.sub(balanceOf(stakingContract));
     }

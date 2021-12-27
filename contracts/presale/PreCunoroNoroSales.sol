@@ -7,7 +7,7 @@ import '../types/ERC20.sol';
 import '../libraries/SafeMath.sol';
 import '../libraries/SafeERC20.sol';
 
-contract PreCunorodCoonSales is Ownable {
+contract PreCunorodNoroSales is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -21,11 +21,11 @@ contract PreCunorodCoonSales is Ownable {
 
     IERC20 public dai;
 
-    IERC20 public pdCoon;
+    IERC20 public pdNoro;
 
     address private _saleProceedsAddress;
 
-    uint256 public pdCoonPrice;
+    uint256 public pdNoroPrice;
 
     bool public initialized;
 
@@ -34,26 +34,26 @@ contract PreCunorodCoonSales is Ownable {
     constructor() {}
 
     function initialize(
-        address pdCoon_,
+        address pdNoro_,
         address dai_,
-        uint256 pdCoonPrice_,
+        uint256 pdNoroPrice_,
         address saleProceedsAddress_
     ) external onlyOwner {
         require(!initialized);
-        pdCoon = IERC20(pdCoon_);
+        pdNoro = IERC20(pdNoro_);
         dai = IERC20(dai_);
-        pdCoonPrice = pdCoonPrice_;
+        pdNoroPrice = pdNoroPrice_;
         _saleProceedsAddress = saleProceedsAddress_;
         initialized = true;
     }
 
-    function setPredCoonPrice(uint256 newPredCoonPrice_)
+    function setPredNoroPrice(uint256 newPredNoroPrice_)
         external
         onlyOwner
         returns (uint256)
     {
-        pdCoonPrice = newPredCoonPrice_;
-        return pdCoonPrice;
+        pdNoroPrice = newPredNoroPrice_;
+        return pdNoroPrice;
     }
 
     function _approveBuyer(address newBuyer_)
@@ -88,14 +88,14 @@ contract PreCunorodCoonSales is Ownable {
         internal
         returns (uint256)
     {
-        return amountPaid_.mul(pdCoonPrice);
+        return amountPaid_.mul(pdNoroPrice);
     }
 
-    function buyPredCoon(uint256 amountPaid_) external returns (bool) {
+    function buyPredNoro(uint256 amountPaid_) external returns (bool) {
         require(approvedBuyers[msg.sender], 'Buyer not approved.');
-        uint256 pdCoonAmountPurchased_ = _calculateAmountPurchased(amountPaid_);
+        uint256 pdNoroAmountPurchased_ = _calculateAmountPurchased(amountPaid_);
         dai.safeTransferFrom(msg.sender, _saleProceedsAddress, amountPaid_);
-        pdCoon.safeTransfer(msg.sender, pdCoonAmountPurchased_);
+        pdNoro.safeTransfer(msg.sender, pdNoroAmountPurchased_);
         return true;
     }
 

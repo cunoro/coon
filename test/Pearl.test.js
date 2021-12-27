@@ -24,8 +24,8 @@ describe('Pearl', function () {
   let // Used as default deployer for contracts, asks as owner of contracts.
     deployer,
     // Used as the default user for deposits and trade. Intended to be the default regular user.
-    coon,
-    sCoon,
+    noro,
+    sNoro,
     pearl,
     dai,
     treasury,
@@ -39,22 +39,22 @@ describe('Pearl', function () {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
-    const COON = await ethers.getContractFactory('CunoroCoonERC20V2')
-    coon = await COON.deploy()
-    await coon.setVault(deployer.address)
+    const NORO = await ethers.getContractFactory('CunoroNoroERC20V2')
+    noro = await NORO.deploy()
+    await noro.setVault(deployer.address)
 
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    const StakedCOON = await ethers.getContractFactory('StakedCunoroCoonERC20V2')
-    sCoon = await StakedCOON.deploy()
+    const StakedNORO = await ethers.getContractFactory('StakedCunoroNoroERC20V2')
+    sNoro = await StakedNORO.deploy()
 
     const PEARL = await ethers.getContractFactory('CunoroPearlERC20')
-    pearl = await PEARL.deploy(sCoon.address)
+    pearl = await PEARL.deploy(sNoro.address)
 
     const Treasury = await ethers.getContractFactory('CunoroTreasury')
     treasury = await Treasury.deploy(
-      coon.address,
+      noro.address,
       dai.address,
       zeroAddress,
       zeroAddress,
@@ -66,15 +66,15 @@ describe('Pearl', function () {
     )
     stakingDistributor = await StakingDistributor.deploy(
       treasury.address,
-      coon.address,
+      noro.address,
       epochLength,
       firstEpochTime
     )
 
     const Staking = await ethers.getContractFactory('CunoroStaking')
     staking = await Staking.deploy(
-      coon.address,
-      sCoon.address,
+      noro.address,
+      sNoro.address,
       epochLength,
       firstEpochNumber,
       firstEpochTime
@@ -82,23 +82,23 @@ describe('Pearl', function () {
 
     // Deploy staking helper
     const StakingHelper = await ethers.getContractFactory('CunoroStakingHelper')
-    stakingHelper = await StakingHelper.deploy(staking.address, coon.address)
+    stakingHelper = await StakingHelper.deploy(staking.address, noro.address)
 
     const StakingWarmup = await ethers.getContractFactory('CunoroStakingWarmup')
     const stakingWarmup = await StakingWarmup.deploy(
       staking.address,
-      sCoon.address
+      sNoro.address
     )
 
-    await sCoon.initialize(staking.address)
-    await sCoon.setIndex(initialIndex)
+    await sNoro.initialize(staking.address)
+    await sNoro.setIndex(initialIndex)
 
     await staking.setContract('0', stakingDistributor.address)
     await staking.setContract('1', stakingWarmup.address)
 
     await stakingDistributor.addRecipient(staking.address, initialRewardRate)
 
-    await coon.setVault(treasury.address)
+    await noro.setVault(treasury.address)
 
     // queue and toggle reward manager
     await treasury.queue('8', stakingDistributor.address)
@@ -108,7 +108,7 @@ describe('Pearl', function () {
     await treasury.queue('0', deployer.address)
     await treasury.toggle('0', deployer.address, zeroAddress)
 
-    await coon.approve(stakingHelper.address, largeApproval)
+    await noro.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
 
     // mint 1,000,000 DAI for testing
@@ -126,7 +126,7 @@ describe('Pearl', function () {
         BigNumber.from(750000).mul(BigNumber.from(10).pow(9))
       )
     ).to.changeTokenBalance(
-      coon,
+      noro,
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
@@ -137,12 +137,12 @@ describe('Pearl', function () {
         deployer.address
       )
     ).to.changeTokenBalance(
-      sCoon,
+      sNoro,
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
 
-    await sCoon.approve(
+    await sNoro.approve(
       pearl.address,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
@@ -158,7 +158,7 @@ describe('Pearl', function () {
     await expect(() =>
       pearl.unwrap(BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(18)))
     ).to.changeTokenBalance(
-      sCoon,
+      sNoro,
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
@@ -172,7 +172,7 @@ describe('Pearl', function () {
         BigNumber.from(750000).mul(BigNumber.from(10).pow(9))
       )
     ).to.changeTokenBalance(
-      coon,
+      noro,
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
@@ -183,12 +183,12 @@ describe('Pearl', function () {
         deployer.address
       )
     ).to.changeTokenBalance(
-      sCoon,
+      sNoro,
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
 
-    await sCoon.approve(
+    await sNoro.approve(
       pearl.address,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(9))
     )
@@ -200,22 +200,22 @@ describe('Pearl', function () {
       deployer,
       BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(18))
     )
-    expect(await sCoon.balanceOf(deployer.address)).to.equal(0)
+    expect(await sNoro.balanceOf(deployer.address)).to.equal(0)
 
     // 0 -> 1 no reward
     await staking.rebase()
-    expect(await sCoon.index()).to.equal(initialIndex)
+    expect(await sNoro.index()).to.equal(initialIndex)
 
     // 1 -> 2
     await timeAndMine.setTimeIncrease(86400 / 3 + 1)
     await staking.rebase()
-    const currentIndex = await sCoon.index()
+    const currentIndex = await sNoro.index()
     expect(currentIndex).to.equal(1003000000)
 
     await expect(() =>
       pearl.unwrap(BigNumber.from(25 * 10000).mul(BigNumber.from(10).pow(18)))
     ).to.changeTokenBalance(
-      sCoon,
+      sNoro,
       deployer,
       BigNumber.from(250750).mul(BigNumber.from(10).pow(9))
     )

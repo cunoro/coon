@@ -15,7 +15,7 @@ contract CunoroStakingDistributor is Ownable {
 
     /* ====== VARIABLES ====== */
 
-    address public immutable COON;
+    address public immutable NORO;
     address public immutable treasury;
 
     uint256 public immutable epochLength; // seconds
@@ -48,7 +48,7 @@ contract CunoroStakingDistributor is Ownable {
         require(_treasury != address(0));
         treasury = _treasury;
         require(_clam != address(0));
-        COON = _clam;
+        NORO = _clam;
         epochLength = _epochLength;
         nextEpochTime = _nextEpochTime;
     }
@@ -112,7 +112,7 @@ contract CunoroStakingDistributor is Ownable {
         @return uint
      */
     function nextRewardAt(uint256 _rate) public view returns (uint256) {
-        return IERC20(COON).totalSupply().mul(_rate).div(1000000);
+        return IERC20(NORO).totalSupply().mul(_rate).div(1000000);
     }
 
     /**

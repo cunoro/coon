@@ -3,8 +3,8 @@ pragma solidity >=0.7.5;
 
 import './IERC20.sol';
 
-interface IsCoon is IERC20 {
-    function rebase(uint256 coonProfit_, uint256 epoch_)
+interface IsNoro is IERC20 {
+    function rebase(uint256 noroProfit_, uint256 epoch_)
         external
         returns (uint256);
 

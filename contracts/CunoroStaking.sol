@@ -2,7 +2,7 @@
 pragma solidity 0.7.5;
 
 import './interfaces/ICunoroStaking.sol';
-import './interfaces/IsCoon.sol';
+import './interfaces/IsNoro.sol';
 
 import './types/ERC20.sol';
 import './types/Ownable.sol';
@@ -22,8 +22,8 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public immutable COON;
-    address public immutable sCOON;
+    address public immutable NORO;
+    address public immutable sNORO;
 
     struct Epoch {
         uint256 length; // in seconds
@@ -42,16 +42,16 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     uint256 public warmupPeriod;
 
     constructor(
-        address _COON,
-        address _sCOON,
+        address _NORO,
+        address _sNORO,
         uint256 _epochLength,
         uint256 _firstEpochNumber,
         uint256 _firstEpochTime
     ) {
-        require(_COON != address(0));
-        COON = _COON;
-        require(_sCOON != address(0));
-        sCOON = _sCOON;
+        require(_NORO != address(0));
+        NORO = _NORO;
+        require(_sNORO != address(0));
+        sNORO = _sNORO;
 
         epoch = Epoch({
             length: _epochLength,
@@ -70,7 +70,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     mapping(address => Claim) public warmupInfo;
 
     /**
-        @notice stake COON to enter warmup
+        @notice stake NORO to enter warmup
         @param _amount uint
         @return bool
      */
@@ -81,24 +81,24 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     {
         rebase();
 
-        IERC20(COON).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(NORO).safeTransferFrom(msg.sender, address(this), _amount);
 
         Claim memory info = warmupInfo[_recipient];
         require(!info.lock, 'Deposits for account are locked');
 
         warmupInfo[_recipient] = Claim({
             deposit: info.deposit.add(_amount),
-            gons: info.gons.add(IsCoon(sCOON).gonsForBalance(_amount)),
+            gons: info.gons.add(IsNoro(sNORO).gonsForBalance(_amount)),
             expiry: epoch.number.add(warmupPeriod),
             lock: false
         });
 
-        IERC20(sCOON).safeTransfer(warmupContract, _amount);
+        IERC20(sNORO).safeTransfer(warmupContract, _amount);
         return true;
     }
 
     /**
-        @notice retrieve sCOON from warmup
+        @notice retrieve sNORO from warmup
         @param _recipient address
      */
     function claim(address _recipient) external override {
@@ -107,13 +107,13 @@ contract CunoroStaking is Ownable, ICunoroStaking {
             delete warmupInfo[_recipient];
             IWarmup(warmupContract).retrieve(
                 _recipient,
-                IsCoon(sCOON).balanceForGons(info.gons)
+                IsNoro(sNORO).balanceForGons(info.gons)
             );
         }
     }
 
     /**
-        @notice forfeit sCOON in warmup and retrieve COON
+        @notice forfeit sNORO in warmup and retrieve NORO
      */
     function forfeit() external {
         Claim memory info = warmupInfo[msg.sender];
@@ -121,9 +121,9 @@ contract CunoroStaking is Ownable, ICunoroStaking {
 
         IWarmup(warmupContract).retrieve(
             address(this),
-            IsCoon(sCOON).balanceForGons(info.gons)
+            IsNoro(sNORO).balanceForGons(info.gons)
         );
-        IERC20(COON).safeTransfer(msg.sender, info.deposit);
+        IERC20(NORO).safeTransfer(msg.sender, info.deposit);
     }
 
     /**
@@ -134,7 +134,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     }
 
     /**
-        @notice redeem sCOON for COON
+        @notice redeem sNORO for NORO
         @param _amount uint
         @param _trigger bool
      */
@@ -142,16 +142,16 @@ contract CunoroStaking is Ownable, ICunoroStaking {
         if (_trigger) {
             rebase();
         }
-        IERC20(sCOON).safeTransferFrom(msg.sender, address(this), _amount);
-        IERC20(COON).safeTransfer(msg.sender, _amount);
+        IERC20(sNORO).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(NORO).safeTransfer(msg.sender, _amount);
     }
 
     /**
-        @notice returns the sCOON index, which tracks rebase growth
+        @notice returns the sNORO index, which tracks rebase growth
         @return uint
      */
     function index() public view returns (uint256) {
-        return IsCoon(sCOON).index();
+        return IsNoro(sNORO).index();
     }
 
     /**
@@ -159,7 +159,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
      */
     function rebase() public {
         if (epoch.endTime <= block.timestamp) {
-            IsCoon(sCOON).rebase(epoch.distribute, epoch.number);
+            IsNoro(sNORO).rebase(epoch.distribute, epoch.number);
 
             epoch.endTime = epoch.endTime.add(epoch.length);
             epoch.number++;
@@ -169,7 +169,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
             }
 
             uint256 balance = contractBalance();
-            uint256 staked = IsCoon(sCOON).circulatingSupply();
+            uint256 staked = IsNoro(sNORO).circulatingSupply();
 
             if (balance <= staked) {
                 epoch.distribute = 0;
@@ -180,11 +180,11 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     }
 
     /**
-        @notice returns contract COON holdings, including bonuses provided
+        @notice returns contract NORO holdings, including bonuses provided
         @return uint
      */
     function contractBalance() public view returns (uint256) {
-        return IERC20(COON).balanceOf(address(this)).add(totalBonus);
+        return IERC20(NORO).balanceOf(address(this)).add(totalBonus);
     }
 
     /**
@@ -194,7 +194,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     function giveLockBonus(uint256 _amount) external {
         require(msg.sender == locker);
         totalBonus = totalBonus.add(_amount);
-        IERC20(sCOON).safeTransfer(locker, _amount);
+        IERC20(sNORO).safeTransfer(locker, _amount);
     }
 
     /**
@@ -204,7 +204,7 @@ contract CunoroStaking is Ownable, ICunoroStaking {
     function returnLockBonus(uint256 _amount) external {
         require(msg.sender == locker);
         totalBonus = totalBonus.sub(_amount);
-        IERC20(sCOON).safeTransferFrom(locker, address(this), _amount);
+        IERC20(sNORO).safeTransferFrom(locker, address(this), _amount);
     }
 
     enum CONTRACTS {

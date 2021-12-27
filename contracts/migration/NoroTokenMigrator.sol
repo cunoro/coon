@@ -54,8 +54,8 @@ contract ClamTokenMigrator is Ownable {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public immutable oldCOON;
-    IERC20 public immutable newCOON;
+    IERC20 public immutable oldNORO;
+    IERC20 public immutable newNORO;
     IERC20 public immutable mai;
     ICunoroTreasury public immutable oldTreasury;
     ICunoroTreasury public immutable newTreasury;
@@ -67,24 +67,24 @@ contract ClamTokenMigrator is Ownable {
     uint256 public oldSupply;
 
     constructor(
-        address _oldCOON,
+        address _oldNORO,
         address _oldTreasury,
         address _quickRouter,
         address _quickFactory,
-        address _newCOON,
+        address _newNORO,
         address _newTreasury,
         address _mai
     ) {
-        require(_oldCOON != address(0));
-        oldCOON = IERC20(_oldCOON);
+        require(_oldNORO != address(0));
+        oldNORO = IERC20(_oldNORO);
         require(_oldTreasury != address(0));
         oldTreasury = ICunoroTreasury(_oldTreasury);
         require(_quickRouter != address(0));
         quickRouter = IUniswapV2Router(_quickRouter);
         require(_quickFactory != address(0));
         quickFactory = IUniswapV2Factory(_quickFactory);
-        require(_newCOON != address(0));
-        newCOON = IERC20(_newCOON);
+        require(_newNORO != address(0));
+        newNORO = IERC20(_newNORO);
         require(_newTreasury != address(0));
         newTreasury = ICunoroTreasury(_newTreasury);
         require(_mai != address(0));
@@ -94,22 +94,22 @@ contract ClamTokenMigrator is Ownable {
     // /* ========== MIGRATION ========== */
     function migrate() external {
         require(clamMigrated);
-        uint256 oldCOONAmount = oldCOON.balanceOf(msg.sender);
+        uint256 oldNOROAmount = oldNORO.balanceOf(msg.sender);
 
-        require(oldCOONAmount > 0);
-        oldCOON.transferFrom(msg.sender, address(this), oldCOONAmount);
+        require(oldNOROAmount > 0);
+        oldNORO.transferFrom(msg.sender, address(this), oldNOROAmount);
 
-        uint256 maiAmount = oldCOONAmount.mul(1e9);
-        uint256 newCOONAmountInLP = oldCOONAmount.div(convertRatio);
+        uint256 maiAmount = oldNOROAmount.mul(1e9);
+        uint256 newNOROAmountInLP = oldNOROAmount.div(convertRatio);
 
-        oldCOON.safeApprove(address(oldTreasury), oldCOONAmount);
+        oldNORO.safeApprove(address(oldTreasury), oldNOROAmount);
         oldTreasury.withdraw(maiAmount, address(mai));
 
         mai.safeApprove(address(newTreasury), maiAmount);
         uint256 valueOfMai = oldTreasury.valueOfToken(address(mai), maiAmount);
         newTreasury.deposit(maiAmount, address(mai), valueOfMai);
 
-        newCOON.transfer(msg.sender, newCOONAmountInLP);
+        newNORO.transfer(msg.sender, newNOROAmountInLP);
     }
 
     /* ========== OWNABLE ========== */
@@ -118,12 +118,12 @@ contract ClamTokenMigrator is Ownable {
     function migrateContracts() external onlyOwner {
         clamMigrated = true;
 
-        oldSupply = oldCOON.totalSupply(); // log total supply at time of migration
+        oldSupply = oldNORO.totalSupply(); // log total supply at time of migration
 
-        uint256 newCOONTotalSupply = oldSupply.div(convertRatio);
+        uint256 newNOROTotalSupply = oldSupply.div(convertRatio);
 
         // withdraw old LP
-        address oldPair = quickFactory.getPair(address(oldCOON), address(mai));
+        address oldPair = quickFactory.getPair(address(oldNORO), address(mai));
         uint256 oldLPAmount = IERC20(oldPair).balanceOf(address(oldTreasury));
         oldTreasury.manage(oldPair, oldLPAmount);
 
@@ -131,7 +131,7 @@ contract ClamTokenMigrator is Ownable {
         (uint256 lpMaiAmount, uint256 lpOldClamAmount) = quickRouter
             .removeLiquidity(
                 address(mai),
-                address(oldCOON),
+                address(oldNORO),
                 oldLPAmount,
                 0,
                 0,
@@ -140,7 +140,7 @@ contract ClamTokenMigrator is Ownable {
             );
 
         // burn old clams
-        oldCOON.safeApprove(address(oldTreasury), lpOldClamAmount);
+        oldNORO.safeApprove(address(oldTreasury), lpOldClamAmount);
         uint256 extraMaiAmount = lpOldClamAmount * 1e9;
         oldTreasury.withdraw(extraMaiAmount, address(mai));
 
@@ -152,19 +152,19 @@ contract ClamTokenMigrator is Ownable {
             newTreasury.valueOfToken(address(mai), extraMaiAmount)
         );
 
-        // mint new COONs from new treasury
-        uint256 newCOONAmountInLP = lpOldClamAmount.div(convertRatio);
-        newTreasury.mintRewards(address(this), newCOONAmountInLP);
+        // mint new NOROs from new treasury
+        uint256 newNOROAmountInLP = lpOldClamAmount.div(convertRatio);
+        newTreasury.mintRewards(address(this), newNOROAmountInLP);
 
         mai.safeApprove(address(quickRouter), lpMaiAmount);
-        newCOON.safeApprove(address(quickRouter), newCOONAmountInLP);
+        newNORO.safeApprove(address(quickRouter), newNOROAmountInLP);
         quickRouter.addLiquidity(
             address(mai),
-            address(newCOON),
+            address(newNORO),
             lpMaiAmount,
-            newCOONAmountInLP,
+            newNOROAmountInLP,
             lpMaiAmount,
-            newCOONAmountInLP,
+            newNOROAmountInLP,
             address(newTreasury),
             100000000000
         );
@@ -178,12 +178,12 @@ contract ClamTokenMigrator is Ownable {
             excessReserves
         );
 
-        // Mint new COON to migrator for migration
+        // Mint new NORO to migrator for migration
         mai.safeApprove(address(newTreasury), excessReserves);
-        uint256 newCOONMinted = newCOONTotalSupply.sub(newCOONAmountInLP).sub(
+        uint256 newNOROMinted = newNOROTotalSupply.sub(newNOROAmountInLP).sub(
             1
         );
-        uint256 profit = valueOfMai.sub(newCOONMinted);
+        uint256 profit = valueOfMai.sub(newNOROMinted);
         newTreasury.deposit(excessReserves, address(mai), profit);
     }
 
@@ -194,7 +194,7 @@ contract ClamTokenMigrator is Ownable {
         address recipient
     ) external onlyOwner {
         require(tokenAddress != address(0), 'Token address cannot be 0x0');
-        require(tokenAddress != address(oldCOON), 'Cannot withdraw: old-COON');
+        require(tokenAddress != address(oldNORO), 'Cannot withdraw: old-NORO');
         require(amount > 0, 'Withdraw value must be greater than 0');
         if (recipient == address(0)) {
             recipient = msg.sender; // if no address is specified the value will will be withdrawn to Owner

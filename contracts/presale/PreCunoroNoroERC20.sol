@@ -13,7 +13,7 @@ abstract contract Divine is ERC20, Ownable {
     ) ERC20(name_, symbol_, decimals_) {}
 }
 
-contract PreCunoroCoonERC20 is Divine {
+contract PreCunoroNoroERC20 is Divine {
     using SafeMath for uint256;
 
     bool public requireSellerApproval;
@@ -21,7 +21,7 @@ contract PreCunoroCoonERC20 is Divine {
 
     mapping(address => bool) public isApprovedSeller;
 
-    constructor() Divine('Pre Coon', 'pCOON2', 18) {
+    constructor() Divine('Pre Noro', 'pNORO2', 18) {
         uint256 initialSupply_ = 1000000000 * 1e18;
         requireSellerApproval = true;
         allowMinting = true;
@@ -103,7 +103,7 @@ contract PreCunoroCoonERC20 is Divine {
     ) internal override {
         require(
             (_balances[to_] > 0 || isApprovedSeller[from_] == true),
-            'Account not approved to transfer pCOON.'
+            'Account not approved to transfer pNORO.'
         );
     }
 

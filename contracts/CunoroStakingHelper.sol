@@ -6,18 +6,18 @@ import './interfaces/ICunoroStaking.sol';
 
 contract CunoroStakingHelper {
     address public immutable staking;
-    address public immutable COON;
+    address public immutable NORO;
 
-    constructor(address _staking, address _COON) {
+    constructor(address _staking, address _NORO) {
         require(_staking != address(0));
         staking = _staking;
-        require(_COON != address(0));
-        COON = _COON;
+        require(_NORO != address(0));
+        NORO = _NORO;
     }
 
     function stake(uint256 _amount, address _recipient) external {
-        IERC20(COON).transferFrom(msg.sender, address(this), _amount);
-        IERC20(COON).approve(staking, _amount);
+        IERC20(NORO).transferFrom(msg.sender, address(this), _amount);
+        IERC20(NORO).approve(staking, _amount);
         ICunoroStaking(staking).stake(_amount, _recipient);
         ICunoroStaking(staking).claim(_recipient);
     }

@@ -24,10 +24,14 @@ contract VaultOwned is Ownable {
     }
 }
 
-contract CunoroCoonERC20 is ERC20Permit, VaultOwned {
+contract CunoroNoroERC20V2 is ERC20Permit, VaultOwned {
     using SafeMath for uint256;
 
-    constructor() ERC20('Cunoro Coon', 'COON', 9) {}
+    constructor() ERC20('Cunoro NORO', 'NORO2', 9) {}
+
+    function completeMigration() external onlyOwner {
+        _symbol = 'NORO';
+    }
 
     function mint(address account_, uint256 amount_) external onlyVault {
         _mint(account_, amount_);
