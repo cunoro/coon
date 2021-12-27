@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
-contract CunoroCoonIDOExclusive is ERC721, ERC721URIStorage, Ownable {
+contract CunoroNoroIDOExclusive is ERC721, ERC721URIStorage, Ownable {
     constructor() ERC721('CunoroCoon IDO Exclusive', 'CUNOROIDO') {
         // Stream Cunoro
         _mint(msg.sender, 1);
