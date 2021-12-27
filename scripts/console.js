@@ -27,14 +27,14 @@ let addresses = {
 
 const { BigNumber } = ethers
 const [deployer] = await ethers.getSigners()
-const IUniswapV2Pair = require('./scripts/IUniswapV2Pair.json').abi
+const IUniswapV2Pair = require('./scripts/ITraderJoePair.json').abi
 
 const lp = new ethers.Contract(
   addresses.RESERVES.DAI_NORO,
   IUniswapV2Pair,
   deployer
 )
-const NORO = await ethers.getContractFactory('CunoroClamERC20')
+const NORO = await ethers.getContractFactory('CunoroNoroERC20')
 const noro = await NORO.attach(addresses.NORO_ADDRESS)
 
 const DAI = await ethers.getContractFactory('DAI')
@@ -59,7 +59,7 @@ const daiBond = DAIBond.attach(addresses.BONDS.DAI)
 const LPBond = await ethers.getContractFactory('CunoroBondDepository')
 const lpBond = LPBond.attach(addresses.BONDS.DAI_NORO)
 
-const Migrator = await ethers.getContractFactory('ClamTokenMigrator')
+const Migrator = await ethers.getContractFactory('NoroTokenMigrator')
 const migrator = Migrator.attach(addresses.MIGRATOR)
 
 module.exports = {

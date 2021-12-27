@@ -2,7 +2,7 @@
 
 const { BigNumber } = require('@ethersproject/bignumber')
 const { ethers } = require('hardhat')
-const POLYGON_MAINNET = {
+const AVALANCHE_MAINNET = {
   sNORO_ADDRESS: '0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67',
   NORO_ADDRESS: '0xC250e9987A032ACAC293d838726C511E6E1C029d',
   OLD_NORO_ADDRESS: '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
@@ -36,34 +36,34 @@ const daoAddr = '0x929A27c46041196e1a49C7B459d63eC9A20cd879'
 async function main() {
   const [deployer] = await ethers.getSigners()
 
-  const addresses = POLYGON_MAINNET
+  const addresses = AVALANCHE_MAINNET
 
   console.log('Deploying contracts with the account: ' + deployer.address)
 
-  const PreCunoroClamERC20 = await ethers.getContractFactory('PreCunoroClamERC20')
-  const pClam = await PreCunoroClamERC20.deploy()
-  await pClam.deployTransaction.wait()
-  console.log('pNORO deployed at: ' + pClam.address)
+  const PreCunoroNoroERC20 = await ethers.getContractFactory('PreCunoroNoroERC20')
+  const pNoro = await PreCunoroNoroERC20.deploy()
+  await pNoro.deployTransaction.wait()
+  console.log('pNORO deployed at: ' + pNoro.address)
   await (
-    await pClam.transfer(
+    await pNoro.transfer(
       daoAddr,
       BigNumber.from(700000000).mul(BigNumber.from(10).pow(18))
     )
   ).wait()
 
-  const ExercisePreClam = await ethers.getContractFactory('ExercisePreClam')
-  const exercisePreClam = await ExercisePreClam.deploy(
-    pClam.address,
+  const ExercisePreNoro = await ethers.getContractFactory('ExercisePreNoro')
+  const exercisePreNoro = await ExercisePreNoro.deploy(
+    pNoro.address,
     addresses.NORO_ADDRESS,
     addresses.MAI_ADDRESS,
     addresses.TREASURY_ADDRESS,
     addresses.NORO_CIRCULATING_SUPPLY
   )
-  await exercisePreClam.deployTransaction.wait()
-  console.log('exercisePreClam deployed at: ' + exercisePreClam.address)
+  await exercisePreNoro.deployTransaction.wait()
+  console.log('exercisePreNoro deployed at: ' + exercisePreNoro.address)
 
   await (
-    await exercisePreClam.setTerms(
+    await exercisePreNoro.setTerms(
       deployer.address,
       '300000000000000000000000000',
       '50000'
@@ -72,9 +72,9 @@ async function main() {
 
   const Treasury = await ethers.getContractFactory('CunoroTreasury')
   const treasury = Treasury.attach(addresses.TREASURY_ADDRESS)
-  await (await treasury.queue('0', exercisePreClam.address)).wait()
+  await (await treasury.queue('0', exercisePreNoro.address)).wait()
   // TODO: toggle after 43200 blocks
-  // await (await treasury.toggle('0', exercisePreClam.address)).wait()
+  // await (await treasury.toggle('0', exercisePreNoro.address)).wait()
 }
 
 main()

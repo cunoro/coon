@@ -1,7 +1,7 @@
 // @dev. This script will deploy this V1.1 of Cunoro. It will deploy the whole ecosystem.
 
 const { ethers } = require('hardhat')
-const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
+const TraderJoeABI = require('./JoeFactory.json').abi
 
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -60,14 +60,14 @@ async function main() {
   const maiAddr = '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1'
 
   // Deploy NORO
-  const NORO = await ethers.getContractFactory('CunoroClamERC20')
+  const NORO = await ethers.getContractFactory('CunoroNoroERC20')
   const noro = NORO.attach('0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465')
   // const noro = await NORO.deploy()
   // console.log('NORO deployed: ' + noro.address)
 
   const uniswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
-    UniswapV2ABI,
+    TraderJoeABI,
     deployer
   )
   // await (await uniswapFactory.createPair(noro.address, maiAddr)).wait()
@@ -113,7 +113,7 @@ async function main() {
   // await stakingDistributor.deployTransaction.wait()
 
   // Deploy sNORO
-  const StakedNORO = await ethers.getContractFactory('StakedCunoroClamERC20')
+  const StakedNORO = await ethers.getContractFactory('StakedCunoroNoroERC20')
   const sNORO = StakedNORO.attach('0x3949F058238563803b5971711Ad19551930C8209')
   // const sNORO = await StakedNORO.deploy()
   // await sNORO.deployTransaction.wait()
@@ -166,18 +166,18 @@ async function main() {
   // )
   // await maiBond.deployTransaction.wait()
 
-  const MaiClamBond = await ethers.getContractFactory('CunoroBondDepository')
-  // const maiClamBond = MaiClamBond.attach(
+  const MaiNoroBond = await ethers.getContractFactory('CunoroBondDepository')
+  // const maiNoroBond = MaiNoroBond.attach(
   //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
-  const maiClamBond = await MaiClamBond.deploy(
+  const maiNoroBond = await MaiNoroBond.deploy(
     noro.address,
     lpAddress,
     treasury.address,
     daoAddr,
     bondingCalculator.address
   )
-  await maiClamBond.deployTransaction.wait()
+  await maiNoroBond.deployTransaction.wait()
 
   console.log(
     JSON.stringify({
@@ -194,7 +194,7 @@ async function main() {
       },
       BONDS: {
         MAI: maiBond.address,
-        MAI_NORO: maiClamBond.address,
+        MAI_NORO: maiNoroBond.address,
       },
     })
   )
@@ -203,7 +203,7 @@ async function main() {
   // await (await treasury.queue('0', maiBond.address)).wait()
 
   // queue and toggle MAI-NORO liquidity depositor
-  // await (await treasury.queue('4', maiClamBond.address)).wait()
+  // await (await treasury.queue('4', maiNoroBond.address)).wait()
 
   // Set bond terms
   // await (await maiBond.initializeBondTerms(
@@ -215,7 +215,7 @@ async function main() {
   //   maxBondDebt,
   //   initialBondDebt
   // )).wait()
-  // await (await maiClamBond.initializeBondTerms(
+  // await (await maiNoroBond.initializeBondTerms(
   //   '40',
   //   bondVestingLength,
   //   minBondPrice,
@@ -227,7 +227,7 @@ async function main() {
 
   // Set staking for bonds
   // await (await maiBond.setStaking(stakingHelper.address, true)).wait()
-  await (await maiClamBond.setStaking(stakingHelper.address, true)).wait()
+  await (await maiNoroBond.setStaking(stakingHelper.address, true)).wait()
 
   // Initialize sNORO and set the index
   // await (await sNORO.initialize(staking.address)).wait()
@@ -249,7 +249,7 @@ async function main() {
 
   // TODO: toggle after 43200 blocks
   //  await treasury.toggle('0', maiBond.address, zeroAddress)
-  //  await (await treasury.toggle('4', maiClamBond.address, zeroAddress)).wait()
+  //  await (await treasury.toggle('4', maiNoroBond.address, zeroAddress)).wait()
   //  await treasury.toggle('8', stakingDistributor.address, zeroAddress)
   // await treasury.queue('9', sNORO.address)
 }

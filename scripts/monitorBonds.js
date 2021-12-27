@@ -1,5 +1,5 @@
 const { ethers } = require('hardhat')
-const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
+const IUniswapV2Pair = require('./ITraderJoePair.json').abi
 
 const NORO_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
 const priceFormatter = Intl.NumberFormat('en', {
