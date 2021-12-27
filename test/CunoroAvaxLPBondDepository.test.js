@@ -3,7 +3,7 @@ const { expect } = require('chai')
 const { parseEther, parseUnits } = require('@ethersproject/units')
 const { deployUniswap, getPair } = require('./helpers/uniswap')
 
-describe('CunoroMaticBondLPDepository', function () {
+describe('CunoroAvaxBondLPDepository', function () {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 

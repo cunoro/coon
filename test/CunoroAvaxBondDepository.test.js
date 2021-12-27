@@ -2,7 +2,7 @@ const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { formatUnits, parseEther, parseUnits } = require('@ethersproject/units')
 
-describe('CunoroMaticBondDepository', function () {
+describe('CunoroAvaxBondDepository', function () {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -87,7 +87,7 @@ describe('CunoroMaticBondDepository', function () {
     )
     await stakingDistributor.addRecipient(staking.address, initialRewardRate)
 
-    const Bond = await ethers.getContractFactory('CunoroMaticBondDepository')
+    const Bond = await ethers.getContractFactory('CunoroAvaxBondDepository')
     bond = await Bond.deploy(
       noro.address,
       sNoro.address,
