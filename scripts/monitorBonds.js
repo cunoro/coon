@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat')
-const IUniswapV2Pair = require('./ITraderJoePair.json').abi
+const ITraderJoePair = require('./ITraderJoePair.json').abi
 
-const NORO_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
+const NORO_DAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
 const priceFormatter = Intl.NumberFormat('en', {
   style: 'currency',
   currency: 'usd',
@@ -15,8 +15,8 @@ async function main() {
     'CunoroAvaxBondDepository'
   )
   const bonds = [
-    { name: 'MAI', address: '0x779CB532e289CbaA3d0692Ae989C63C2B4fBd4d0' },
-    { name: 'NORO-MAI', address: '0xda0d7c3d751d00a1ec1c495eF7Cf3db1a202B0B9' },
+    { name: 'DAI', address: '0x779CB532e289CbaA3d0692Ae989C63C2B4fBd4d0' },
+    { name: 'NORO-DAI', address: '0xda0d7c3d751d00a1ec1c495eF7Cf3db1a202B0B9' },
     { name: 'FRAX', address: '0x9e1430EB3b56e8953a342BFBBdD2DDC3b6E84d9D' },
     { name: 'NORO-FRAX', address: '0xd99c8aF24c5E7fd6E292b1682Ec0f0cB3535e002', },
     { name: 'AVAX', address: '0xf57Fb38f57D2a4Fca0ee074A3F3b4e5C570959E4' },
@@ -57,7 +57,7 @@ async function main() {
             }).format((marketPrice - Number(priceInUSD / 1e18)) / priceInUSD),
             minPrice: terms[2].toString(),
             debtRatio:
-              name === 'MAI' || name === 'FRAX' || name === 'AVAX'
+              name === 'DAI' || name === 'FRAX' || name === 'AVAX'
                 ? ethers.utils.formatUnits(debtRatio, 7) + '%'
                 : ethers.utils.formatUnits(debtRatio, 16) + '%',
             adjustment: `${
@@ -102,7 +102,7 @@ async function fetchBondInfo(name, bond) {
           adjustment[0] ? '+' : '-'
         }${adjustment[1].toString()} target: ${adjustment[2].toString()} buffer: ${adjustment[3].toString()}`,
         debtRatio:
-          name === 'MAI' || name === 'FRAX' || name === 'AVAX'
+          name === 'DAI' || name === 'FRAX' || name === 'AVAX'
             ? ethers.utils.formatUnits(debtRatio, 7) + '%'
             : ethers.utils.formatUnits(debtRatio, 16) + '%',
         ROI: Intl.NumberFormat('en', {
@@ -119,7 +119,7 @@ async function fetchBondInfo(name, bond) {
 
 async function getMarketPrice() {
   const signer = await ethers.getSigner()
-  const lp = new ethers.Contract(NORO_MAI_LP, IUniswapV2Pair, signer)
+  const lp = new ethers.Contract(NORO_DAI_LP, ITraderJoePair, signer)
   const reserves = await lp.getReserves()
   const marketPrice = reserves[0].div(reserves[1])
   return marketPrice

@@ -10,7 +10,6 @@ async function main() {
 
   // Initial staking index
   const initialIndex = '1000000000'
-  const initialIndex = '1400675709'
 
   const { provider } = deployer
   const firstEpochTime = 1635897600 // 2021-11-3 00:00 UTC
@@ -29,8 +28,8 @@ async function main() {
   // Ethereum 0 address, used when toggling changes in treasury
   const zeroAddress = '0x0000000000000000000000000000000000000000'
 
-  // MAI bond BCV
-  const maiBondBCV = '300'
+  // DAI bond BCV
+  const daiBondBCV = '300'
 
   // Bond vesting length in seconds.
   const bondVestingLength = 5 * 24 * 3600
@@ -53,11 +52,11 @@ async function main() {
   const warmupPeriod = '3'
 
   const chainId = (await provider.getNetwork()).chainId
-  const quickswapFactoryAddr =
-    chainId === 80001
-      ? '0x69004509291F4a4021fA169FafdCFc2d92aD02Aa'
-      : '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'
-  const maiAddr = '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1'
+  const traderjoeFactoryAddr =
+    chainId === 43114
+      ? '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10'
+      : '0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10'
+  const daiAddr = '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70'
 
   // Deploy NORO
   const NORO = await ethers.getContractFactory('CunoroNoroERC20')
@@ -66,12 +65,12 @@ async function main() {
   // console.log('NORO deployed: ' + noro.address)
 
   const uniswapFactory = new ethers.Contract(
-    quickswapFactoryAddr,
+    traderjoeFactoryAddr,
     TraderJoeABI,
     deployer
   )
-  // await (await uniswapFactory.createPair(noro.address, maiAddr)).wait()
-  const lpAddress = await uniswapFactory.getPair(noro.address, maiAddr)
+  // await (await uniswapFactory.createPair(noro.address, daiAddr)).wait()
+  const lpAddress = await uniswapFactory.getPair(noro.address, daiAddr)
   console.log('LP: ' + lpAddress)
 
   // Deploy bonding calc
@@ -90,7 +89,7 @@ async function main() {
   )
   // const treasury = await Treasury.deploy(
   //   noro.address,
-  //   maiAddr,
+  //   daiAddr,
   //   lpAddress,
   //   bondingCalculator.address,
   //   '43200'
@@ -154,60 +153,60 @@ async function main() {
   // )
   // await stakingHelper.deployTransaction.wait()
 
-  // Deploy MAI bond
-  const MAIBond = await ethers.getContractFactory('CunoroBondDepository')
-  const maiBond = MAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
-  // const maiBond = await MAIBond.deploy(
+  // Deploy DAI bond
+  const DAIBond = await ethers.getContractFactory('CunoroBondDepository')
+  const daiBond = DAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
+  // const daiBond = await DAIBond.deploy(
   //   noro.address,
-  //   maiAddr,
+  //   daiAddr,
   //   treasury.address,
   //   daoAddr,
   //   zeroAddress
   // )
-  // await maiBond.deployTransaction.wait()
+  // await daiBond.deployTransaction.wait()
 
-  const MaiNoroBond = await ethers.getContractFactory('CunoroBondDepository')
-  // const maiNoroBond = MaiNoroBond.attach(
+  const DaiNoroBond = await ethers.getContractFactory('CunoroBondDepository')
+  // const daiNoroBond = DaiNoroBond.attach(
   //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
-  const maiNoroBond = await MaiNoroBond.deploy(
+  const daiNoroBond = await DaiNoroBond.deploy(
     noro.address,
     lpAddress,
     treasury.address,
     daoAddr,
     bondingCalculator.address
   )
-  await maiNoroBond.deployTransaction.wait()
+  await daiNoroBond.deployTransaction.wait()
 
   console.log(
     JSON.stringify({
       sNORO_ADDRESS: sNORO.address,
       NORO_ADDRESS: noro.address,
-      MAI_ADDRESS: maiAddr,
+      DAI_ADDRESS: daiAddr,
       TREASURY_ADDRESS: treasury.address,
       NORO_BONDING_CALC_ADDRESS: bondingCalculator.address,
       STAKING_ADDRESS: staking.address,
       STAKING_HELPER_ADDRESS: stakingHelper.address,
       RESERVES: {
-        MAI: maiAddr,
-        MAI_NORO: lpAddress,
+        DAI: daiAddr,
+        DAI_NORO: lpAddress,
       },
       BONDS: {
-        MAI: maiBond.address,
-        MAI_NORO: maiNoroBond.address,
+        DAI: daiBond.address,
+        DAI_NORO: daiNoroBond.address,
       },
     })
   )
 
-  // queue and toggle MAI reserve depositor
-  // await (await treasury.queue('0', maiBond.address)).wait()
+  // queue and toggle DAI reserve depositor
+  // await (await treasury.queue('0', daiBond.address)).wait()
 
-  // queue and toggle MAI-NORO liquidity depositor
-  // await (await treasury.queue('4', maiNoroBond.address)).wait()
+  // queue and toggle DAI-NORO liquidity depositor
+  // await (await treasury.queue('4', daiNoroBond.address)).wait()
 
   // Set bond terms
-  // await (await maiBond.initializeBondTerms(
-  //   maiBondBCV,
+  // await (await daiBond.initializeBondTerms(
+  //   daiBondBCV,
   //   bondVestingLength,
   //   minBondPrice,
   //   maxBondPayout,
@@ -215,7 +214,7 @@ async function main() {
   //   maxBondDebt,
   //   initialBondDebt
   // )).wait()
-  // await (await maiNoroBond.initializeBondTerms(
+  // await (await daiNoroBond.initializeBondTerms(
   //   '40',
   //   bondVestingLength,
   //   minBondPrice,
@@ -226,8 +225,8 @@ async function main() {
   // )).wait()
 
   // Set staking for bonds
-  // await (await maiBond.setStaking(stakingHelper.address, true)).wait()
-  await (await maiNoroBond.setStaking(stakingHelper.address, true)).wait()
+  // await (await daiBond.setStaking(stakingHelper.address, true)).wait()
+  await (await daiNoroBond.setStaking(stakingHelper.address, true)).wait()
 
   // Initialize sNORO and set the index
   // await (await sNORO.initialize(staking.address)).wait()
@@ -248,8 +247,8 @@ async function main() {
   // await (await treasury.queue('8', stakingDistributor.address)).wait()
 
   // TODO: toggle after 43200 blocks
-  //  await treasury.toggle('0', maiBond.address, zeroAddress)
-  //  await (await treasury.toggle('4', maiNoroBond.address, zeroAddress)).wait()
+  //  await treasury.toggle('0', daiBond.address, zeroAddress)
+  //  await (await treasury.toggle('4', daiNoroBond.address, zeroAddress)).wait()
   //  await treasury.toggle('8', stakingDistributor.address, zeroAddress)
   // await treasury.queue('9', sNORO.address)
 }

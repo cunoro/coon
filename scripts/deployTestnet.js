@@ -67,11 +67,11 @@ async function main() {
   const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
     getTraderJoeAddresses(chainId)
 
-  const UniswapV2Router = ContractFactory.fromSolidity(
+  const JoeRouter = ContractFactory.fromSolidity(
     JoeRouter02Json,
     deployer
   )
-  const quickRouter = UniswapV2Router.attach(quickswapRouterAddr)
+  const quickRouter = JoeRouter.attach(quickswapRouterAddr)
 
   const daiAddr =
     chainId === 80001

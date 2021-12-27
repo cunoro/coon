@@ -8,7 +8,7 @@ async function main() {
   const bondType = 'lp'
 
   const bond =
-    bondType == 'mai'
+    bondType == 'dai'
       ? CunoroBondDepository.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
       : CunoroBondDepository.attach('0x64c766f9A4936c3a4b51C55Ea5C4854E19766035')
 
@@ -40,7 +40,7 @@ async function main() {
   console.log('adjusted')
 
   const nonce = await signer.getTransactionCount()
-  const amount = bondType === 'mai' ? '0.6' : '0.000002'
+  const amount = bondType === 'dai' ? '0.6' : '0.000002'
   for (let i = 0; i < step; i++) {
     await bond.deposit(
       ethers.utils.parseEther(amount),

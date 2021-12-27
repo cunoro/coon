@@ -34,7 +34,7 @@ async function main() {
   const zeroAddress = '0x0000000000000000000000000000000000000000'
 
   // MAI bond BCV
-  const maiBondBCV = '300'
+  const daiBondBCV = '300'
 
   // Bond vesting length in seconds.
   const bondVestingLength = 5 * 24 * 3600
@@ -58,9 +58,9 @@ async function main() {
 
   const chainId = (await provider.getNetwork()).chainId
   const oldContractAddresses = getAddresses(chainId)
-  const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
+  const { router: traderjoeRouterAddr, factory: traderjoeFactoryAddr } =
     getTraderJoeAddresses(chainId)
-  const maiAddr = oldContractAddresses.MAI_ADDRESS
+  const daiAddr = oldContractAddresses.MAI_ADDRESS
 
   // Deploy NORO v2
   const NORO2 = await ethers.getContractFactory('CunoroNoroERC20V2')
@@ -82,12 +82,12 @@ async function main() {
   await (await noroCirculatingSupply.initialize(newNoro.address)).wait()
 
   const quickswapFactory = new ethers.Contract(
-    quickswapFactoryAddr,
+    traderjoeFactoryAddr,
     TraderJoeABI,
     deployer
   )
-  await (await quickswapFactory.createPair(newNoro.address, maiAddr)).wait()
-  const lpAddress = await quickswapFactory.getPair(newNoro.address, maiAddr)
+  await (await quickswapFactory.createPair(newNoro.address, daiAddr)).wait()
+  const lpAddress = await quickswapFactory.getPair(newNoro.address, daiAddr)
   console.log('LP: ' + lpAddress)
 
   // Deploy bonding calc
@@ -101,7 +101,7 @@ async function main() {
   const Treasury = await ethers.getContractFactory('CunoroTreasury')
   const newTreasury = await Treasury.deploy(
     newNoro.address,
-    maiAddr,
+    daiAddr,
     lpAddress,
     bondingCalculator.address,
     chainId === 80001 ? '0' : '43200' // no time lock for testnet
@@ -173,40 +173,40 @@ async function main() {
 
   // Deploy MAI bond
   const MAIBond = await ethers.getContractFactory('CunoroBondDepository')
-  // const maiBond = MAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
-  const maiBond = await MAIBond.deploy(
+  // const daiBond = MAIBond.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
+  const daiBond = await MAIBond.deploy(
     newNoro.address,
-    maiAddr,
+    daiAddr,
     newTreasury.address,
     daoAddr,
     zeroAddress
   )
-  await maiBond.deployTransaction.wait()
-  console.log('mai bond: ' + maiBond.address)
+  await daiBond.deployTransaction.wait()
+  console.log('dai bond: ' + daiBond.address)
 
   const MaiNoroBond = await ethers.getContractFactory('CunoroBondDepository')
-  // const maiNoroBond = MaiNoroBond.attach(
+  // const daiNoroBond = MaiNoroBond.attach(
   //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
-  const maiNoroBond = await MaiNoroBond.deploy(
+  const daiNoroBond = await MaiNoroBond.deploy(
     newNoro.address,
     lpAddress,
     newTreasury.address,
     daoAddr,
     bondingCalculator.address
   )
-  await maiNoroBond.deployTransaction.wait()
-  console.log('noro/mai bond: ' + maiNoroBond.address)
+  await daiNoroBond.deployTransaction.wait()
+  console.log('noro/dai bond: ' + daiNoroBond.address)
 
   const Migrator = await ethers.getContractFactory('NoroTokenMigrator')
   const migrator = await Migrator.deploy(
     oldContractAddresses.NORO_ADDRESS,
     oldContractAddresses.TREASURY_ADDRESS,
-    quickswapRouterAddr,
-    quickswapFactoryAddr,
+    traderjoeRouterAddr,
+    traderjoeFactoryAddr,
     newNoro.address,
     newTreasury.address,
-    maiAddr
+    daiAddr
   )
   await migrator.deployTransaction.wait()
   console.log('migrator: ' + migrator.address)
@@ -215,25 +215,19 @@ async function main() {
     JSON.stringify({
       sNORO_ADDRESS: sNORO.address,
       NORO_ADDRESS: newNoro.address,
-      OLD_NORO_ADDRESS: oldContractAddresses.NORO_ADDRESS,
-      OLD_SNORO_ADDRESS: oldContractAddresses.sNORO_ADDRESS,
-      MAI_ADDRESS: maiAddr,
+      MAI_ADDRESS: daiAddr,
       TREASURY_ADDRESS: newTreasury.address,
       NORO_BONDING_CALC_ADDRESS: bondingCalculator.address,
       STAKING_ADDRESS: staking.address,
-      OLD_STAKING_ADDRESS: oldContractAddresses.STAKING_ADDRESS,
       STAKING_HELPER_ADDRESS: stakingHelper.address,
       MIGRATOR: migrator.address,
       RESERVES: {
-        MAI: maiAddr,
-        OLD_MAI_NORO: oldContractAddresses.RESERVES.MAI_NORO,
+        MAI: daiAddr,
         MAI_NORO: lpAddress,
       },
       BONDS: {
-        OLD_MAI: oldContractAddresses.BONDS.MAI,
-        MAI: maiBond.address,
-        OLD_MAI_NORO: oldContractAddresses.BONDS.MAI_NORO_V2,
-        MAI_NORO: maiNoroBond.address,
+        MAI: daiBond.address,
+        MAI_NORO: daiNoroBond.address,
       },
       NORO_CIRCULATING_SUPPLY: noroCirculatingSupply.address,
     })
@@ -241,18 +235,10 @@ async function main() {
 
   await (await sNORO.initialize(staking.address)).wait()
 
-  await (await newTreasury.queue('0', maiBond.address)).wait()
-  await (await newTreasury.queue('4', maiNoroBond.address)).wait()
+  await (await newTreasury.queue('0', daiBond.address)).wait()
+  await (await newTreasury.queue('4', daiNoroBond.address)).wait()
   await (await newTreasury.queue('8', stakingDistributor.address)).wait()
   console.log('queue bonds / distributor to new treasury')
-
-  const oldTreasury = Treasury.attach(oldContractAddresses.TREASURY_ADDRESS)
-  if (chainId === 80001) {
-    await (await oldTreasury.queue('1', migrator.address)).wait()
-    await (await oldTreasury.queue('3', migrator.address)).wait()
-    await (await oldTreasury.queue('6', migrator.address)).wait()
-    console.log('queue migrator as old treasury manager')
-  }
 
   await (await newTreasury.queue('0', migrator.address)).wait()
   await (await newTreasury.queue('4', migrator.address)).wait()
@@ -260,8 +246,8 @@ async function main() {
   console.log('queue migrator as new treasury depositor')
 
   // Set staking for bonds
-  await (await maiBond.setStaking(stakingHelper.address, true)).wait()
-  await (await maiNoroBond.setStaking(stakingHelper.address, true)).wait()
+  await (await daiBond.setStaking(stakingHelper.address, true)).wait()
+  await (await daiNoroBond.setStaking(stakingHelper.address, true)).wait()
   console.log('set staking for bonds')
 
   // set distributor contract and warmup contract
@@ -282,20 +268,14 @@ async function main() {
   // TODO: toggle after 43200 blocks
   // toggle bonds / distributor to new treasury
   if (chainId === 80001) {
-    await (await newTreasury.toggle('0', maiBond.address, zeroAddress)).wait()
+    await (await newTreasury.toggle('0', daiBond.address, zeroAddress)).wait()
     await (
-      await newTreasury.toggle('4', maiNoroBond.address, zeroAddress)
+      await newTreasury.toggle('4', daiNoroBond.address, zeroAddress)
     ).wait()
     await (
       await newTreasury.toggle('8', stakingDistributor.address, zeroAddress)
     ).wait()
     console.log('toggle bonds / distributor to new treasury')
-
-    // toggle migrator as old treasury manager
-    await (await oldTreasury.toggle('1', migrator.address, zeroAddress)).wait()
-    await (await oldTreasury.toggle('3', migrator.address, zeroAddress)).wait()
-    await (await oldTreasury.toggle('6', migrator.address, zeroAddress)).wait()
-    console.log('toggle migrator as old treasury manager')
 
     // toggle migrator as new treasury depositor
     await (await newTreasury.toggle('0', migrator.address, zeroAddress)).wait()
@@ -309,7 +289,7 @@ async function main() {
   await verify(noroCirculatingSupply.address, [deployer.address])
   await verify(newTreasury.address, [
     newNoro.address,
-    maiAddr,
+    daiAddr,
     lpAddress,
     bondingCalculator.address,
     chainId === 80001 ? '0' : '43200', // no time lock for testnet
@@ -329,14 +309,14 @@ async function main() {
   ])
   await verify(stakingWarmup.address, [staking.address, sNORO.address])
   await verify(stakingHelper.address, [staking.address, newNoro.address])
-  await verify(maiBond.address, [
+  await verify(daiBond.address, [
     newNoro.address,
-    maiAddr,
+    daiAddr,
     newTreasury.address,
     daoAddr,
     zeroAddress,
   ])
-  await verify(maiNoroBond.address, [
+  await verify(daiNoroBond.address, [
     newNoro.address,
     lpAddress,
     newTreasury.address,
@@ -344,18 +324,16 @@ async function main() {
     bondingCalculator.address,
   ])
   await verify(migrator.address, [
-    oldContractAddresses.NORO_ADDRESS,
-    oldContractAddresses.TREASURY_ADDRESS,
-    quickswapRouterAddr,
-    quickswapFactoryAddr,
+    traderjoeRouterAddr,
+    traderjoeFactoryAddr,
     newNoro.address,
     newTreasury.address,
-    maiAddr,
+    daiAddr,
   ])
 
   // Set bond terms
-  // await (await maiBond.initializeBondTerms(
-  //   maiBondBCV,
+  // await (await daiBond.initializeBondTerms(
+  //   daiBondBCV,
   //   bondVestingLength,
   //   minBondPrice,
   //   maxBondPayout,
@@ -363,7 +341,7 @@ async function main() {
   //   maxBondDebt,
   //   initialBondDebt
   // )).wait()
-  // await (await maiNoroBond.initializeBondTerms(
+  // await (await daiNoroBond.initializeBondTerms(
   //   '40',
   //   bondVestingLength,
   //   minBondPrice,
