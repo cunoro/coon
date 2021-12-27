@@ -6,7 +6,7 @@ async function main() {
   const [deployer] = await ethers.getSigners()
   console.log('Deploying contracts with the account: ' + deployer.address)
 
-  const NFT = await ethers.getContractFactory('CunoroClamIDOExclusive')
+  const NFT = await ethers.getContractFactory('CunoroNoroIDOExclusive')
   const nft = await NFT.deploy({nonce:12})
   console.log('Deploy tx: ' + nft.deployTransaction.hash)
   console.log('Deploy nonce: ' + nft.deployTransaction.nonce)

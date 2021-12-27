@@ -12,7 +12,7 @@ async function main() {
   const [deployer] = await ethers.getSigners()
   console.log('Deploying contracts with the account: ' + deployer.address)
 
-  const IDO = await ethers.getContractFactory('CunoroClamIDO')
+  const IDO = await ethers.getContractFactory('CunoroNoroIDO')
   // const ido = await IDO.deploy(
   //   '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465', // NORO
   //   '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1', // MAI

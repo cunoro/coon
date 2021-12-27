@@ -37,7 +37,7 @@ const epochLengthInSeconds = 86400 / 3
 async function main() {
   const deployer = await ethers.getSigner()
   await verify(address.NORO_BONDING_CALC_ADDRESS,[address.NORO_ADDRESS])
-  // await verify(newClam.address, [])
+  // await verify(newNoro.address, [])
   // await verify(address.sNORO_ADDRESS, [])
   // await verify(address.NORO_CIRCULATING_SUPPLY, [deployer.address])
   // await verify(address.TREASURY_ADDRESS, [

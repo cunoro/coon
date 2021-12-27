@@ -1,7 +1,7 @@
 const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { parseEther, parseUnits } = require('@ethersproject/units')
-const { deployUniswap, getPair } = require('./helpers/uniswap')
+const { deployTraderJoe, getPair } = require('./helpers/traderjoe')
 
 describe('CunoroAvaxBondLPDepository', function () {
   // Large number for approval for DAI
@@ -95,7 +95,7 @@ describe('CunoroAvaxBondLPDepository', function () {
     )
     const bondingCalculator = await BondingCalculator.deploy(noro.address)
 
-    const { factory, router } = await deployUniswap(deployer)
+    const { factory, router } = await deployTraderJoe(deployer)
     uniRouter = router
     await factory.createPair(dai.address, noro.address)
     const lpAddress = factory.getPair(dai.address, noro.address)

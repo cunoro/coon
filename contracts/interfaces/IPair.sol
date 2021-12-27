@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity >=0.5.0;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.7.5;
+pragma experimental ABIEncoderV2;
 
-interface IUniswapV2Pair {
+import "./IERC20.sol";
+
+interface IPair {
     event Approval(
         address indexed owner,
         address indexed spender,

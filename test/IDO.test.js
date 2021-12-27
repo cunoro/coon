@@ -1,6 +1,6 @@
 const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
-const { deployUniswap } = require('./helpers/uniswap')
+const { deployTraderJoe } = require('./helpers/traderjoe')
 const { BigNumber } = require('@ethersproject/bignumber')
 
 // eslint-disable-next-line mocha/no-skipped-tests
@@ -53,7 +53,7 @@ describe.skip('IDO', function () {
     const DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.deploy(0)
 
-    uniFactory = (await deployUniswap(deployer)).factory
+    uniFactory = (await deployTraderJoe(deployer)).factory
     await uniFactory.createPair(noro.address, dai.address)
 
     pairAddress = await uniFactory.getPair(noro.address, dai.address)

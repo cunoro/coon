@@ -5,9 +5,9 @@
 
 const assert = require("assert");
 const { ethers } = require("hardhat");
-const UniswapV2ABI = require("./IUniswapV2Factory.json").abi;
+const TraderJoeABI = require("./JoeFactory.json").abi;
 const IUniswapV2Pair = require("./IUniswapV2Pair.json").abi;
-const IUniswapV2Router02 = require("./IUniswapV2Router02.json").abi;
+const JoeRouter02 = require("./JoeRouter02.json").abi;
 
 async function main() {
   const [deployer, MockDAO] = await ethers.getSigners();

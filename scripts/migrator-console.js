@@ -36,17 +36,17 @@ const Treasury = await ethers.getContractFactory('CunoroTreasury')
 let oldTreasury = Treasury.attach('0xab328Ca61599974b0f577d1F8AB0129f2842d765').connect(multisig)
 let newTreasury = Treasury.attach('0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C').connect(deployer)
 
-const Migrator = await ethers.getContractFactory('ClamTokenMigrator')
+const Migrator = await ethers.getContractFactory('NoroTokenMigrator')
 let migrator = Migrator.attach( '0xDaa1f5036eC158fca9E5ce791ab3e213cD1c41df').connect(deployer)
 
-const ERC20 = await ethers.getContractFactory('CunoroClamERC20V2')
+const ERC20 = await ethers.getContractFactory('CunoroNoroERC20V2')
 let noro = ERC20.attach(addresses.OLD_NORO_ADDRESS)
 let noro2 = ERC20.attach(addresses.NORO_ADDRESS)
 let mai = ERC20.attach(addresses.MAI_ADDRESS)
 
-const StakedCunoroClamERC20V2 = await ethers.getContractFactory('StakedCunoroClamERC20V2')
-let sClam = StakedCunoroClamERC20V2.attach(addresses.OLD_SNORO_ADDRESS).connect(deployer)
-let sClam2 = StakedCunoroClamERC20V2.attach(addresses.sNORO_ADDRESS).connect(deployer)
+const StakedCunoroNoroERC20V2 = await ethers.getContractFactory('StakedCunoroNoroERC20V2')
+let sNoro = StakedCunoroNoroERC20V2.attach(addresses.OLD_SNORO_ADDRESS).connect(deployer)
+let sNoro2 = StakedCunoroNoroERC20V2.attach(addresses.sNORO_ADDRESS).connect(deployer)
 
 const Staking = await ethers.getContractFactory('CunoroStaking')
 let staking = Staking.attach(addresses.STAKING_ADDRESS).connect(deployer)
@@ -78,7 +78,7 @@ await oldStaking.rebase()
 // await newTreasury.toggle('8', '0x0Dd015889df6F50d39e9D7A52711D0B86E43FC62', zeroAddress)
 
 // await migrator.migrateContracts({ gasLimit: '30000000' })
-// await sClam2.setIndex(sClam.index())
+// await sNoro2.setIndex(sNoro.index())
 
 await hre.network.provider.request({ method: 'hardhat_impersonateAccount', params: ['0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B'] })
 let deployer = await ethers.getSigner('0x63B0fB7FE68342aFad3D63eF743DE4A74CDF462B')
