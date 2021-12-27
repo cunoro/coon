@@ -101,7 +101,7 @@ describe('CunoroAvaxBondLPDepository', function () {
     const lpAddress = factory.getPair(dai.address, noro.address)
     lp = getPair(lpAddress, deployer)
 
-    const Bond = await ethers.getContractFactory('CunoroMaticLPBondDepository')
+    const Bond = await ethers.getContractFactory('CunoroAvaxLPBondDepository')
     bond = await Bond.deploy(
       noro.address,
       sNoro.address,
