@@ -33,7 +33,7 @@ interface AggregatorV3Interface {
         );
 }
 
-contract CunoroMaticBondDepository is Ownable {
+contract CunoroAvaxBondDepository is Ownable {
     using FixedPoint for *;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
