@@ -12,11 +12,11 @@ const JoeRouter02 = require("./JoeRouter02.json").abi;
 async function main() {
   const [deployer, MockDAO] = await ethers.getSigners();
 
-  // Deploy DAI
+  // Deploy DAI Avalanche
   const DAI = await ethers.getContractFactory("DAI");
-  const dai = DAI.attach("0x19907af68A173080c3e05bb53932B0ED541f6d20");
+  const dai = DAI.attach("0xd586E7F844cEa2F87f50152665BCbc2C279D8d70");
 
-  const DAIBond = await ethers.getContractFactory("OlympusBondDepository");
+  const DAIBond = await ethers.getContractFactory("CunoroBondDepository");
   const daiBond = DAIBond.attach("");
 }
 
