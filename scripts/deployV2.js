@@ -2,7 +2,7 @@
 
 const { ethers } = require('hardhat')
 const TraderJoeABI = require('./JoeFactory.json').abi
-const { getAddresses, getQuickSwapAddresses } = require('./addresses')
+const { getAddresses, getTraderJoeAddresses } = require('./addresses')
 
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -59,7 +59,7 @@ async function main() {
   const chainId = (await provider.getNetwork()).chainId
   const oldContractAddresses = getAddresses(chainId)
   const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
-    getQuickSwapAddresses(chainId)
+    getTraderJoeAddresses(chainId)
   const maiAddr = oldContractAddresses.MAI_ADDRESS
 
   // Deploy NORO v2

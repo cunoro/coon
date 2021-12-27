@@ -2,10 +2,10 @@
 
 const { ethers } = require('hardhat')
 const { BigNumber, ContractFactory } = ethers
-const TraderJoeABI = require('./JoeFactory.json').abi
+const ITraderJoeABI = require('./JoeFactory.json').abi
 const IUniswapV2Pair = require('./ITraderJoePair.json').abi
-const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
-const { getQuickSwapAddresses } = require('./addresses')
+const JoeRouter02Json = require('./build/JoeRouter02.json')
+const { getTraderJoeAddresses } = require('./addresses')
 
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -65,10 +65,10 @@ async function main() {
   const chainId = (await provider.getNetwork()).chainId
 
   const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
-    getQuickSwapAddresses(chainId)
+    getTraderJoeAddresses(chainId)
 
   const UniswapV2Router = ContractFactory.fromSolidity(
-    UniswapV2RouterJson,
+    JoeRouter02Json,
     deployer
   )
   const quickRouter = UniswapV2Router.attach(quickswapRouterAddr)
@@ -100,7 +100,7 @@ async function main() {
 
   const uniswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
-    TraderJoeABI,
+    ITraderJoeABI,
     deployer
   )
   await (await uniswapFactory.createPair(noro.address, dai.address)).wait()
