@@ -11,8 +11,8 @@
     "clean": "npx hardhat clean",
     "lint:sol": "solhint -f table contracts/**/*.sol",
     "format:sol": "./node_modules/.bin/prettier --write **/*.sol",
-    "bonds:monitor": "npx hardhat run ./scripts/monitorBonds.js --network polygon-mainnet",
-    "bonds:adjust": "npx hardhat run ./scripts/adjustBonds.js --network polygon-mainnet"
+    "bonds:monitor": "npx hardhat run ./scripts/monitorBonds.js --network avax-mainnet",
+    "bonds:adjust": "npx hardhat run ./scripts/adjustBonds.js --network avax-mainnet"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.4.0",
