@@ -2,32 +2,32 @@
 pragma solidity 0.7.5;
 
 import "ds-test/test.sol"; // ds-test
-import "../../../contracts/OlympusERC20.sol";
+import "../../../contracts/CunoroERC20.sol";
 
-import "../../../contracts/OlympusAuthority.sol";
+import "../../../contracts/CunoroAuthority.sol";
 
 
 contract OlymppusERC20TokenTest is DSTest {
-    OlympusERC20Token internal ohmContract;
+    CunoroERC20Token internal noroContract;
 
-    IOlympusAuthority internal authority;
+    ICunoroAuthority internal authority;
 
     address internal UNAUTHORIZED_USER = address(0x1);
 
 
     function test_erc20() public {
-        authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        assertEq("Olympus", ohmContract.name());
-        assertEq("OHM", ohmContract.symbol());
-        assertEq(9, int(ohmContract.decimals()));
+        authority = new CunoroAuthority(address(this), address(this), address(this), address(this));
+        noroContract = new CunoroERC20Token(address(authority));
+        assertEq("Cunoro", noroContract.name());
+        assertEq("NORO", noroContract.symbol());
+        assertEq(9, int(noroContract.decimals()));
     }
 
     function testCannot_mint() public {
-        authority = new OlympusAuthority(address(this), address(this), address(this), UNAUTHORIZED_USER);
-        ohmContract = new OlympusERC20Token(address(authority));
+        authority = new CunoroAuthority(address(this), address(this), address(this), UNAUTHORIZED_USER);
+        noroContract = new CunoroERC20Token(address(authority));
         // try/catch block pattern copied from https://github.com/Anish-Agnihotri/MultiRaffle/blob/master/src/test/utils/DSTestExtended.sol
-        try ohmContract.mint(address(this), 100) {
+        try noroContract.mint(address(this), 100) {
             fail();
         } catch Error(string memory error) {
             // Assert revert error matches expected message
@@ -37,27 +37,27 @@ contract OlymppusERC20TokenTest is DSTest {
 
     // Tester will pass it's own parameters, see https://fv.ethereum.org/2020/12/11/symbolic-execution-with-ds-test/
     function test_mint(uint256 amount) public {
-        authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        uint256 supplyBefore = ohmContract.totalSupply();
+        authority = new CunoroAuthority(address(this), address(this), address(this), address(this));
+        noroContract = new CunoroERC20Token(address(authority));
+        uint256 supplyBefore = noroContract.totalSupply();
          // TODO look into https://dapphub.chat/channel/dev?msg=HWrPJqxp8BHMiKTbo
-        // ohmContract.setVault(address(this)); //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
-        ohmContract.mint(address(this), amount);
-        assertEq(supplyBefore + amount, ohmContract.totalSupply());
+        // noroContract.setVault(address(this)); //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
+        noroContract.mint(address(this), amount);
+        assertEq(supplyBefore + amount, noroContract.totalSupply());
     }
 
     // Tester will pass it's own parameters, see https://fv.ethereum.org/2020/12/11/symbolic-execution-with-ds-test/
     function test_burn(uint256 mintAmount, uint256 burnAmount) public {
-        authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        uint256 supplyBefore = ohmContract.totalSupply();
-        // ohmContract.setVault(address(this));  //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
-        ohmContract.mint(address(this), mintAmount);
+        authority = new CunoroAuthority(address(this), address(this), address(this), address(this));
+        noroContract = new CunoroERC20Token(address(authority));
+        uint256 supplyBefore = noroContract.totalSupply();
+        // noroContract.setVault(address(this));  //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
+        noroContract.mint(address(this), mintAmount);
         if (burnAmount <= mintAmount){
-            ohmContract.burn(burnAmount);
-            assertEq(supplyBefore + mintAmount - burnAmount, ohmContract.totalSupply());
+            noroContract.burn(burnAmount);
+            assertEq(supplyBefore + mintAmount - burnAmount, noroContract.totalSupply());
         } else {
-            try ohmContract.burn(burnAmount) {
+            try noroContract.burn(burnAmount) {
                 fail();
             } catch Error(string memory error) {
                 // Assert revert error matches expected message

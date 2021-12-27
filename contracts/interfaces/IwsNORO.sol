@@ -3,13 +3,13 @@ pragma solidity >=0.7.5;
 
 import "./IERC20.sol";
 
-// Old wsOHM interface
-interface IwsOHM is IERC20 {
+// Old wsNORO interface
+interface IwsNORO is IERC20 {
   function wrap(uint256 _amount) external returns (uint256);
 
   function unwrap(uint256 _amount) external returns (uint256);
 
-  function wOHMTosOHM(uint256 _amount) external view returns (uint256);
+  function wNOROTosNORO(uint256 _amount) external view returns (uint256);
 
-  function sOHMTowOHM(uint256 _amount) external view returns (uint256);
+  function sNOROTowNORO(uint256 _amount) external view returns (uint256);
 }

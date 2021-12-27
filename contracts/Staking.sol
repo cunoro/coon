@@ -5,19 +5,19 @@ import "./libraries/SafeMath.sol";
 import "./libraries/SafeERC20.sol";
 
 import "./interfaces/IERC20.sol";
-import "./interfaces/IsOHM.sol";
-import "./interfaces/IgOHM.sol";
+import "./interfaces/IsNORO.sol";
+import "./interfaces/IgNORO.sol";
 import "./interfaces/IDistributor.sol";
 
-import "./types/OlympusAccessControlled.sol";
+import "./types/CunoroAccessControlled.sol";
 
-contract OlympusStaking is OlympusAccessControlled {
+contract CunoroStaking is CunoroAccessControlled {
     /* ========== DEPENDENCIES ========== */
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IsOHM;
-    using SafeERC20 for IgOHM;
+    using SafeERC20 for IsNORO;
+    using SafeERC20 for IgNORO;
 
     /* ========== EVENTS ========== */
 
@@ -42,9 +42,9 @@ contract OlympusStaking is OlympusAccessControlled {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public immutable OHM;
-    IsOHM public immutable sOHM;
-    IgOHM public immutable gOHM;
+    IERC20 public immutable NORO;
+    IsNORO public immutable sNORO;
+    IgNORO public immutable gNORO;
 
     Epoch public epoch;
 
@@ -57,20 +57,20 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _ohm,
-        address _sOHM,
-        address _gOHM,
+        address _noro,
+        address _sNORO,
+        address _gNORO,
         uint256 _epochLength,
         uint256 _firstEpochNumber,
         uint256 _firstEpochTime,
         address _authority
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_ohm != address(0), "Zero address: OHM");
-        OHM = IERC20(_ohm);
-        require(_sOHM != address(0), "Zero address: sOHM");
-        sOHM = IsOHM(_sOHM);
-        require(_gOHM != address(0), "Zero address: gOHM");
-        gOHM = IgOHM(_gOHM);
+    ) CunoroAccessControlled(ICunoroAuthority(_authority)) {
+        require(_noro != address(0), "Zero address: NORO");
+        NORO = IERC20(_noro);
+        require(_sNORO != address(0), "Zero address: sNORO");
+        sNORO = IsNORO(_sNORO);
+        require(_gNORO != address(0), "Zero address: gNORO");
+        gNORO = IgNORO(_gNORO);
 
         epoch = Epoch({length: _epochLength, number: _firstEpochNumber, end: _firstEpochTime, distribute: 0});
     }
@@ -78,7 +78,7 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice stake OHM to enter warmup
+     * @notice stake NORO to enter warmup
      * @param _to address
      * @param _amount uint
      * @param _claim bool
@@ -91,7 +91,7 @@ contract OlympusStaking is OlympusAccessControlled {
         bool _rebasing,
         bool _claim
     ) external returns (uint256) {
-        OHM.safeTransferFrom(msg.sender, address(this), _amount);
+        NORO.safeTransferFrom(msg.sender, address(this), _amount);
         _amount = _amount.add(rebase()); // add bounty if rebase occurred
         if (_claim && warmupPeriod == 0) {
             return _send(_to, _amount, _rebasing);
@@ -103,12 +103,12 @@ contract OlympusStaking is OlympusAccessControlled {
 
             warmupInfo[_to] = Claim({
                 deposit: info.deposit.add(_amount),
-                gons: info.gons.add(sOHM.gonsForBalance(_amount)),
+                gons: info.gons.add(sNORO.gonsForBalance(_amount)),
                 expiry: epoch.number.add(warmupPeriod),
                 lock: info.lock
             });
 
-            gonsInWarmup = gonsInWarmup.add(sOHM.gonsForBalance(_amount));
+            gonsInWarmup = gonsInWarmup.add(sNORO.gonsForBalance(_amount));
 
             return _amount;
         }
@@ -132,13 +132,13 @@ contract OlympusStaking is OlympusAccessControlled {
 
             gonsInWarmup = gonsInWarmup.sub(info.gons);
 
-            return _send(_to, sOHM.balanceForGons(info.gons), _rebasing);
+            return _send(_to, sNORO.balanceForGons(info.gons), _rebasing);
         }
         return 0;
     }
 
     /**
-     * @notice forfeit stake and retrieve OHM
+     * @notice forfeit stake and retrieve NORO
      * @return uint
      */
     function forfeit() external returns (uint256) {
@@ -147,7 +147,7 @@ contract OlympusStaking is OlympusAccessControlled {
 
         gonsInWarmup = gonsInWarmup.sub(info.gons);
 
-        OHM.safeTransfer(msg.sender, info.deposit);
+        NORO.safeTransfer(msg.sender, info.deposit);
 
         return info.deposit;
     }
@@ -160,7 +160,7 @@ contract OlympusStaking is OlympusAccessControlled {
     }
 
     /**
-     * @notice redeem sOHM for OHMs
+     * @notice redeem sNORO for NOROs
      * @param _to address
      * @param _amount uint
      * @param _trigger bool
@@ -179,39 +179,39 @@ contract OlympusStaking is OlympusAccessControlled {
             bounty = rebase();
         }
         if (_rebasing) {
-            sOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            sNORO.safeTransferFrom(msg.sender, address(this), _amount);
             amount_ = amount_.add(bounty);
         } else {
-            gOHM.burn(msg.sender, _amount); // amount was given in gOHM terms
-            amount_ = gOHM.balanceFrom(amount_).add(bounty); // convert amount to OHM terms & add bounty
+            gNORO.burn(msg.sender, _amount); // amount was given in gNORO terms
+            amount_ = gNORO.balanceFrom(amount_).add(bounty); // convert amount to NORO terms & add bounty
         }
 
-        require(amount_ <= OHM.balanceOf(address(this)), "Insufficient OHM balance in contract");
-        OHM.safeTransfer(_to, amount_);
+        require(amount_ <= NORO.balanceOf(address(this)), "Insufficient NORO balance in contract");
+        NORO.safeTransfer(_to, amount_);
     }
 
     /**
-     * @notice convert _amount sOHM into gBalance_ gOHM
+     * @notice convert _amount sNORO into gBalance_ gNORO
      * @param _to address
      * @param _amount uint
      * @return gBalance_ uint
      */
     function wrap(address _to, uint256 _amount) external returns (uint256 gBalance_) {
-        sOHM.safeTransferFrom(msg.sender, address(this), _amount);
-        gBalance_ = gOHM.balanceTo(_amount);
-        gOHM.mint(_to, gBalance_);
+        sNORO.safeTransferFrom(msg.sender, address(this), _amount);
+        gBalance_ = gNORO.balanceTo(_amount);
+        gNORO.mint(_to, gBalance_);
     }
 
     /**
-     * @notice convert _amount gOHM into sBalance_ sOHM
+     * @notice convert _amount gNORO into sBalance_ sNORO
      * @param _to address
      * @param _amount uint
      * @return sBalance_ uint
      */
     function unwrap(address _to, uint256 _amount) external returns (uint256 sBalance_) {
-        gOHM.burn(msg.sender, _amount);
-        sBalance_ = gOHM.balanceFrom(_amount);
-        sOHM.safeTransfer(_to, sBalance_);
+        gNORO.burn(msg.sender, _amount);
+        sBalance_ = gNORO.balanceFrom(_amount);
+        sNORO.safeTransfer(_to, sBalance_);
     }
 
     /**
@@ -221,17 +221,17 @@ contract OlympusStaking is OlympusAccessControlled {
     function rebase() public returns (uint256) {
         uint256 bounty;
         if (epoch.end <= block.timestamp) {
-            sOHM.rebase(epoch.distribute, epoch.number);
+            sNORO.rebase(epoch.distribute, epoch.number);
 
             epoch.end = epoch.end.add(epoch.length);
             epoch.number++;
 
             if (address(distributor) != address(0)) {
                 distributor.distribute();
-                bounty = distributor.retrieveBounty(); // Will mint ohm for this contract if there exists a bounty
+                bounty = distributor.retrieveBounty(); // Will mint noro for this contract if there exists a bounty
             }
-            uint256 balance = OHM.balanceOf(address(this));
-            uint256 staked = sOHM.circulatingSupply();
+            uint256 balance = NORO.balanceOf(address(this));
+            uint256 staked = sNORO.circulatingSupply();
             if (balance <= staked.add(bounty)) {
                 epoch.distribute = 0;
             } else {
@@ -244,7 +244,7 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     /**
-     * @notice send staker their amount as sOHM or gOHM
+     * @notice send staker their amount as sNORO or gNORO
      * @param _to address
      * @param _amount uint
      * @param _rebasing bool
@@ -255,29 +255,29 @@ contract OlympusStaking is OlympusAccessControlled {
         bool _rebasing
     ) internal returns (uint256) {
         if (_rebasing) {
-            sOHM.safeTransfer(_to, _amount); // send as sOHM (equal unit as OHM)
+            sNORO.safeTransfer(_to, _amount); // send as sNORO (equal unit as NORO)
             return _amount;
         } else {
-            gOHM.mint(_to, gOHM.balanceTo(_amount)); // send as gOHM (convert units from OHM)
-            return gOHM.balanceTo(_amount);
+            gNORO.mint(_to, gNORO.balanceTo(_amount)); // send as gNORO (convert units from NORO)
+            return gNORO.balanceTo(_amount);
         }
     }
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice returns the sOHM index, which tracks rebase growth
+     * @notice returns the sNORO index, which tracks rebase growth
      * @return uint
      */
     function index() public view returns (uint256) {
-        return sOHM.index();
+        return sNORO.index();
     }
 
     /**
      * @notice total supply in warmup
      */
     function supplyInWarmup() public view returns (uint256) {
-        return sOHM.balanceForGons(gonsInWarmup);
+        return sNORO.balanceForGons(gonsInWarmup);
     }
 
     /**

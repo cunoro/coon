@@ -9,30 +9,30 @@ import "../libraries/SafeERC20.sol";
 contract CrossChainMigrator is Ownable {
     using SafeERC20 for IERC20;
 
-    IERC20 internal immutable wsOHM; // v1 token
-    IERC20 internal immutable gOHM; // v2 token
+    IERC20 internal immutable wsNORO; // v1 token
+    IERC20 internal immutable gNORO; // v2 token
 
-    constructor(address _wsOHM, address _gOHM) {
-        require(_wsOHM != address(0), "Zero address: wsOHM");
-        wsOHM = IERC20(_wsOHM);
-        require(_gOHM != address(0), "Zero address: gOHM");
-        gOHM = IERC20(_gOHM);
+    constructor(address _wsNORO, address _gNORO) {
+        require(_wsNORO != address(0), "Zero address: wsNORO");
+        wsNORO = IERC20(_wsNORO);
+        require(_gNORO != address(0), "Zero address: gNORO");
+        gNORO = IERC20(_gNORO);
     }
 
-    // migrate wsOHM to gOHM - 1:1 like kind
+    // migrate wsNORO to gNORO - 1:1 like kind
     function migrate(uint256 amount) external {
-        wsOHM.safeTransferFrom(msg.sender, address(this), amount);
-        gOHM.safeTransfer(msg.sender, amount);
+        wsNORO.safeTransferFrom(msg.sender, address(this), amount);
+        gNORO.safeTransfer(msg.sender, amount);
     }
 
-    // withdraw wsOHM so it can be bridged on ETH and returned as more gOHM
+    // withdraw wsNORO so it can be bridged on ETH and returned as more gNORO
     function replenish() external onlyOwner {
-        wsOHM.safeTransfer(msg.sender, wsOHM.balanceOf(address(this)));
+        wsNORO.safeTransfer(msg.sender, wsNORO.balanceOf(address(this)));
     }
 
-    // withdraw migrated wsOHM and unmigrated gOHM
+    // withdraw migrated wsNORO and unmigrated gNORO
     function clear() external onlyOwner {
-        wsOHM.safeTransfer(msg.sender, wsOHM.balanceOf(address(this)));
-        gOHM.safeTransfer(msg.sender, gOHM.balanceOf(address(this)));
+        wsNORO.safeTransfer(msg.sender, wsNORO.balanceOf(address(this)));
+        gNORO.safeTransfer(msg.sender, gNORO.balanceOf(address(this)));
     }
 }

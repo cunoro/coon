@@ -9,17 +9,17 @@ import "../../../contracts/libraries/FixedPoint.sol";
 import "../../../contracts/libraries/FullMath.sol";
 import "../../../contracts/BondDepository.sol";
 import "../../../contracts/Staking.sol";
-import "../../../contracts/OlympusERC20.sol";
-import "../../../contracts/sOlympusERC20.sol";
+import "../../../contracts/CunoroERC20.sol";
+import "../../../contracts/sCunoroERC20.sol";
 import "../../../contracts/StandardBondingCalculator.sol";
 import "../../../contracts/interfaces/IUniswapV2Pair.sol";
 import "../../../contracts/interfaces/IERC20Metadata.sol";
 import "../../../contracts/Treasury.sol";
 import "../../../contracts/BondDepository.sol";
-import "../../../contracts/OlympusAuthority.sol";
+import "../../../contracts/CunoroAuthority.sol";
 import "./util/Hevm.sol";
 import "../../../contracts/BondTeller.sol";
-import "../../../contracts/governance/gOHM.sol";
+import "../../../contracts/governance/gNORO.sol";
 import "./util/MockContract.sol";
 
 contract BondDepositoryTest is DSTest {
@@ -27,16 +27,16 @@ contract BondDepositoryTest is DSTest {
     using SafeMath for uint256;
     using SafeMath for uint112;
 
-    OlympusBondDepository internal bondDepository;
-    OlympusStaking internal staking;
-    OlympusBondingCalculator internal bondingCalculator;
-    OlympusTreasury internal treasury;
+    CunoroBondDepository internal bondDepository;
+    CunoroStaking internal staking;
+    CunoroBondingCalculator internal bondingCalculator;
+    CunoroTreasury internal treasury;
     BondTeller internal teller;
-    OlympusAuthority internal authority;
+    CunoroAuthority internal authority;
 
-    OlympusERC20Token internal ohm;
-    sOlympus internal sohm;
-    gOHM internal gohm;
+    CunoroERC20Token internal noro;
+    sCunoro internal snoro;
+    gNORO internal gnoro;
 
     MockContract internal abcToken;
 
@@ -48,30 +48,30 @@ contract BondDepositoryTest is DSTest {
         hevm.warp(0);
         hevm.roll(0);
 
-        authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
+        authority = new CunoroAuthority(address(this), address(this), address(this), address(this));
 
-        ohm = new OlympusERC20Token(address(authority));
-        gohm = new gOHM(address(this), address(this));
-        sohm = new sOlympus();
-        sohm.setIndex(10);
-        sohm.setgOHM(address(gohm));
+        noro = new CunoroERC20Token(address(authority));
+        gnoro = new gNORO(address(this), address(this));
+        snoro = new sCunoro();
+        snoro.setIndex(10);
+        snoro.setgNORO(address(gnoro));
 
         abcToken = new MockContract();
         abcToken.givenMethodReturn(abi.encodeWithSelector(ERC20.name.selector), abi.encode("ABC DAO"));
         abcToken.givenMethodReturn(abi.encodeWithSelector(ERC20.symbol.selector), abi.encode("ABC"));
         abcToken.givenMethodReturnUint(abi.encodeWithSelector(ERC20.decimals.selector), 18);
 
-        bondingCalculator = new OlympusBondingCalculator(address(ohm));
-        treasury = new OlympusTreasury(address(ohm), 1, address(authority));
+        bondingCalculator = new CunoroBondingCalculator(address(noro));
+        treasury = new CunoroTreasury(address(noro), 1, address(authority));
         authority.pushVault(address(treasury), true);
-        staking = new OlympusStaking(address(ohm), address(sohm), address(gohm), 8, 0, 0, address(authority));
+        staking = new CunoroStaking(address(noro), address(snoro), address(gnoro), 8, 0, 0, address(authority));
 
-        sohm.initialize(address(staking), address(treasury));
-        gohm.migrate(address(staking), address(sohm));
+        snoro.initialize(address(staking), address(treasury));
+        gnoro.migrate(address(staking), address(snoro));
 
-        bondDepository = new OlympusBondDepository(address(ohm), address(treasury), address(authority));
+        bondDepository = new CunoroBondDepository(address(noro), address(treasury), address(authority));
 
-        teller = new BondTeller(address(bondDepository), address(staking), address(treasury), address(ohm), address(sohm), address(authority));
+        teller = new BondTeller(address(bondDepository), address(staking), address(treasury), address(noro), address(snoro), address(authority));
         bondDepository.setTeller(address(teller));
     }
 
@@ -82,11 +82,11 @@ contract BondDepositoryTest is DSTest {
     //        uint256 capacity)
     //    public {
     //        uint256 amount = 5 * 10 ** 16;
-    //    uint256 ohmMintAmount = 10 * 10 ** 18;
-    //        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({controlVariable : 2, fixedTerm : false, vestingTerm : 5, expiration : 6, conclusion : 6, minimumPrice : 10, maxPayout : 1, maxDebt : 10});
+    //    uint256 noroMintAmount = 10 * 10 ** 18;
+    //        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({controlVariable : 2, fixedTerm : false, vestingTerm : 5, expiration : 6, conclusion : 6, minimumPrice : 10, maxPayout : 1, maxDebt : 10});
     //        uint256 initialDebt = 0;
     //
-    //        try  this.createBond_deposit(amount, ohmMintAmount, capacityIsPayout, capacity, terms, initialDebt){
+    //        try  this.createBond_deposit(amount, noroMintAmount, capacityIsPayout, capacity, terms, initialDebt){
     //        } catch Error(string memory error) {
     ////            assertEq("SafeERC20: ERC20 operation did not succeed", error);
     //TODO use gnosis MockContract, this isn't a real error
@@ -94,7 +94,7 @@ contract BondDepositoryTest is DSTest {
     //    }
 
     function test_createBond_mulDiv() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -105,11 +105,11 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**18;
+        uint256 noroMintAmount = 10 * 10**18;
         try
             this.createBond_deposit(
                 2763957476737854671246564045522737104576123858413359401,
-                ohmMintAmount,
+                noroMintAmount,
                 false,
                 9 * 10**20,
                 terms,
@@ -124,7 +124,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_mulOverflow() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -135,11 +135,11 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**18;
+        uint256 noroMintAmount = 10 * 10**18;
         try
             this.createBond_deposit(
                 75002556493819725874826918455844256653204641352000021311689657671948594686325,
-                ohmMintAmount,
+                noroMintAmount,
                 false,
                 9 * 10**20,
                 terms,
@@ -154,7 +154,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_fixedPointFractionOverflow() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -165,11 +165,11 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**18;
+        uint256 noroMintAmount = 10 * 10**18;
         try
             this.createBond_deposit(
                 5136935571488474593545398400365374838660649282530,
-                ohmMintAmount,
+                noroMintAmount,
                 false,
                 9 * 10**20,
                 terms,
@@ -184,7 +184,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_happyPath() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -195,13 +195,13 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 11 * 10**18;
+        uint256 noroMintAmount = 11 * 10**18;
 
-        this.createBond_deposit(5 * 10**16, ohmMintAmount, false, 9 * 10**20, terms, initialDebt, 1 * 10**9);
+        this.createBond_deposit(5 * 10**16, noroMintAmount, false, 9 * 10**20, terms, initialDebt, 1 * 10**9);
     }
 
     function test_createBond_insufficientReserves() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -212,8 +212,8 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**9;
-        try this.createBond_deposit(5 * 10**16, ohmMintAmount, false, 9 * 10**20, terms, initialDebt, 1) {
+        uint256 noroMintAmount = 10 * 10**9;
+        try this.createBond_deposit(5 * 10**16, noroMintAmount, false, 9 * 10**20, terms, initialDebt, 1) {
             fail();
         } catch Error(string memory error) {
             assertEq("Treasury: insufficient reserves", error);
@@ -221,7 +221,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_bondTooLarge() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -232,8 +232,8 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**9;
-        try this.createBond_deposit(5 * 10**16, ohmMintAmount, false, 9 * 10**20, terms, initialDebt, 1) {
+        uint256 noroMintAmount = 10 * 10**9;
+        try this.createBond_deposit(5 * 10**16, noroMintAmount, false, 9 * 10**20, terms, initialDebt, 1) {
             fail();
         } catch Error(string memory error) {
             assertEq("Bond too large", error);
@@ -241,7 +241,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_zeroAmount() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -252,9 +252,9 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**18;
+        uint256 noroMintAmount = 10 * 10**18;
 
-        try this.createBond_deposit(0, ohmMintAmount, false, 9 * 10**20, terms, initialDebt, 1 * 10**9) {
+        try this.createBond_deposit(0, noroMintAmount, false, 9 * 10**20, terms, initialDebt, 1 * 10**9) {
             fail();
         } catch Error(string memory error) {
             assertEq("Bond too small", error);
@@ -262,7 +262,7 @@ contract BondDepositoryTest is DSTest {
     }
 
     function test_createBond_bondConcluded() public {
-        OlympusBondDepository.Terms memory terms = OlympusBondDepository.Terms({
+        CunoroBondDepository.Terms memory terms = CunoroBondDepository.Terms({
             controlVariable: 2,
             fixedTerm: false,
             vestingTerm: 5,
@@ -273,8 +273,8 @@ contract BondDepositoryTest is DSTest {
             maxDebt: 10
         });
         uint256 initialDebt = 0;
-        uint256 ohmMintAmount = 10 * 10**18;
-        try this.createBond_deposit(5 * 10**25, ohmMintAmount, false, 1 * 10**20, terms, initialDebt, 1 * 10**9) {
+        uint256 noroMintAmount = 10 * 10**18;
+        try this.createBond_deposit(5 * 10**25, noroMintAmount, false, 1 * 10**20, terms, initialDebt, 1 * 10**9) {
             fail();
         } catch Error(string memory error) {
             assertEq("Bond concluded", error);
@@ -286,25 +286,25 @@ contract BondDepositoryTest is DSTest {
         uint256 treasuryDeposit,
         bool capacityIsPayout,
         uint256 capacity,
-        OlympusBondDepository.Terms memory terms,
+        CunoroBondDepository.Terms memory terms,
         uint256 initialDebt,
         uint256 profit
     ) external {
         //        log_named_uint("amount", amount);
-        //        log_named_uint("ohmMintAmount", treasuryDeposit);
+        //        log_named_uint("noroMintAmount", treasuryDeposit);
         //        log_named_uint("capacityIsPayout", capacityIsPayout ? 1 : 0);
         //        log_named_uint("capacity", capacity);
 
-        //        ohm.mint(address(this), ohmMintAmount);
+        //        noro.mint(address(this), noroMintAmount);
         // treasury.enableOnChainGovernance();
         uint256 currentBlock = 8;
         hevm.roll(currentBlock);
         //7 day timelock TODO add test where it's not long enough
         // Timelock is disabled before initializtion
-        treasury.enable(OlympusTreasury.STATUS.REWARDMANAGER, address(teller), address(bondingCalculator));
+        treasury.enable(CunoroTreasury.STATUS.REWARDMANAGER, address(teller), address(bondingCalculator));
 
-        treasury.enable(OlympusTreasury.STATUS.RESERVETOKEN, address(abcToken), address(bondingCalculator));
-        treasury.enable(OlympusTreasury.STATUS.RESERVEDEPOSITOR, address(this), address(bondingCalculator));
+        treasury.enable(CunoroTreasury.STATUS.RESERVETOKEN, address(abcToken), address(bondingCalculator));
+        treasury.enable(CunoroTreasury.STATUS.RESERVEDEPOSITOR, address(this), address(bondingCalculator));
         treasury.initialize();
 
         abcToken.givenMethodReturnBool(abi.encodeWithSelector(IERC20.transferFrom.selector), true);
@@ -320,7 +320,7 @@ contract BondDepositoryTest is DSTest {
         pair.givenMethodReturn(abi.encodeWithSelector(ERC20.symbol.selector), abi.encode("MOCK"));
         pair.givenMethodReturnUint(abi.encodeWithSelector(ERC20.decimals.selector), 18);
 
-        pair.givenMethodReturnAddress(abi.encodeWithSelector(IUniswapV2Pair.token0.selector), address(ohm));
+        pair.givenMethodReturnAddress(abi.encodeWithSelector(IUniswapV2Pair.token0.selector), address(noro));
         pair.givenMethodReturnAddress(abi.encodeWithSelector(IUniswapV2Pair.token1.selector), address(abcToken));
         pair.givenMethodReturn(
             abi.encodeWithSelector(IUniswapV2Pair.getReserves.selector),

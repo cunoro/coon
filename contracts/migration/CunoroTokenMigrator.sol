@@ -2,9 +2,9 @@
 pragma solidity 0.7.5;
 
 import "../interfaces/IERC20.sol";
-import "../interfaces/IsOHM.sol";
-import "../interfaces/IwsOHM.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IsNORO.sol";
+import "../interfaces/IwsNORO.sol";
+import "../interfaces/IgNORO.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IStaking.sol";
 import "../interfaces/IOwnable.sol";
@@ -12,18 +12,18 @@ import "../interfaces/IUniswapV2Router.sol";
 import "../interfaces/IStakingV1.sol";
 import "../interfaces/ITreasuryV1.sol";
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/CunoroAccessControlled.sol";
 
 import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 
 
-contract OlympusTokenMigrator is OlympusAccessControlled {
+contract CunoroTokenMigrator is CunoroAccessControlled {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IgOHM;
-    using SafeERC20 for IsOHM;
-    using SafeERC20 for IwsOHM;
+    using SafeERC20 for IgNORO;
+    using SafeERC20 for IsNORO;
+    using SafeERC20 for IwsNORO;
 
     /* ========== MIGRATION ========== */
 
@@ -34,21 +34,21 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public immutable oldOHM;
-    IsOHM public immutable oldsOHM;
-    IwsOHM public immutable oldwsOHM;
+    IERC20 public immutable oldNORO;
+    IsNORO public immutable oldsNORO;
+    IwsNORO public immutable oldwsNORO;
     ITreasuryV1 public immutable oldTreasury;
     IStakingV1 public immutable oldStaking;
 
     IUniswapV2Router public immutable sushiRouter;
     IUniswapV2Router public immutable uniRouter;
 
-    IgOHM public gOHM;
+    IgNORO public gNORO;
     ITreasury public newTreasury;
     IStaking public newStaking;
-    IERC20 public newOHM;
+    IERC20 public newNORO;
 
-    bool public ohmMigrated;
+    bool public noroMigrated;
     bool public shutdown;
 
     uint256 public immutable timelockLength;
@@ -57,26 +57,26 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     uint256 public oldSupply;
 
     constructor(
-        address _oldOHM,
-        address _oldsOHM,
+        address _oldNORO,
+        address _oldsNORO,
         address _oldTreasury,
         address _oldStaking,
-        address _oldwsOHM,
+        address _oldwsNORO,
         address _sushi,
         address _uni,
         uint256 _timelock,
         address _authority
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_oldOHM != address(0), "Zero address: OHM");
-        oldOHM = IERC20(_oldOHM);
-        require(_oldsOHM != address(0), "Zero address: sOHM");
-        oldsOHM = IsOHM(_oldsOHM);
+    ) CunoroAccessControlled(ICunoroAuthority(_authority)) {
+        require(_oldNORO != address(0), "Zero address: NORO");
+        oldNORO = IERC20(_oldNORO);
+        require(_oldsNORO != address(0), "Zero address: sNORO");
+        oldsNORO = IsNORO(_oldsNORO);
         require(_oldTreasury != address(0), "Zero address: Treasury");
         oldTreasury = ITreasuryV1(_oldTreasury);
         require(_oldStaking != address(0), "Zero address: Staking");
         oldStaking = IStakingV1(_oldStaking);
-        require(_oldwsOHM != address(0), "Zero address: wsOHM");
-        oldwsOHM = IwsOHM(_oldwsOHM);
+        require(_oldwsNORO != address(0), "Zero address: wsNORO");
+        oldwsNORO = IwsNORO(_oldwsNORO);
         require(_sushi != address(0), "Zero address: Sushi");
         sushiRouter = IUniswapV2Router(_sushi);
         require(_uni != address(0), "Zero address: Uni");
@@ -92,7 +92,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         WRAPPED
     }
 
-    // migrate OHMv1, sOHMv1, or wsOHM for OHMv2, sOHMv2, or gOHM
+    // migrate NOROv1, sNOROv1, or wsNORO for NOROv2, sNOROv2, or gNORO
     function migrate(
         uint256 _amount,
         TYPE _from,
@@ -100,58 +100,58 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     ) external {
         require(!shutdown, "Shut down");
 
-        uint256 wAmount = oldwsOHM.sOHMTowOHM(_amount);
+        uint256 wAmount = oldwsNORO.sNOROTowNORO(_amount);
 
         if (_from == TYPE.UNSTAKED) {
-            require(ohmMigrated, "Only staked until migration");
-            oldOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            require(noroMigrated, "Only staked until migration");
+            oldNORO.safeTransferFrom(msg.sender, address(this), _amount);
         } else if (_from == TYPE.STAKED) {
-            oldsOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            oldsNORO.safeTransferFrom(msg.sender, address(this), _amount);
         } else {
-            oldwsOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            oldwsNORO.safeTransferFrom(msg.sender, address(this), _amount);
             wAmount = _amount;
         }
 
-        if (ohmMigrated) {
-            require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
+        if (noroMigrated) {
+            require(oldSupply >= oldNORO.totalSupply(), "NOROv1 minted");
             _send(wAmount, _to);
         } else {
-            gOHM.mint(msg.sender, wAmount);
+            gNORO.mint(msg.sender, wAmount);
         }
     }
 
-    // migrate all olympus tokens held
+    // migrate all cunoro tokens held
     function migrateAll(TYPE _to) external {
         require(!shutdown, "Shut down");
 
-        uint256 ohmBal = 0;
-        uint256 sOHMBal = oldsOHM.balanceOf(msg.sender);
-        uint256 wsOHMBal = oldwsOHM.balanceOf(msg.sender);
+        uint256 noroBal = 0;
+        uint256 sNOROBal = oldsNORO.balanceOf(msg.sender);
+        uint256 wsNOROBal = oldwsNORO.balanceOf(msg.sender);
 
-        if (oldOHM.balanceOf(msg.sender) > 0 && ohmMigrated) {
-            ohmBal = oldOHM.balanceOf(msg.sender);
-            oldOHM.safeTransferFrom(msg.sender, address(this), ohmBal);
+        if (oldNORO.balanceOf(msg.sender) > 0 && noroMigrated) {
+            noroBal = oldNORO.balanceOf(msg.sender);
+            oldNORO.safeTransferFrom(msg.sender, address(this), noroBal);
         }
-        if (sOHMBal > 0) {
-            oldsOHM.safeTransferFrom(msg.sender, address(this), sOHMBal);
+        if (sNOROBal > 0) {
+            oldsNORO.safeTransferFrom(msg.sender, address(this), sNOROBal);
         }
-        if (wsOHMBal > 0) {
-            oldwsOHM.safeTransferFrom(msg.sender, address(this), wsOHMBal);
+        if (wsNOROBal > 0) {
+            oldwsNORO.safeTransferFrom(msg.sender, address(this), wsNOROBal);
         }
 
-        uint256 wAmount = wsOHMBal.add(oldwsOHM.sOHMTowOHM(ohmBal.add(sOHMBal)));
-        if (ohmMigrated) {
-            require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
+        uint256 wAmount = wsNOROBal.add(oldwsNORO.sNOROTowNORO(noroBal.add(sNOROBal)));
+        if (noroMigrated) {
+            require(oldSupply >= oldNORO.totalSupply(), "NOROv1 minted");
             _send(wAmount, _to);
         } else {
-            gOHM.mint(msg.sender, wAmount);
+            gNORO.mint(msg.sender, wAmount);
         }
     }
 
     // send preferred token
     function _send(uint256 wAmount, TYPE _to) internal {
         if (_to == TYPE.WRAPPED) {
-            gOHM.safeTransfer(msg.sender, wAmount);
+            gNORO.safeTransfer(msg.sender, wAmount);
         } else if (_to == TYPE.STAKED) {
             newStaking.unwrap(msg.sender, wAmount);
         } else if (_to == TYPE.UNSTAKED) {
@@ -159,22 +159,22 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         }
     }
 
-    // bridge back to OHM, sOHM, or wsOHM
+    // bridge back to NORO, sNORO, or wsNORO
     function bridgeBack(uint256 _amount, TYPE _to) external {
-        if (!ohmMigrated) {
-            gOHM.burn(msg.sender, _amount);
+        if (!noroMigrated) {
+            gNORO.burn(msg.sender, _amount);
         } else {
-            gOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            gNORO.safeTransferFrom(msg.sender, address(this), _amount);
         }
 
-        uint256 amount = oldwsOHM.wOHMTosOHM(_amount);
+        uint256 amount = oldwsNORO.wNOROTosNORO(_amount);
         // error throws if contract does not have enough of type to send
         if (_to == TYPE.UNSTAKED) {
-            oldOHM.safeTransfer(msg.sender, amount);
+            oldNORO.safeTransfer(msg.sender, amount);
         } else if (_to == TYPE.STAKED) {
-            oldsOHM.safeTransfer(msg.sender, amount);
+            oldsNORO.safeTransfer(msg.sender, amount);
         } else if (_to == TYPE.WRAPPED) {
-            oldwsOHM.safeTransfer(msg.sender, _amount);
+            oldwsNORO.safeTransfer(msg.sender, _amount);
         }
     }
 
@@ -182,22 +182,22 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
 
     // halt migrations (but not bridging back)
     function halt() external onlyPolicy {
-        require(!ohmMigrated, "Migration has occurred");
+        require(!noroMigrated, "Migration has occurred");
         shutdown = !shutdown;
     }
 
-    // withdraw backing of migrated OHM
+    // withdraw backing of migrated NORO
     function defund(address reserve) external onlyGovernor {
-        require(ohmMigrated, "Migration has not begun");
+        require(noroMigrated, "Migration has not begun");
         require(timelockEnd < block.number && timelockEnd != 0, "Timelock not complete");
 
-        oldwsOHM.unwrap(oldwsOHM.balanceOf(address(this)));
+        oldwsNORO.unwrap(oldwsNORO.balanceOf(address(this)));
 
-        uint256 amountToUnstake = oldsOHM.balanceOf(address(this));
-        oldsOHM.approve(address(oldStaking), amountToUnstake);
+        uint256 amountToUnstake = oldsNORO.balanceOf(address(this));
+        oldsNORO.approve(address(oldStaking), amountToUnstake);
         oldStaking.unstake(amountToUnstake, false);
 
-        uint256 balance = oldOHM.balanceOf(address(this));
+        uint256 balance = oldNORO.balanceOf(address(this));
 
         if(balance > oldSupply) {
             oldSupply = 0;
@@ -206,7 +206,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         }
 
         uint256 amountToWithdraw = balance.mul(1e9);
-        oldOHM.approve(address(oldTreasury), amountToWithdraw);
+        oldNORO.approve(address(oldTreasury), amountToWithdraw);
         oldTreasury.withdraw(amountToWithdraw, reserve);
         IERC20(reserve).safeTransfer(address(newTreasury), IERC20(reserve).balanceOf(address(this)));
 
@@ -221,12 +221,12 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         emit TimelockStarted(block.number, timelockEnd);
     }
 
-    // set gOHM address
-    function setgOHM(address _gOHM) external onlyGovernor {
-        require(address(gOHM) == address(0), "Already set");
-        require(_gOHM != address(0), "Zero address: gOHM");
+    // set gNORO address
+    function setgNORO(address _gNORO) external onlyGovernor {
+        require(address(gNORO) == address(0), "Already set");
+        require(_gNORO != address(0), "Zero address: gNORO");
 
-        gOHM = IgOHM(_gOHM);
+        gNORO = IgNORO(_gNORO);
     }
 
     // call internal migrate token function
@@ -235,7 +235,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     }
 
     /**
-     *   @notice Migrate LP and pair with new OHM
+     *   @notice Migrate LP and pair with new NORO
      */
     function migrateLP(
         address pair,
@@ -255,7 +255,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         IERC20(pair).approve(address(router), oldLPAmount);
         (uint256 amountA, uint256 amountB) = router.removeLiquidity(
             token, 
-            address(oldOHM), 
+            address(oldNORO), 
             oldLPAmount,
             _minA, 
             _minB, 
@@ -266,11 +266,11 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         newTreasury.mint(address(this), amountB);
 
         IERC20(token).approve(address(router), amountA);
-        newOHM.approve(address(router), amountB);
+        newNORO.approve(address(router), amountB);
 
         router.addLiquidity(
             token, 
-            address(newOHM), 
+            address(newNORO), 
             amountA, 
             amountB, 
             amountA, 
@@ -280,17 +280,17 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         );
     }
 
-    // Failsafe function to allow owner to withdraw funds sent directly to contract in case someone sends non-ohm tokens to the contract
+    // Failsafe function to allow owner to withdraw funds sent directly to contract in case someone sends non-noro tokens to the contract
     function withdrawToken(
         address tokenAddress,
         uint256 amount,
         address recipient
     ) external onlyGovernor {
         require(tokenAddress != address(0), "Token address cannot be 0x0");
-        require(tokenAddress != address(gOHM), "Cannot withdraw: gOHM");
-        require(tokenAddress != address(oldOHM), "Cannot withdraw: old-OHM");
-        require(tokenAddress != address(oldsOHM), "Cannot withdraw: old-sOHM");
-        require(tokenAddress != address(oldwsOHM), "Cannot withdraw: old-wsOHM");
+        require(tokenAddress != address(gNORO), "Cannot withdraw: gNORO");
+        require(tokenAddress != address(oldNORO), "Cannot withdraw: old-NORO");
+        require(tokenAddress != address(oldsNORO), "Cannot withdraw: old-sNORO");
+        require(tokenAddress != address(oldwsNORO), "Cannot withdraw: old-wsNORO");
         require(amount > 0, "Withdraw value must be greater than 0");
         if (recipient == address(0)) {
             recipient = msg.sender; // if no address is specified the value will will be withdrawn to Owner
@@ -309,39 +309,39 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     function migrateContracts(
         address _newTreasury,
         address _newStaking,
-        address _newOHM,
-        address _newsOHM,
+        address _newNORO,
+        address _newsNORO,
         address _reserve
     ) external onlyGovernor {
-        require(!ohmMigrated, "Already migrated");
-        ohmMigrated = true;
+        require(!noroMigrated, "Already migrated");
+        noroMigrated = true;
         shutdown = false;
 
         require(_newTreasury != address(0), "Zero address: Treasury");
         newTreasury = ITreasury(_newTreasury);
         require(_newStaking != address(0), "Zero address: Staking");
         newStaking = IStaking(_newStaking);
-        require(_newOHM != address(0), "Zero address: OHM");
-        newOHM = IERC20(_newOHM);
+        require(_newNORO != address(0), "Zero address: NORO");
+        newNORO = IERC20(_newNORO);
 
-        oldSupply = oldOHM.totalSupply(); // log total supply at time of migration
+        oldSupply = oldNORO.totalSupply(); // log total supply at time of migration
 
-        gOHM.migrate(_newStaking, _newsOHM); // change gOHM minter
+        gNORO.migrate(_newStaking, _newsNORO); // change gNORO minter
 
         _migrateToken(_reserve, true); // will deposit tokens into new treasury so reserves can be accounted for
 
-        _fund(oldsOHM.circulatingSupply()); // fund with current staked supply for token migration
+        _fund(oldsNORO.circulatingSupply()); // fund with current staked supply for token migration
 
         emit Migrated(_newStaking, _newTreasury);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    // fund contract with gOHM
+    // fund contract with gNORO
     function _fund(uint256 _amount) internal {
         newTreasury.mint(address(this), _amount);
-        newOHM.approve(address(newStaking), _amount);
-        newStaking.stake(address(this), _amount, false, true); // stake and claim gOHM
+        newNORO.approve(address(newStaking), _amount);
+        newStaking.stake(address(this), _amount, false, true); // stake and claim gNORO
 
         emit Funded(_amount);
     }
