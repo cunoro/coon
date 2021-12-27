@@ -61,15 +61,15 @@ const config: any = {
     },
     networks: {
         hardhat: {
-          // networkId: !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
-          // forking: forkingData
-            forking: {
-                url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
-            },
-            //accounts: {
-            //    mnemonic,
-            //},
-            chainId: chainIds.hardhat,
+          networkId: !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
+          forking: forkingData
+            // forking: {
+            //     url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+            // },
+            // //accounts: {
+            // //    mnemonic,
+            // //},
+            // chainId: chainIds.hardhat,
         },
         // Uncomment for testing.
         // rinkeby: getChainConfig("rinkeby"),
