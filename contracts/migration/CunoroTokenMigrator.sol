@@ -8,7 +8,7 @@ import "../interfaces/IgNORO.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IStaking.sol";
 import "../interfaces/IOwnable.sol";
-import "../interfaces/IUniswapV2Router.sol";
+import "../interfaces/IJoeRouter02.sol";
 import "../interfaces/IStakingV1.sol";
 import "../interfaces/ITreasuryV1.sol";
 
@@ -40,8 +40,8 @@ contract CunoroTokenMigrator is CunoroAccessControlled {
     ITreasuryV1 public immutable oldTreasury;
     IStakingV1 public immutable oldStaking;
 
-    IUniswapV2Router public immutable sushiRouter;
-    IUniswapV2Router public immutable uniRouter;
+    IJoeRouter02 public immutable sushiRouter;
+    IJoeRouter02 public immutable uniRouter;
 
     IgNORO public gNORO;
     ITreasury public newTreasury;
@@ -78,9 +78,9 @@ contract CunoroTokenMigrator is CunoroAccessControlled {
         require(_oldwsNORO != address(0), "Zero address: wsNORO");
         oldwsNORO = IwsNORO(_oldwsNORO);
         require(_sushi != address(0), "Zero address: Sushi");
-        sushiRouter = IUniswapV2Router(_sushi);
+        sushiRouter = IJoeRouter02(_sushi);
         require(_uni != address(0), "Zero address: Uni");
-        uniRouter = IUniswapV2Router(_uni);
+        uniRouter = IJoeRouter02(_uni);
         timelockLength = _timelock;
     }
 
@@ -247,19 +247,19 @@ contract CunoroTokenMigrator is CunoroAccessControlled {
         uint256 oldLPAmount = IERC20(pair).balanceOf(address(oldTreasury));
         oldTreasury.manage(pair, oldLPAmount);
 
-        IUniswapV2Router router = sushiRouter;
+        IJoeRouter02 router = sushiRouter;
         if (!sushi) {
             router = uniRouter;
         }
 
         IERC20(pair).approve(address(router), oldLPAmount);
         (uint256 amountA, uint256 amountB) = router.removeLiquidity(
-            token, 
-            address(oldNORO), 
+            token,
+            address(oldNORO),
             oldLPAmount,
-            _minA, 
-            _minB, 
-            address(this), 
+            _minA,
+            _minB,
+            address(this),
             block.timestamp
         );
 
@@ -269,13 +269,13 @@ contract CunoroTokenMigrator is CunoroAccessControlled {
         newNORO.approve(address(router), amountB);
 
         router.addLiquidity(
-            token, 
-            address(newNORO), 
-            amountA, 
-            amountB, 
-            amountA, 
-            amountB, 
-            address(newTreasury), 
+            token,
+            address(newNORO),
+            amountA,
+            amountB,
+            amountA,
+            amountB,
+            address(newTreasury),
             block.timestamp
         );
     }

@@ -4,7 +4,7 @@ pragma solidity 0.7.5;
 import "../interfaces/IERC20.sol";
 import "../libraries/SafeERC20.sol";
 import "../libraries/SafeMath.sol";
-import "../interfaces/IUniswapV2Router.sol";
+import "../interfaces/IJoeRouter02.sol";
 import "../interfaces/ICunoroAuthority.sol";
 import "../types/CunoroAccessControlled.sol";
 import "../interfaces/ITreasury.sol";
@@ -41,8 +41,8 @@ contract LiquidityMigrator is CunoroAccessControlled {
      */
     function migrateLP(
         address pair,
-        IUniswapV2Router routerFrom,
-        IUniswapV2Router routerTo,
+        IJoeRouter02 routerFrom,
+        IJoeRouter02 routerTo,
         address token,
         uint256 _minA,
         uint256 _minB,
@@ -57,12 +57,12 @@ contract LiquidityMigrator is CunoroAccessControlled {
         // Remove the V1 liquidity
         IERC20(pair).approve(address(routerFrom), oldLPAmount);
         (uint256 amountToken, uint256 amountNORO) = routerFrom.removeLiquidity(
-            token, 
-            address(oldNORO), 
+            token,
+            address(oldNORO),
             oldLPAmount,
-            _minA, 
-            _minB, 
-            address(this), 
+            _minA,
+            _minB,
+            address(this),
             _deadline
         );
 
@@ -75,13 +75,13 @@ contract LiquidityMigrator is CunoroAccessControlled {
         IERC20(token).approve(address(routerTo), amountToken);
         newNORO.approve(address(routerTo), amountNewNORO);
         routerTo.addLiquidity(
-            token, 
-            address(newNORO), 
-            amountToken, 
-            amountNewNORO, 
-            amountToken, 
-            amountNewNORO, 
-            address(newTreasury), 
+            token,
+            address(newNORO),
+            amountToken,
+            amountNewNORO,
+            amountToken,
+            amountNewNORO,
+            address(newTreasury),
             _deadline
         );
 
