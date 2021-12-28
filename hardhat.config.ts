@@ -15,40 +15,35 @@ import { NetworkUserConfig } from "hardhat/types";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-    goerli: 5,
+    mainnet: 43114,
+    fuji: 43113,
     hardhat: 31337,
-    kovan: 42,
-    mainnet: 1,
-    rinkeby: 4,
-    ropsten: 3,
 };
 
 // Ensure that we have all the environment variables we need.
 //const mnemonic: string | undefined = process.env.MNEMONIC ?? "NO_MNEMONIC";
 const privateKey: string | undefined = process.env.PRIVATE_KEY ?? "NO_PRIVATE_KEY";
-// Make sure node is setup on Alchemy website
-const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY ?? "NO_ALCHEMY_API_KEY";
 
-function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-    const url = `https://eth-${network}.alchemyapi.io/v2/${alchemyApiKey}`;
-    return {
-        //accounts: {
-        //    count: 10,
-        //    mnemonic,
-        //    path: "m/44'/60'/0'/0",
-        //},
-        accounts: [`${privateKey}`],
-        chainId: chainIds[network],
-        url,
-    };
-}
+// function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
+//     const url = `https://eth-${network}.alchemyapi.io/v2/${alchemyApiKey}`;
+//     return {
+//         //accounts: {
+//         //    count: 10,
+//         //    mnemonic,
+//         //    path: "m/44'/60'/0'/0",
+//         //},
+//         accounts: [`${privateKey}`],
+//         chainId: chainIds[network],
+//         url,
+//     };
+// }
 
 const FORK_FUJI = true
 const FORK_MAINNET = false
 const forkingData = FORK_FUJI ? {
   url: 'https://api.avax-test.network/ext/bc/C/rpc',
 } : FORK_MAINNET ? {
-  url: 'https://api.avax.network/ext/bc/C/rpc'
+  url: 'https://api.avax.network/ext/bc/C/rpc',
 } : undefined
 
 const config: any = {
@@ -61,19 +56,15 @@ const config: any = {
     },
     networks: {
         hardhat: {
-          networkId: !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
-          forking: forkingData
-            // forking: {
-            //     url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
-            // },
-            // //accounts: {
-            // //    mnemonic,
-            // //},
+          networkId: !forkingData ? chainIds.mainnet : undefined, // Only specify a chainId if we are not forking
+          forking: forkingData,
+          accounts: [
+            {
+              privateKey,
+            }
+          ],
             // chainId: chainIds.hardhat,
         },
-        // Uncomment for testing.
-        // rinkeby: getChainConfig("rinkeby"),
-        // ropsten: getChainConfig("ropsten"),
     },
     paths: {
         artifacts: "./artifacts",
@@ -115,15 +106,12 @@ const config: any = {
         },
         daoMultisig: {
             // mainnet
-            1: "0x245cc372C84B3645Bf0Ffe6538620B04a217988B",
+            1: "", // TODO Gnosis Proxy
         },
     },
     typechain: {
         outDir: "types",
         target: "ethers-v5",
-    },
-    etherscan: {
-        apiKey: process.env.ETHERSCAN_API_KEY,
     },
 };
 
