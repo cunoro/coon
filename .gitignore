@@ -1,10 +1,28 @@
-node_modules/
-artifacts/
+.DS_Store
 cache/
+artifacts/
 
-yarn-error.log
-.secret*
-whitelist.txt
-.vscode/settings.json
+coverage*
+types/
+
+.vscode/*
+!.vscode/settings.json.default
+!.vscode/launch.json.default
+!.vscode/extensions.json.default
+
+node_modules/
 .env
+yarn-error.log
+.package-lock.json
 
+.yalc
+yalc.lock
+
+contractsInfo.json
+deployments/hardhat
+deployments/localhost
+deployments/**/solcinputs
+
+/.dapp
+
+/flatten
