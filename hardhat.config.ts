@@ -58,11 +58,11 @@ const config: any = {
         hardhat: {
           networkId: !forkingData ? chainIds.mainnet : undefined, // Only specify a chainId if we are not forking
           forking: forkingData,
-          accounts: [
-            {
-              privateKey,
-            }
-          ],
+          // accounts: [
+          //   {
+          //     privateKey,
+          //   }
+          // ],
             // chainId: chainIds.hardhat,
         },
     },
@@ -87,6 +87,9 @@ const config: any = {
                         runs: 800,
                     },
                 },
+            },
+            {
+                version: "0.5.0",
             },
             {
                 version: "0.5.16",
