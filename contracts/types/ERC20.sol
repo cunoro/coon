@@ -12,7 +12,7 @@ abstract contract ERC20 is IERC20 {
 
     // TODO comment actual hash value.
     bytes32 constant private ERC20TOKEN_ERC1820_INTERFACE_ID = keccak256( "ERC20Token" );
-    
+
     mapping (address => uint256) internal _balances;
 
     mapping (address => mapping (address => uint256)) internal _allowances;
@@ -20,9 +20,9 @@ abstract contract ERC20 is IERC20 {
     uint256 internal _totalSupply;
 
     string internal _name;
-    
+
     string internal _symbol;
-    
+
     uint8 internal immutable _decimals;
 
     constructor (string memory name_, string memory symbol_, uint8 decimals_) {

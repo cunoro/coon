@@ -12,6 +12,7 @@ const { addresses } = require("./config");
 const EPOCH_LEGNTH = 2200;
 const DAI_ADDRESS = addresses.DAI;
 const SUSHI_ROUTER = addresses.SUSHI_ROUTER;
+const JOE_ROUTER = addresses.JOE_ROUTER;
 const UNISWAP_ROUTER = addresses.UNISWAP_ROUTER;
 const OLD_NORO_ADDRESS = addresses.OLD_NORO_ADDRESS;
 const OLD_SNORO_ADDRESS = addresses.OLD_SNORO_ADDRESS;
@@ -73,8 +74,7 @@ describe("Treasury Token Migration", async function () {
             OLD_TREASURY_ADDRESS,
             OLD_STAKING_ADDRESS,
             OLD_WSNORO_ADDRESS,
-            SUSHI_ROUTER,
-            UNISWAP_ROUTER,
+            JOE_ROUTER,
             1, // timelock for defunds
             authority.address
         );
@@ -274,7 +274,7 @@ describe("Treasury Token Migration", async function () {
                 await sendETH(deployer, wallet);
             }
         });
-        /** 
+        /**
         it("should migrate noro", async () => {
             const token = olympus_tokens.find((token) => token.name === "noro");
             const { oldTokenBalance, newgNoroBalance } = await performMigration(token);

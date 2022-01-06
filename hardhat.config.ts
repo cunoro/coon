@@ -65,6 +65,17 @@ const config: any = {
           // ],
             // chainId: chainIds.hardhat,
         },
+        localhost: {
+          url: "http://127.0.0.1:8545",
+          gas: 12000000,
+          blockGasLimit: 12000000,
+        },
+        fuji: {
+          url: 'https://api.avax-test.network/ext/bc/C/rpc',
+          gasPrice: 225000000000,
+          chainId: 43113,
+          accounts: []
+        },
     },
     paths: {
         artifacts: "./artifacts",

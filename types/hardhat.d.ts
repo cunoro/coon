@@ -245,22 +245,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.LibNote__factory>;
     getContractFactory(
-      name: "ERC20",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ERC20__factory>;
-    getContractFactory(
-      name: "IERC20",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IERC20__factory>;
-    getContractFactory(
-      name: "IsNOROOLD",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IsNOROOLD__factory>;
-    getContractFactory(
-      name: "WNORO",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.WNORO__factory>;
-    getContractFactory(
       name: "SCunoro",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.SCunoro__factory>;
@@ -603,26 +587,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.LibNote>;
-    getContractAt(
-      name: "ERC20",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ERC20>;
-    getContractAt(
-      name: "IERC20",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IERC20>;
-    getContractAt(
-      name: "IsNOROOLD",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IsNOROOLD>;
-    getContractAt(
-      name: "WNORO",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.WNORO>;
     getContractAt(
       name: "SCunoro",
       address: string,
