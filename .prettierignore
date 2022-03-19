@@ -1,9 +1,5 @@
-export/
-deployments/
-artifacts/
-cache/
-coverage/
-node_modules/
-package.json
-typechain/
-dapp_test/test.sol
+node_modules
+artifacts
+cache
+coverage*
+gasReporterOutput.json

@@ -4,6 +4,7 @@ artifacts/
 
 coverage*
 types/
+typechain/
 
 .vscode/*
 !.vscode/settings.json.default
