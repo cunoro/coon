@@ -1,10 +1,12 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { Bend, CunoroERC20Token, SCunoroERC20Token, CunoroTreasury, CunoroStaking, Distributor, StakingHelper, StakingWarmup, CunoroBondDepository, AvaxBondDepository, CunoroBondingCalculator, WsNORO } from "../typechain";
+import { PangolinRouter, Bend, CunoroERC20Token, SCunoroERC20Token, CunoroTreasury, CunoroStaking, Distributor, StakingHelper, StakingWarmup, CunoroBondDepository, AvaxBondDepository, CunoroBondingCalculator, WsNORO } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("Olympus DAO Test", function () {
+	// let factory : PangolinFactory;
+	let router : PangolinRouter;
 	let bend : Bend;
 	let cunoro : CunoroERC20Token;
 	let scunoro : SCunoroERC20Token;
@@ -44,13 +46,29 @@ describe("Olympus DAO Test", function () {
 	    const WAVAX = "0xd00ae08403B9bbb9124bB305C09058E32C39A48c";
 	    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 	    const AVAX_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD";
+	    const FEE_TO_SETTER = "0x808ce8dec9e10bed8d0892aceef9f1b8ec2f52bd";
+	    const FACTORY_ADDRESS = "0xe4a575550c2b460d2307b82dcd7afe84ad1484dd";
+
+	// PangolinFactory deploy
+		// const Factory = await ethers.getContractFactory("PangolinFactory");
+		// factory = await Factory.deploy(FEE_TO_SETTER);
+		// await factory.deployed();
+
+		// console.log("PangolinFactory Deployed.", factory.address);
+
+	// PangolinRouter deploy
+		const Router = await ethers.getContractFactory("PangolinRouter");
+		router = await Router.deploy(FACTORY_ADDRESS, WAVAX);
+		await router.deployed();
+
+		console.log("PangolinRouter Deployed.", router.address);
 
 	// BEND token deploy
 		const Bend = await ethers.getContractFactory("Bend");
-	    bend = await Bend.deploy();
+	    bend = await Bend.deploy(router.address);
 	    await bend.deployed();
 
-	    await bend.transfer(accounts[1].address, 1000000);
+	    await bend.transfer(accounts[1].address, 1000000000);
 	    console.log("BEND balance of account 1 : ", await bend.balanceOf(accounts[1].address));
 	    
 	    console.log("Bend Deployed.", bend.address);
@@ -218,16 +236,19 @@ describe("Olympus DAO Test", function () {
 	});
 
 	it("BondDepository_BEND", async function() {
-	    await bend.approve(bonddepository.address, 100000);
+	    await bend.approve(bonddepository.address, 10000000);
 		console.log("allowance of deployer : ", await bend.allowance(deployer.address, bonddepository.address));
 
-		await bend.connect(accounts[1]).approve(bonddepository.address, 100000);
+		await bend.connect(accounts[1]).approve(bonddepository.address, 10000000);
 		console.log("allowance of account 1 : ", await bend.allowance(accounts[1].address, bonddepository.address));
 
 		// await bonddepository.deposit(5000, 30000, deployer.address);
 		// console.log("bondinfo of deployer : ", await bonddepository.bondInfo(deployer.address));
 
-		await bonddepository.connect(accounts[1]).deposit(5000, 30000, accounts[1].address);
+		await bonddepository.connect(accounts[1]).deposit(5000000, 30000, accounts[1].address);
+		console.log("bondinfo of accounts[1]: ", await bonddepository.bondInfo(accounts[1].address));
+
+		await bonddepository.connect(accounts[1]).deposit(5000000, 30000, accounts[1].address);
 		console.log("bondinfo of accounts[1]: ", await bonddepository.bondInfo(accounts[1].address));
 	});
 });

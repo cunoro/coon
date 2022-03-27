@@ -349,7 +349,7 @@ contract CunoroTreasury is Ownable {
     function deposit( uint _amount, address _token, uint _value, uint _payout ) external {
         require( isReserveToken[ _token ] || isLiquidityToken[ _token ], "Not accepted" );
         IERC20( _token ).safeTransferFrom( msg.sender, address(this), _amount );
-
+        
         if ( isReserveToken[ _token ] ) {
             require( isReserveDepositor[ msg.sender ], "Not approved" );
         } else {

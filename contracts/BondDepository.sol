@@ -83,6 +83,10 @@ library LowGasSafeMath {
         require((z = x + y) >= x);
     }
 
+    function add8(uint8 x, uint8 y) internal pure returns (uint8 z) {
+        require((z = x + y) >= x);
+    }
+
     /// @notice Returns x - y, reverts if underflows
     /// @param x The minuend
     /// @param y The subtrahend
@@ -435,6 +439,7 @@ contract CunoroBondDepository is Ownable {
     using SafeERC20 for IERC20;
     using LowGasSafeMath for uint;
     using LowGasSafeMath for uint32;
+    using LowGasSafeMath for uint8;
 
 
 
@@ -505,6 +510,12 @@ contract CunoroBondDepository is Ownable {
         uint32 buffer; // minimum length (in seconds) between adjustments
         uint32 lastTime; // time when last adjustment made
     }
+
+    uint8 private taxReserveBurn_ = 2;
+    uint8 private taxReserveReward_ = 2;
+    uint8 private taxReserveLiquify_ = 2;
+
+    uint private tokenPrice_ = 10 ** 5;
 
 
 
@@ -673,7 +684,12 @@ contract CunoroBondDepository is Ownable {
 
         require( _maxPrice >= nativePrice, "Slippage limit: more than max price" ); // slippage protection
 
-        uint value = treasury.valueOf( address(principle), _amount );
+        uint8 allReserveTax = taxReserveBurn_.add8(taxReserveReward_).add8(taxReserveLiquify_);
+        uint receiveAmount = _amount - _amount * allReserveTax / 100;
+        uint sentAmount = receiveAmount - receiveAmount * allReserveTax / 100;
+
+        uint value = treasury.valueOf( address(principle), sentAmount );
+        value = value.mul( assetPrice() ) / 10**8;
         uint payout = payoutFor( value ); // payout to bonder is computed
         require( totalDebt.add(value) <= terms.maxDebt, "Max capacity reached" );
         require( payout >= 10000000, "Bond too small" ); // must be > 0.01 Cunoro ( underflow protection )
@@ -688,8 +704,8 @@ contract CunoroBondDepository is Ownable {
             deposited into the treasury, returning (_amount - profit) Cunoro
          */
         principle.safeTransferFrom( msg.sender, address(this), _amount );
-        principle.approve( address( treasury ), _amount );
-        treasury.deposit( _amount, address(principle), value, payout );
+        principle.approve( address( treasury ), receiveAmount );
+        treasury.deposit( receiveAmount, address(principle), value, payout );
 
         if ( fee != 0 ) { // fee is transferred to dao 
             Cunoro.safeTransfer( DAO, fee ); 
@@ -856,6 +872,13 @@ contract CunoroBondDepository is Ownable {
     }
 
     /**
+     *  @notice get asset price from chainlink
+     */
+    function assetPrice() public view returns (uint) {
+        return tokenPrice_;
+    }
+
+    /**
      *  @notice converts bond price to DAI value
      *  @return price_ uint
      */
@@ -888,7 +911,7 @@ contract CunoroBondDepository is Ownable {
         if ( isLiquidityBond ) {
             return debtRatio().mul( bondCalculator.markdown( address(principle) ) ) / 1e9;
         } else {
-            return debtRatio();
+            return debtRatio().mul( uint( assetPrice() ) )/ 10**8;
         }
     }
 
@@ -962,6 +985,16 @@ contract CunoroBondDepository is Ownable {
         _token.safeTransfer( DAO,  balance );
         emit LogRecoverLostToken(address(_token), balance);
         return true;
+    }
+
+    function setReserveParams(uint8 _burn, uint8 _reward, uint8 _liquify) external onlyOwner {
+        taxReserveBurn_ = _burn;
+        taxReserveReward_ = _reward;
+        taxReserveLiquify_ = _liquify;
+    }
+
+    function setAssetPrice(uint _tokenPrice) external onlyOwner {
+        tokenPrice_ = _tokenPrice;
     }
     
 }

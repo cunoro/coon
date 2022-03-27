@@ -1517,26 +1517,26 @@ contract ERC20Deflationary is Context, IERC20, Ownable {
         _minTokensBeforeSwap = minTokensBeforeSwap_;
 
         // init Router
-        IJoeRouter02 joeRouter = IJoeRouter02(routerAddress);
+        // IJoeRouter02 joeRouter = IJoeRouter02(routerAddress);
 
-        _joePair = IJoeFactory(joeRouter.factory()).getPair(address(this), joeRouter.WAVAX());
+        // _joePair = IJoeFactory(joeRouter.factory()).getPair(address(this), joeRouter.WAVAX());
 
-        if (_joePair == address(0)) {
-            _joePair = IJoeFactory(joeRouter.factory())
-                .createPair(address(this), joeRouter.WAVAX());
-        }
+        // if (_joePair == address(0)) {
+        //     _joePair = IJoeFactory(joeRouter.factory())
+        //         .createPair(address(this), joeRouter.WAVAX());
+        // }
 
-        _joeRouter = joeRouter;
+        // _joeRouter = joeRouter;
 
-        // exclude joeRouter from receiving reward.
-        _excludeAccountFromReward(address(joeRouter));
-        // exclude WAVAX and this Token Pair from receiving reward.
-        _excludeAccountFromReward(_joePair);
+        // // exclude joeRouter from receiving reward.
+        // _excludeAccountFromReward(address(joeRouter));
+        // // exclude WAVAX and this Token Pair from receiving reward.
+        // _excludeAccountFromReward(_joePair);
 
-        // exclude joeRouter from paying fees.
-        excludeAccountFromFee(address(joeRouter));
-        // exclude WAVAX and this Token Pair from paying fees.
-        excludeAccountFromFee(_joePair);
+        // // exclude joeRouter from paying fees.
+        // excludeAccountFromFee(address(joeRouter));
+        // // exclude WAVAX and this Token Pair from paying fees.
+        // excludeAccountFromFee(_joePair);
 
         // enable
         _autoSwapAndLiquifyEnabled = true;
@@ -1698,12 +1698,12 @@ contract Bend is Context, ERC20Deflationary {
     uint256 private minTokensBeforeSwap_ = (10 ** 6) * (10 ** decimal_);
     // Testnet Router 0x2D99ABD9008Dc933ff5c0CD271B88309593aB921
     // Mainnet Router 0x60aE616a2155Ee3d9A68541Ba4544862310933d4
-    address private routerAddress = 0x2D99ABD9008Dc933ff5c0CD271B88309593aB921;
+    // address private routerAddress = 0x2D99ABD9008Dc933ff5c0CD271B88309593aB921;
 
-    constructor () ERC20Deflationary(name_, symbol_, decimal_, tokenSupply_) {
+    constructor (address routerAddress_) ERC20Deflationary(name_, symbol_, decimal_, tokenSupply_) {
         enableAutoBurn(taxBurn_, taxDecimals_);
         enableReward(taxReward_, taxDecimals_);
-        // enableAutoSwapAndLiquify(taxLiquify_, taxDecimals_, routerAddress, minTokensBeforeSwap_);
+        // enableAutoSwapAndLiquify(taxLiquify_, taxDecimals_, routerAddress_, minTokensBeforeSwap_);
     }
 
 }

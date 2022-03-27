@@ -15,6 +15,7 @@ node_modules/
 .env
 yarn-error.log
 .package-lock.json
+verify.cmd
 
 .yalc
 yalc.lock

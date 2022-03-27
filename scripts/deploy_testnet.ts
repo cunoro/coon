@@ -8,6 +8,10 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+function sleep(ms = 0) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
 async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts on TESTNET with the account: " + deployer.address);
@@ -17,8 +21,8 @@ async function main() {
     const INIT_INDEX = Math.pow(10, 9);
     const EPOCH_LEGNTH = 900;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1647705600;
-    const REWARD_RATE = 2188;
+    const FIRST_EPOCH_TIME = 1648137600;
+    const REWARD_RATE = 100;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
@@ -41,7 +45,7 @@ async function main() {
     console.log("Cunoro Deployed.", cunoro.address);
 
 // sNORO token deploy
-    const sCunoro = await ethers.getContractFactory("sCunoroERC20Token");
+    const sCunoro = await ethers.getContractFactory("SCunoroERC20Token");
     const scunoro = await sCunoro.deploy();
     await scunoro.deployed();
     // setIndex
@@ -51,23 +55,21 @@ async function main() {
 
 // Treasury deploy
     const Treasury = await ethers.getContractFactory("CunoroTreasury");
-    console.log('1');
     const treasury = await Treasury.deploy(cunoro.address, BEND, 0);
-    console.log('2');
     await treasury.deployed();
-    console.log('3');
     // add reserve token, dao
-    await treasury.queue(2, WAVAX);
-    console.log('4');
-    await treasury.toggle(2, WAVAX, ZERO_ADDRESS);
-    console.log('5');
-
-    await treasury.queue(3, DAO);
-    console.log('6');
-    await treasury.toggle(3, DAO, ZERO_ADDRESS);
-    console.log('7');
+    let tx = await treasury.queue(2, WAVAX);
+    // await tx.wait();
+    await tx.wait();
+    tx = await treasury.toggle(2, WAVAX, ZERO_ADDRESS);
+    await tx.wait();
+    tx = await treasury.queue(3, DAO);
+    await tx.wait();
+    tx = await treasury.toggle(3, DAO, ZERO_ADDRESS);
     // Cunoro.setVault
-    await cunoro.setVault(treasury.address);
+    await tx.wait();
+    tx = await cunoro.setVault(treasury.address);
+    await tx.wait();
 
     console.log("Treasury Deployed.", treasury.address);
 
@@ -82,7 +84,8 @@ async function main() {
     );
     await staking.deployed();
     //sCunoro.initialize
-    await scunoro.initialize(staking.address);
+    tx = await scunoro.initialize(staking.address);
+    await tx.wait();
 
     console.log("Staking Deployed.", staking.address);
 
@@ -96,12 +99,16 @@ async function main() {
     );
     await distributor.deployed();
     // addRecipient
-    await distributor.addRecipient(staking.address, REWARD_RATE);
+    tx = await distributor.addRecipient(staking.address, REWARD_RATE);
     // add reward manager to treasury
-    await treasury.queue(8, distributor.address);
-    await treasury.toggle(8, distributor.address, ZERO_ADDRESS);
+    await tx.wait();
+    tx = await treasury.queue(8, distributor.address);
+    await tx.wait();
+    tx = await treasury.toggle(8, distributor.address, ZERO_ADDRESS);
     // staking.setContract
-    await staking.setContract(0, distributor.address);
+    await tx.wait();
+    tx = await staking.setContract(0, distributor.address);
+    await tx.wait();
 
     console.log("Distributor Deployed.", distributor.address);
 
@@ -117,7 +124,8 @@ async function main() {
     const warmup = await Warmup.deploy(staking.address, scunoro.address);
     await warmup.deployed();
     // staking.setContract
-    await staking.setContract(1, warmup.address);
+    tx = await staking.setContract(1, warmup.address);
+    await tx.wait();
 
     console.log("Warmup Deployed.", warmup.address);
 
@@ -132,7 +140,7 @@ async function main() {
     );
     await bonddepository.deployed();
     // initializeBondTerms
-    await bonddepository.initializeBondTerms(
+    tx = await bonddepository.initializeBondTerms(
         CONTROL_VARIABLE,
         MIN_PRICE,
         MAX_PAYOUT,
@@ -141,10 +149,14 @@ async function main() {
         VESTING_TERM
     );
     // add depositor to treasury
-    await treasury.queue(0, bonddepository.address);
-    await treasury.toggle(0, bonddepository.address, ZERO_ADDRESS);
+    await tx.wait();
+    tx = await treasury.queue(0, bonddepository.address);
+    await tx.wait();
+    tx = await treasury.toggle(0, bonddepository.address, ZERO_ADDRESS);
     // setStaking
-    await bonddepository.setStaking(helper.address, true);
+    await tx.wait();
+    tx = await bonddepository.setStaking(helper.address, true);
+    await tx.wait();
 
     console.log("BondDepository_BEND Deployed.", bonddepository.address);
 
@@ -159,7 +171,7 @@ async function main() {
     );
     await avaxbonddepository.deployed();
     // initializeBondTerms
-    await avaxbonddepository.initializeBondTerms(
+    tx = await avaxbonddepository.initializeBondTerms(
         CONTROL_VARIABLE,
         MIN_PRICE,
         MAX_PAYOUT,
@@ -167,10 +179,14 @@ async function main() {
         VESTING_TERM
     );
     // add depositor to treasury
-    await treasury.queue(0, avaxbonddepository.address);
-    await treasury.toggle(0, avaxbonddepository.address, ZERO_ADDRESS);
+    await tx.wait();
+    tx = await treasury.queue(0, avaxbonddepository.address);
+    await tx.wait();
+    tx = await treasury.toggle(0, avaxbonddepository.address, ZERO_ADDRESS);
     // setStaking
-    await avaxbonddepository.setStaking(helper.address, true);
+    await tx.wait();
+    tx = await avaxbonddepository.setStaking(helper.address, true);
+    await tx.wait();
 
     console.log("BondDepository_AVAX Deployed.", avaxbonddepository.address);
 
@@ -182,24 +198,24 @@ async function main() {
     console.log("BondingCalculator Deployed.", bondingcalculator.address);
 
 // wsNORO deploy
-    const wsNORO = await ethers.getContractFactory("wsNORO");
+    const wsNORO = await ethers.getContractFactory("WsNORO");
     const wsnoro = await wsNORO.deploy(scunoro.address);
     await wsnoro.deployed();
 
     console.log("wsNORO Deployed.", wsnoro.address);
     console.log("===================================================================");
 
-    console.log("NORO: " + cunoro.address);
-    console.log("sNORO: " + scunoro.address);
-    console.log("Treasury: " + treasury.address);
-    console.log("Staking: " + staking.address);
-    console.log("Distributor: " + distributor.address);
-    console.log("Helper: " + helper.address);
-    console.log("Warmup: " + warmup.address);
-    console.log("BondDepository(BEND): " + bonddepository.address);
-    console.log("BondDepository(AVAX): " + avaxbonddepository.address);
-    console.log("BondingCalculator: " + bondingcalculator.address);
-    console.log("wsNORO: " + wsnoro.address);
+    console.log("Cunoro : " + cunoro.address);
+    console.log("sCunoro : " + scunoro.address);
+    console.log("Treasury : " + treasury.address);
+    console.log("Staking : " + staking.address);
+    console.log("Distributor : " + distributor.address);
+    console.log("Helper : " + helper.address);
+    console.log("Warmup : " + warmup.address);
+    console.log("BondDepository(BEND) : " + bonddepository.address);
+    console.log("BondDepository(AVAX) : " + avaxbonddepository.address);
+    console.log("BondingCalculator : " + bondingcalculator.address);
+    console.log("wsNORO : " + wsnoro.address);
 }
 
 main()
