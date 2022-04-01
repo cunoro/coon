@@ -38,7 +38,7 @@ describe("Olympus DAO Test", function () {
 
 	    const CONTROL_VARIABLE = 40;
 	    const MIN_PRICE = 100;
-	    const MAX_PAYOUT = 1000;
+	    const MAX_PAYOUT = 10000;
 	    const BOND_FEE = 0;
 	    const MAX_DEBT = Math.pow(10, 15);
 	    const VESTING_TERM = 5*24*3600;
@@ -236,19 +236,24 @@ describe("Olympus DAO Test", function () {
 	});
 
 	it("BondDepository_BEND", async function() {
-	    await bend.approve(bonddepository.address, 10000000);
+	    await bend.approve(bonddepository.address, 100000000);
 		console.log("allowance of deployer : ", await bend.allowance(deployer.address, bonddepository.address));
 
-		await bend.connect(accounts[1]).approve(bonddepository.address, 10000000);
+		await bend.connect(accounts[1]).approve(bonddepository.address, 200000000);
+		console.log("balance of account 1 : ", await bend.balanceOf(accounts[1].address));
 		console.log("allowance of account 1 : ", await bend.allowance(accounts[1].address, bonddepository.address));
 
 		// await bonddepository.deposit(5000, 30000, deployer.address);
 		// console.log("bondinfo of deployer : ", await bonddepository.bondInfo(deployer.address));
 
-		await bonddepository.connect(accounts[1]).deposit(5000000, 30000, accounts[1].address);
+		await bonddepository.connect(accounts[1]).deposit(90000000, 30000, accounts[1].address);
+		console.log("balance of account 1 : ", await bend.balanceOf(accounts[1].address));
+		console.log("allowance of account 1 : ", await bend.allowance(accounts[1].address, bonddepository.address));
 		console.log("bondinfo of accounts[1]: ", await bonddepository.bondInfo(accounts[1].address));
 
-		await bonddepository.connect(accounts[1]).deposit(5000000, 30000, accounts[1].address);
+		await bonddepository.connect(accounts[1]).deposit(90000000, 30000, accounts[1].address);
+		console.log("balance of account 1 : ", await bend.balanceOf(accounts[1].address));
+		console.log("allowance of account 1 : ", await bend.allowance(accounts[1].address, bonddepository.address));
 		console.log("bondinfo of accounts[1]: ", await bonddepository.bondInfo(accounts[1].address));
 	});
 });

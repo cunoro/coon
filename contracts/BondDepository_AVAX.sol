@@ -557,7 +557,7 @@ contract AvaxBondDepository is Ownable {
     ) external onlyPolicy() {
         require( terms.controlVariable == 0, "Bonds must be initialized from 0" );
         require( _controlVariable >= 40, "Can lock adjustment" );
-        require( _maxPayout <= 1000, "Payout cannot be above 1 percent" );
+        require( _maxPayout <= 10000, "Payout cannot be above 10 percent" );
         require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
         terms = Terms ({
             controlVariable: _controlVariable,
@@ -586,7 +586,7 @@ contract AvaxBondDepository is Ownable {
             require( _input >= 129600, "Vesting must be longer than 36 hours" );
             terms.vestingTerm = uint32(_input);
         } else if ( _parameter == PARAMETER.PAYOUT ) { // 1
-            require( _input <= 1000, "Payout cannot be above 1 percent" );
+            require( _input <= 10000, "Payout cannot be above 10 percent" );
             terms.maxPayout = _input;
         } else if ( _parameter == PARAMETER.DEBT ) { // 2
             terms.maxDebt = _input;

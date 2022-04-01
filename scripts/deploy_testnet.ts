@@ -21,12 +21,12 @@ async function main() {
     const INIT_INDEX = Math.pow(10, 9);
     const EPOCH_LEGNTH = 900;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1648137600;
-    const REWARD_RATE = 100;
+    const FIRST_EPOCH_TIME = 1648656000;
+    const REWARD_RATE = 300;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
-    const MAX_PAYOUT = 1000;
+    const MAX_PAYOUT = 10000;
     const BOND_FEE = 0;
     const MAX_DEBT = Math.pow(10, 15);
     const VESTING_TERM = 5*24*3600;
@@ -59,7 +59,6 @@ async function main() {
     await treasury.deployed();
     // add reserve token, dao
     let tx = await treasury.queue(2, WAVAX);
-    // await tx.wait();
     await tx.wait();
     tx = await treasury.toggle(2, WAVAX, ZERO_ADDRESS);
     await tx.wait();
