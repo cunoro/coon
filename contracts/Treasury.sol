@@ -1,484 +1,724 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.7.5;
+// SPDX-License-Identifier: AGPL-3.0-or-later
+pragma solidity 0.7.5;
 
-import "./libraries/SafeMath.sol";
-import "./libraries/SafeERC20.sol";
+library LowGasSafeMath {
+    /// @notice Returns x + y, reverts if sum overflows uint256
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x + y) >= x);
+    }
 
-import "./interfaces/IOwnable.sol";
-import "./interfaces/IERC20.sol";
-import "./interfaces/IERC20Metadata.sol";
-import "./interfaces/INORO.sol";
-import "./interfaces/IsNORO.sol";
-import "./interfaces/IBondingCalculator.sol";
-import "./interfaces/ITreasury.sol";
+    function add32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x + y) >= x);
+    }
 
-import "./types/CunoroAccessControlled.sol";
+    /// @notice Returns x - y, reverts if underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x - y) <= x);
+    }
 
-contract CunoroTreasury is CunoroAccessControlled, ITreasury {
-    /* ========== DEPENDENCIES ========== */
+    function sub32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x - y) <= x);
+    }
 
-    using SafeMath for uint256;
+    /// @notice Returns x * y, reverts if overflows
+    /// @param x The multiplicand
+    /// @param y The multiplier
+    /// @return z The product of x and y
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(x == 0 || (z = x * y) / x == y);
+    }
+
+    function mul32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require(x == 0 || (z = x * y) / x == y);
+    }
+
+    /// @notice Returns x + y, reverts if overflows or underflows
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x + y) >= x == (y >= 0));
+    }
+
+    /// @notice Returns x - y, reverts if overflows or underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x - y) <= x == (y >= 0));
+    }
+
+    function div(uint256 x, uint256 y) internal pure returns(uint256 z){
+        require(y > 0);
+        z=x/y;
+    }
+}
+
+library Address {
+
+  function isContract(address account) internal view returns (bool) {
+        // This method relies in extcodesize, which returns 0 for contracts in
+        // construction, since the code is only stored at the end of the
+        // constructor execution.
+
+        uint256 size;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { size := extcodesize(account) }
+        return size > 0;
+    }
+
+    function functionCall(
+        address target, 
+        bytes memory data, 
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        return _functionCallWithValue(target, data, 0, errorMessage);
+    }
+
+    function _functionCallWithValue(
+        address target, 
+        bytes memory data, 
+        uint256 weiValue, 
+        string memory errorMessage
+    ) private returns (bytes memory) {
+        require(isContract(target), "Address: call to non-contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);
+        if (success) {
+            return returndata;
+        } else {
+            if (returndata.length > 0) {
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert(errorMessage);
+            }
+        }
+    }
+
+    function _verifyCallResult(
+        bool success, 
+        bytes memory returndata, 
+        string memory errorMessage
+    ) private pure returns(bytes memory) {
+        if (success) {
+            return returndata;
+        } else {
+            if (returndata.length > 0) {
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert(errorMessage);
+            }
+        }
+    }
+}
+
+contract OwnableData {
+    address public owner;
+    address public pendingOwner;
+}
+
+contract Ownable is OwnableData {
+    mapping(address => bool) _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /// @notice `owner` defaults to msg.sender on construction.
+    constructor() {
+        owner = msg.sender;
+        _owner[msg.sender] = true;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
+    /// Can only be invoked by the current `owner`.
+    /// @param newOwner Address of the new owner.
+    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
+    function transferOwnership(
+        address newOwner,
+        bool direct,
+        bool renounce
+    ) public onlyOwner {
+        if (direct) {
+            // Checks
+            require(newOwner != address(0) || renounce, "Ownable: zero address");
+
+            // Effects
+            emit OwnershipTransferred(owner, newOwner);
+            owner = newOwner;
+            _owner[newOwner] = true;
+            pendingOwner = address(0);
+        } else {
+            // Effects
+            pendingOwner = newOwner;
+        }
+    }
+
+     /// @notice Needs to be called by `pendingOwner` to claim ownership.
+    function claimOwnership() public {
+        address _pendingOwner = pendingOwner;
+
+        // Checks
+        require(msg.sender == _pendingOwner, "Ownable: caller != pending owner");
+
+        // Effects
+        emit OwnershipTransferred(owner, _pendingOwner);
+        owner = _pendingOwner;
+        _owner[_pendingOwner] = true;
+        pendingOwner = address(0);
+    }
+
+    /// @notice Only allows the `owner` to execute the function.
+    modifier onlyOwner() {
+        require( _owner[msg.sender], "Ownable: caller is not the owner" );
+        _;
+    }
+}
+
+interface IERC20 {
+    function decimals() external view returns (uint8);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function totalSupply() external view returns (uint256);
+
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+library SafeERC20 {
+    using LowGasSafeMath for uint256;
+    using Address for address;
+
+    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    }
+
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    }
+
+    function _callOptionalReturn(IERC20 token, bytes memory data) private {
+        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
+        if (returndata.length > 0) { // Return data is optional
+            // solhint-disable-next-line max-line-length
+            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+        }
+    }
+}
+
+interface IERC20Mintable {
+  function mint( uint256 amount_ ) external;
+
+  function mint( address account_, uint256 ammount_ ) external;
+}
+
+interface ICunoroERC20 is IERC20Mintable, IERC20 {
+    function burnFrom(address account_, uint256 amount_) external;
+}
+
+interface IBondCalculator {
+  function valuation( address pair_, uint amount_ ) external view returns ( uint _value );
+}
+
+contract CunoroTreasury is Ownable {
+
+    using LowGasSafeMath for uint;
+    using LowGasSafeMath for uint32;
     using SafeERC20 for IERC20;
 
-    /* ========== EVENTS ========== */
+    event Deposit( address indexed token, uint amount, uint value );
+    event Withdrawal( address indexed token, uint amount, uint value );
+    event CreateDebt( address indexed debtor, address indexed token, uint amount, uint value );
+    event RepayDebt( address indexed debtor, address indexed token, uint amount, uint value );
+    event ReservesManaged( address indexed token, uint amount );
+    event ReservesUpdated( uint indexed totalReserves );
+    event ReservesAudited( uint indexed totalReserves );
+    event RewardsMinted( address indexed caller, address indexed recipient, uint amount );
+    event ChangeQueued( MANAGING indexed managing, address queued );
+    event ChangeActivated( MANAGING indexed managing, address activated, bool result );
 
-    event Deposit(address indexed token, uint256 amount, uint256 value);
-    event Withdrawal(address indexed token, uint256 amount, uint256 value);
-    event CreateDebt(address indexed debtor, address indexed token, uint256 amount, uint256 value);
-    event RepayDebt(address indexed debtor, address indexed token, uint256 amount, uint256 value);
-    event Managed(address indexed token, uint256 amount);
-    event ReservesAudited(uint256 indexed totalReserves);
-    event Minted(address indexed caller, address indexed recipient, uint256 amount);
-    event PermissionQueued(STATUS indexed status, address queued);
-    event Permissioned(address addr, STATUS indexed status, bool result);
-
-    /* ========== DATA STRUCTURES ========== */
-
-    enum STATUS {
-        RESERVEDEPOSITOR,
-        RESERVESPENDER,
-        RESERVETOKEN,
-        RESERVEMANAGER,
-        LIQUIDITYDEPOSITOR,
-        LIQUIDITYTOKEN,
-        LIQUIDITYMANAGER,
-        RESERVEDEBTOR,
-        REWARDMANAGER,
-        SNORO,
-        NORODEBTOR
+    enum MANAGING { 
+        RESERVEDEPOSITOR, 
+        RESERVESPENDER, 
+        RESERVETOKEN, 
+        RESERVEMANAGER, 
+        LIQUIDITYDEPOSITOR, 
+        LIQUIDITYTOKEN, 
+        LIQUIDITYMANAGER, 
+        DEBTOR, 
+        REWARDMANAGER, 
+        SOHM 
     }
 
-    struct Queue {
-        STATUS managing;
-        address toPermit;
-        address calculator;
-        uint256 timelockEnd;
-        bool nullify;
-        bool executed;
+    ICunoroERC20 public immutable Cunoro;
+    uint32 public immutable secondsNeededForQueue;
+
+    address[] public reserveTokens; // Push only, beware false-positives.
+    mapping( address => bool ) public isReserveToken;
+    mapping( address => uint32 ) public reserveTokenQueue; // Delays changes to mapping.
+
+    address[] public reserveDepositors; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isReserveDepositor;
+    mapping( address => uint32 ) public reserveDepositorQueue; // Delays changes to mapping.
+
+    address[] public reserveSpenders; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isReserveSpender;
+    mapping( address => uint32 ) public reserveSpenderQueue; // Delays changes to mapping.
+
+    address[] public liquidityTokens; // Push only, beware false-positives.
+    mapping( address => bool ) public isLiquidityToken;
+    mapping( address => uint32 ) public LiquidityTokenQueue; // Delays changes to mapping.
+
+    address[] public liquidityDepositors; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isLiquidityDepositor;
+    mapping( address => uint32 ) public LiquidityDepositorQueue; // Delays changes to mapping.
+
+    mapping( address => address ) public bondCalculator; // bond calculator for liquidity token
+
+    address[] public reserveManagers; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isReserveManager;
+    mapping( address => uint32 ) public ReserveManagerQueue; // Delays changes to mapping.
+
+    address[] public liquidityManagers; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isLiquidityManager;
+    mapping( address => uint32 ) public LiquidityManagerQueue; // Delays changes to mapping.
+
+    address[] public debtors; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isDebtor;
+    mapping( address => uint32 ) public debtorQueue; // Delays changes to mapping.
+    mapping( address => uint ) public debtorBalance;
+
+    address[] public rewardManagers; // Push only, beware false-positives. Only for viewing.
+    mapping( address => bool ) public isRewardManager;
+    mapping( address => uint32 ) public rewardManagerQueue; // Delays changes to mapping.
+
+    IERC20 public sCunoro;
+    uint public sOHMQueue; // Delays change to sOHM address
+    
+    uint public totalReserves; // Risk-free value of all assets
+    uint public totalDebt;
+
+
+
+    constructor (
+        address _Cunoro,
+        address _BEND,
+        uint32 _secondsNeededForQueue
+    ) {
+        require( _Cunoro != address(0) );
+        Cunoro = ICunoroERC20(_Cunoro);
+
+        isReserveToken[ _BEND ] = true;
+        reserveTokens.push( _BEND );
+
+    //    isLiquidityToken[ _OHMDAI ] = true;
+    //    liquidityTokens.push( _OHMDAI );
+
+        secondsNeededForQueue = _secondsNeededForQueue;
     }
-
-    /* ========== STATE VARIABLES ========== */
-
-    INORO public immutable NORO;
-    IsNORO public sNORO;
-
-    mapping(STATUS => address[]) public registry;
-    mapping(STATUS => mapping(address => bool)) public permissions;
-    mapping(address => address) public bondCalculator;
-
-    mapping(address => uint256) public debtLimit;
-
-    uint256 public totalReserves;
-    uint256 public totalDebt;
-    uint256 public noroDebt;
-
-    Queue[] public permissionQueue;
-    uint256 public immutable blocksNeededForQueue;
-
-    bool public timelockEnabled;
-    bool public initialized;
-
-    uint256 public onChainGovernanceTimelock;
-
-    string internal notAccepted = "Treasury: not accepted";
-    string internal notApproved = "Treasury: not approved";
-    string internal invalidToken = "Treasury: invalid token";
-    string internal insufficientReserves = "Treasury: insufficient reserves";
-
-    /* ========== CONSTRUCTOR ========== */
-
-    constructor(
-        address _noro,
-        uint256 _timelock,
-        address _authority
-    ) CunoroAccessControlled(ICunoroAuthority(_authority)) {
-        require(_noro != address(0), "Zero address: NORO");
-        NORO = INORO(_noro);
-
-        timelockEnabled = false;
-        initialized = false;
-        blocksNeededForQueue = _timelock;
-    }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice allow approved address to deposit an asset for NORO
-     * @param _amount uint256
-     * @param _token address
-     * @param _profit uint256
-     * @return send_ uint256
+        @notice allow approved address to deposit an asset for Cunoro
+        @param _amount uint
+        @param _token address
+        @param _payout uint
      */
-    function deposit(
-        uint256 _amount,
-        address _token,
-        uint256 _profit
-    ) external override returns (uint256 send_) {
-        if (permissions[STATUS.RESERVETOKEN][_token]) {
-            require(permissions[STATUS.RESERVEDEPOSITOR][msg.sender], notApproved);
-        } else if (permissions[STATUS.LIQUIDITYTOKEN][_token]) {
-            require(permissions[STATUS.LIQUIDITYDEPOSITOR][msg.sender], notApproved);
+    function deposit( uint _amount, address _token, uint _value, uint _payout ) external {
+        require( isReserveToken[ _token ] || isLiquidityToken[ _token ], "Not accepted" );
+        IERC20( _token ).safeTransferFrom( msg.sender, address(this), _amount );
+        
+        if ( isReserveToken[ _token ] ) {
+            require( isReserveDepositor[ msg.sender ], "Not approved" );
         } else {
-            revert(invalidToken);
+            require( isLiquidityDepositor[ msg.sender ], "Not approved" );
         }
 
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        // mint Cunoro needed and store amount of rewards for distribution
+        require(_value >= _payout, "Payout less than reserve token value");
+        Cunoro.mint( msg.sender, _payout );
+        totalReserves = totalReserves.add( _value );
 
-        uint256 value = tokenValue(_token, _amount);
-        // mint NORO needed and store amount of rewards for distribution
-        send_ = value.sub(_profit);
-        NORO.mint(msg.sender, send_);
-
-        totalReserves = totalReserves.add(value);
-
-        emit Deposit(_token, _amount, value);
+        emit ReservesUpdated( totalReserves );
+        emit Deposit( _token, _amount, _value );
     }
 
     /**
-     * @notice allow approved address to burn NORO for reserves
-     * @param _amount uint256
-     * @param _token address
+        @notice allow approved address to burn Cunoro for reserves
+        @param _amount uint
+        @param _token address
      */
-    function withdraw(uint256 _amount, address _token) external override {
-        require(permissions[STATUS.RESERVETOKEN][_token], notAccepted); // Only reserves can be used for redemptions
-        require(permissions[STATUS.RESERVESPENDER][msg.sender], notApproved);
+    function withdraw( uint _amount, address _token ) external {
+        require( isReserveToken[ _token ], "Not accepted" ); // Only reserves can be used for redemptions
+        require( isReserveSpender[ msg.sender ], "Not approved" );
 
-        uint256 value = tokenValue(_token, _amount);
-        NORO.burnFrom(msg.sender, value);
+        uint value = valueOf( _token, _amount );
+        Cunoro.burnFrom( msg.sender, value );
 
-        totalReserves = totalReserves.sub(value);
+        totalReserves = totalReserves.sub( value );
+        emit ReservesUpdated( totalReserves );
 
-        IERC20(_token).safeTransfer(msg.sender, _amount);
+        IERC20( _token ).safeTransfer( msg.sender, _amount );
 
-        emit Withdrawal(_token, _amount, value);
+        emit Withdrawal( _token, _amount, value );
     }
 
     /**
-     * @notice allow approved address to withdraw assets
-     * @param _token address
-     * @param _amount uint256
+        @notice allow approved address to borrow reserves
+        @param _amount uint
+        @param _token address
      */
-    function manage(address _token, uint256 _amount) external override {
-        if (permissions[STATUS.LIQUIDITYTOKEN][_token]) {
-            require(permissions[STATUS.LIQUIDITYMANAGER][msg.sender], notApproved);
+    function incurDebt( uint _amount, address _token ) external {
+        require( isDebtor[ msg.sender ], "Not approved" );
+        require( isReserveToken[ _token ], "Not accepted" );
+
+        uint value = valueOf( _token, _amount );
+
+        uint maximumDebt = sCunoro.balanceOf( msg.sender ); // Can only borrow against sOHM held
+        uint balance = debtorBalance[ msg.sender ];
+        uint availableDebt = maximumDebt.sub( balance );
+        require( value <= availableDebt, "Exceeds debt limit" );
+        debtorBalance[ msg.sender ] = balance.add( value );
+        totalDebt = totalDebt.add( value );
+
+        totalReserves = totalReserves.sub( value );
+        emit ReservesUpdated( totalReserves );
+        
+        IERC20( _token ).safeTransfer( msg.sender, _amount );
+        
+        emit CreateDebt( msg.sender, _token, _amount, value );
+    }
+
+    /**
+        @notice allow approved address to repay borrowed reserves with reserves
+        @param _amount uint
+        @param _token address
+     */
+    function repayDebtWithReserve( uint _amount, address _token ) external {
+        require( isDebtor[ msg.sender ], "Not approved" );
+        require( isReserveToken[ _token ], "Not accepted" );
+
+        IERC20( _token ).safeTransferFrom( msg.sender, address(this), _amount );
+
+        uint value = valueOf( _token, _amount );
+        debtorBalance[ msg.sender ] = debtorBalance[ msg.sender ].sub( value );
+        totalDebt = totalDebt.sub( value );
+
+        totalReserves = totalReserves.add( value );
+        emit ReservesUpdated( totalReserves );
+
+        emit RepayDebt( msg.sender, _token, _amount, value );
+    }
+
+    /**
+        @notice allow approved address to repay borrowed reserves with Cunoro
+        @param _amount uint
+     */
+    function repayDebtWithCunoro( uint _amount ) external {
+        require( isDebtor[ msg.sender ], "Not approved as debtor" );
+        require( isReserveSpender[ msg.sender ], "Not approved as spender" );
+
+        Cunoro.burnFrom( msg.sender, _amount );
+
+        debtorBalance[ msg.sender ] = debtorBalance[ msg.sender ].sub( _amount );
+        totalDebt = totalDebt.sub( _amount );
+
+        emit RepayDebt( msg.sender, address(Cunoro), _amount, _amount );
+    }
+
+    /**
+        @notice allow approved address to withdraw assets
+        @param _token address
+        @param _amount uint
+     */
+    function manage( address _token, uint _amount ) external {
+        uint value = valueOf(_token, _amount);
+        if( isLiquidityToken[ _token ] ) {
+            require( isLiquidityManager[ msg.sender ], "Not approved" );
         } else {
-            require(permissions[STATUS.RESERVEMANAGER][msg.sender], notApproved);
+            require( isReserveManager[ msg.sender ], "Not approved" );
         }
-        if (permissions[STATUS.RESERVETOKEN][_token] || permissions[STATUS.LIQUIDITYTOKEN][_token]) {
-            uint256 value = tokenValue(_token, _amount);
-            require(value <= excessReserves(), insufficientReserves);
-            totalReserves = totalReserves.sub(value);
-        }
-        IERC20(_token).safeTransfer(msg.sender, _amount);
-        emit Managed(_token, _amount);
+        
+        require(value <= excessReserves(), "Insufficient reserves");
+        totalReserves = totalReserves.sub( value );
+        emit ReservesUpdated( totalReserves );
+
+        IERC20( _token ).safeTransfer( msg.sender, _amount );
+
+        emit ReservesManaged( _token, _amount );
     }
 
     /**
-     * @notice mint new NORO using excess reserves
-     * @param _recipient address
-     * @param _amount uint256
+        @notice send epoch reward to staking contract
      */
-    function mint(address _recipient, uint256 _amount) external override {
-        require(permissions[STATUS.REWARDMANAGER][msg.sender], notApproved);
-        require(_amount <= excessReserves(), insufficientReserves);
-        NORO.mint(_recipient, _amount);
-        emit Minted(msg.sender, _recipient, _amount);
+    function mintRewards( address _recipient, uint _amount ) external {
+        require( isRewardManager[ msg.sender ], "Not approved" );
+        require( _amount <= excessReserves(), "Insufficient reserves" );
+        Cunoro.mint( _recipient, _amount );
+
+        emit RewardsMinted( msg.sender, _recipient, _amount );
+    } 
+
+    /**
+        @notice returns excess reserves not backing tokens
+        @return uint
+     */
+    function excessReserves() public view returns ( uint ) {
+        return totalReserves.sub( Cunoro.totalSupply().sub( totalDebt ) );
     }
 
     /**
-     * DEBT: The debt functions allow approved addresses to borrow treasury assets
-     * or NORO from the treasury, using sNORO as collateral. This might allow an
-     * sNORO holder to provide NORO liquidity without taking on the opportunity cost
-     * of unstaking, or alter their backing without imposing risk onto the treasury.
-     * Many of these use cases are yet to be defined, but they appear promising.
-     * However, we urge the community to think critically and move slowly upon
-     * proposals to acquire these permissions.
+        @notice takes inventory of all tracked assets
+        @notice always consolidate to recognized reserves before audit
      */
-
-    /**
-     * @notice allow approved address to borrow reserves
-     * @param _amount uint256
-     * @param _token address
-     */
-    function incurDebt(uint256 _amount, address _token) external override {
-        uint256 value;
-        if (_token == address(NORO)) {
-            require(permissions[STATUS.NORODEBTOR][msg.sender], notApproved);
-            value = _amount;
-        } else {
-            require(permissions[STATUS.RESERVEDEBTOR][msg.sender], notApproved);
-            require(permissions[STATUS.RESERVETOKEN][_token], notAccepted);
-            value = tokenValue(_token, _amount);
+    function auditReserves() external onlyOwner {
+        uint reserves;
+        for( uint i = 0; i < reserveTokens.length; i++ ) {
+            reserves = reserves.add ( 
+                valueOf( reserveTokens[ i ], IERC20( reserveTokens[ i ] ).balanceOf( address(this) ) )
+            );
         }
-        require(value != 0, invalidToken);
-
-        sNORO.changeDebt(value, msg.sender, true);
-        require(sNORO.debtBalances(msg.sender) <= debtLimit[msg.sender], "Treasury: exceeds limit");
-        totalDebt = totalDebt.add(value);
-
-        if (_token == address(NORO)) {
-            NORO.mint(msg.sender, value);
-            noroDebt = noroDebt.add(value);
-        } else {
-            totalReserves = totalReserves.sub(value);
-            IERC20(_token).safeTransfer(msg.sender, _amount);
-        }
-        emit CreateDebt(msg.sender, _token, _amount, value);
-    }
-
-    /**
-     * @notice allow approved address to repay borrowed reserves with reserves
-     * @param _amount uint256
-     * @param _token address
-     */
-    function repayDebtWithReserve(uint256 _amount, address _token) external override {
-        require(permissions[STATUS.RESERVEDEBTOR][msg.sender], notApproved);
-        require(permissions[STATUS.RESERVETOKEN][_token], notAccepted);
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 value = tokenValue(_token, _amount);
-        sNORO.changeDebt(value, msg.sender, false);
-        totalDebt = totalDebt.sub(value);
-        totalReserves = totalReserves.add(value);
-        emit RepayDebt(msg.sender, _token, _amount, value);
-    }
-
-    /**
-     * @notice allow approved address to repay borrowed reserves with NORO
-     * @param _amount uint256
-     */
-    function repayDebtWithNORO(uint256 _amount) external {
-        require(permissions[STATUS.RESERVEDEBTOR][msg.sender] || permissions[STATUS.NORODEBTOR][msg.sender], notApproved);
-        NORO.burnFrom(msg.sender, _amount);
-        sNORO.changeDebt(_amount, msg.sender, false);
-        totalDebt = totalDebt.sub(_amount);
-        noroDebt = noroDebt.sub(_amount);
-        emit RepayDebt(msg.sender, address(NORO), _amount, _amount);
-    }
-
-    /* ========== MANAGERIAL FUNCTIONS ========== */
-
-    /**
-     * @notice takes inventory of all tracked assets
-     * @notice always consolidate to recognized reserves before audit
-     */
-    function auditReserves() external onlyGovernor {
-        uint256 reserves;
-        address[] memory reserveToken = registry[STATUS.RESERVETOKEN];
-        for (uint256 i = 0; i < reserveToken.length; i++) {
-            if (permissions[STATUS.RESERVETOKEN][reserveToken[i]]) {
-                reserves = reserves.add(tokenValue(reserveToken[i], IERC20(reserveToken[i]).balanceOf(address(this))));
-            }
-        }
-        address[] memory liquidityToken = registry[STATUS.LIQUIDITYTOKEN];
-        for (uint256 i = 0; i < liquidityToken.length; i++) {
-            if (permissions[STATUS.LIQUIDITYTOKEN][liquidityToken[i]]) {
-                reserves = reserves.add(tokenValue(liquidityToken[i], IERC20(liquidityToken[i]).balanceOf(address(this))));
-            }
+        for( uint i = 0; i < liquidityTokens.length; i++ ) {
+            reserves = reserves.add (
+                valueOf( liquidityTokens[ i ], IERC20( liquidityTokens[ i ] ).balanceOf( address(this) ) )
+            );
         }
         totalReserves = reserves;
-        emit ReservesAudited(reserves);
+        emit ReservesUpdated( reserves );
+        emit ReservesAudited( reserves );
     }
 
     /**
-     * @notice set max debt for address
-     * @param _address address
-     * @param _limit uint256
+        @notice returns Cunoro valuation of asset
+        @param _token address
+        @param _amount uint
+        @return value_ uint
      */
-    function setDebtLimit(address _address, uint256 _limit) external onlyGovernor {
-        debtLimit[_address] = _limit;
+    function valueOf( address _token, uint _amount ) public view returns ( uint value_ ) {
+        if ( isReserveToken[ _token ] ) {
+            // convert amount to match Cunoro decimals
+            value_ = _amount.mul( 10 ** Cunoro.decimals() ).div( 10 ** IERC20( _token ).decimals() );
+        } else if ( isLiquidityToken[ _token ] ) {
+            value_ = IBondCalculator( bondCalculator[ _token ] ).valuation( _token, _amount );
+        }
     }
 
     /**
-     * @notice enable permission from queue
-     * @param _status STATUS
-     * @param _address address
-     * @param _calculator address
+        @notice queue address to change boolean in mapping
+        @param _managing MANAGING
+        @param _address address
+        @return bool
      */
-    function enable(
-        STATUS _status,
-        address _address,
-        address _calculator
-    ) external onlyGovernor {
-        require(timelockEnabled == false, "Use queueTimelock");
-        if (_status == STATUS.SNORO) {
-            sNORO = IsNORO(_address);
-        } else {
-            permissions[_status][_address] = true;
+    function queue( MANAGING _managing, address _address ) external onlyOwner returns ( bool ) {
+        require( _address != address(0), "IA" );
+        if ( _managing == MANAGING.RESERVEDEPOSITOR ) { // 0
+            reserveDepositorQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.RESERVESPENDER ) { // 1
+            reserveSpenderQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.RESERVETOKEN ) { // 2
+            reserveTokenQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.RESERVEMANAGER ) { // 3
+            ReserveManagerQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue.mul32( 2 ) );
+        } else if ( _managing == MANAGING.LIQUIDITYDEPOSITOR ) { // 4
+            LiquidityDepositorQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.LIQUIDITYTOKEN ) { // 5
+            LiquidityTokenQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.LIQUIDITYMANAGER ) { // 6
+            LiquidityManagerQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue.mul32( 2 ) );
+        } else if ( _managing == MANAGING.DEBTOR ) { // 7
+            debtorQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.REWARDMANAGER ) { // 8
+            rewardManagerQueue[ _address ] = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else if ( _managing == MANAGING.SOHM ) { // 9
+            sOHMQueue = uint32(block.timestamp).add32( secondsNeededForQueue );
+        } else return false;
 
-            if (_status == STATUS.LIQUIDITYTOKEN) {
-                bondCalculator[_address] = _calculator;
-            }
+        emit ChangeQueued( _managing, _address );
+        return true;
+    }
 
-            (bool registered, ) = indexInRegistry(_address, _status);
-            if (!registered) {
-                registry[_status].push(_address);
-
-                if (_status == STATUS.LIQUIDITYTOKEN || _status == STATUS.RESERVETOKEN) {
-                    (bool reg, uint256 index) = indexInRegistry(_address, _status);
-                    if (reg) {
-                        delete registry[_status][index];
-                    }
+    /**
+        @notice verify queue then set boolean in mapping
+        @param _managing MANAGING
+        @param _address address
+        @param _calculator address
+        @return bool
+     */
+    function toggle(
+        MANAGING _managing, 
+        address _address, 
+        address _calculator 
+    ) external onlyOwner returns ( bool ) {
+        require( _address != address(0), "IA" );
+        bool result;
+        if ( _managing == MANAGING.RESERVEDEPOSITOR ) { // 0
+            if ( requirements( reserveDepositorQueue, isReserveDepositor, _address ) ) {
+                reserveDepositorQueue[ _address ] = 0;
+                if( !listContains( reserveDepositors, _address ) ) {
+                    reserveDepositors.push( _address );
                 }
             }
-        }
-        emit Permissioned(_address, _status, true);
-    }
-
-    /**
-     *  @notice disable permission from address
-     *  @param _status STATUS
-     *  @param _toDisable address
-     */
-    function disable(STATUS _status, address _toDisable) external {
-        require(msg.sender == authority.governor() || msg.sender == authority.guardian(), "Only governor or guardian");
-        permissions[_status][_toDisable] = false;
-        emit Permissioned(_toDisable, _status, false);
-    }
-
-    /**
-     * @notice check if registry contains address
-     * @return (bool, uint256)
-     */
-    function indexInRegistry(address _address, STATUS _status) public view returns (bool, uint256) {
-        address[] memory entries = registry[_status];
-        for (uint256 i = 0; i < entries.length; i++) {
-            if (_address == entries[i]) {
-                return (true, i);
-            }
-        }
-        return (false, 0);
-    }
-
-    /* ========== TIMELOCKED FUNCTIONS ========== */
-
-    // functions are used prior to enabling on-chain governance
-
-    /**
-     * @notice queue address to receive permission
-     * @param _status STATUS
-     * @param _address address
-     * @param _calculator address
-     */
-    function queueTimelock(
-        STATUS _status,
-        address _address,
-        address _calculator
-    ) external onlyGovernor {
-        require(_address != address(0));
-        require(timelockEnabled == true, "Timelock is disabled, use enable");
-
-        uint256 timelock = block.number.add(blocksNeededForQueue);
-        if (_status == STATUS.RESERVEMANAGER || _status == STATUS.LIQUIDITYMANAGER) {
-            timelock = block.number.add(blocksNeededForQueue.mul(2));
-        }
-        permissionQueue.push(
-            Queue({managing: _status, toPermit: _address, calculator: _calculator, timelockEnd: timelock, nullify: false, executed: false})
-        );
-        emit PermissionQueued(_status, _address);
-    }
-
-    /**
-     *  @notice enable queued permission
-     *  @param _index uint256
-     */
-    function execute(uint256 _index) external {
-        require(timelockEnabled == true, "Timelock is disabled, use enable");
-
-        Queue memory info = permissionQueue[_index];
-
-        require(!info.nullify, "Action has been nullified");
-        require(!info.executed, "Action has already been executed");
-        require(block.number >= info.timelockEnd, "Timelock not complete");
-
-        if (info.managing == STATUS.SNORO) {
-            // 9
-            sNORO = IsNORO(info.toPermit);
-        } else {
-            permissions[info.managing][info.toPermit] = true;
-
-            if (info.managing == STATUS.LIQUIDITYTOKEN) {
-                bondCalculator[info.toPermit] = info.calculator;
-            }
-            (bool registered, ) = indexInRegistry(info.toPermit, info.managing);
-            if (!registered) {
-                registry[info.managing].push(info.toPermit);
-
-                if (info.managing == STATUS.LIQUIDITYTOKEN) {
-                    (bool reg, uint256 index) = indexInRegistry(info.toPermit, STATUS.RESERVETOKEN);
-                    if (reg) {
-                        delete registry[STATUS.RESERVETOKEN][index];
-                    }
-                } else if (info.managing == STATUS.RESERVETOKEN) {
-                    (bool reg, uint256 index) = indexInRegistry(info.toPermit, STATUS.LIQUIDITYTOKEN);
-                    if (reg) {
-                        delete registry[STATUS.LIQUIDITYTOKEN][index];
-                    }
+            result = !isReserveDepositor[ _address ];
+            isReserveDepositor[ _address ] = result;
+            
+        } else if ( _managing == MANAGING.RESERVESPENDER ) { // 1
+            if ( requirements( reserveSpenderQueue, isReserveSpender, _address ) ) {
+                reserveSpenderQueue[ _address ] = 0;
+                if( !listContains( reserveSpenders, _address ) ) {
+                    reserveSpenders.push( _address );
                 }
             }
+            result = !isReserveSpender[ _address ];
+            isReserveSpender[ _address ] = result;
+
+        } else if ( _managing == MANAGING.RESERVETOKEN ) { // 2
+            if ( requirements( reserveTokenQueue, isReserveToken, _address ) ) {
+                reserveTokenQueue[ _address ] = 0;
+                if( !listContains( reserveTokens, _address ) && !listContains( liquidityTokens, _address ) ) {
+                    reserveTokens.push( _address );
+                }
+            }
+            result = !isReserveToken[ _address ];
+            require(!result || !isLiquidityToken[_address], "Do not add to both types of token");
+            isReserveToken[ _address ] = result;
+
+        } else if ( _managing == MANAGING.RESERVEMANAGER ) { // 3
+            if ( requirements( ReserveManagerQueue, isReserveManager, _address ) ) {
+                reserveManagers.push( _address );
+                ReserveManagerQueue[ _address ] = 0;
+                if( !listContains( reserveManagers, _address ) ) {
+                    reserveManagers.push( _address );
+                }
+            }
+            result = !isReserveManager[ _address ];
+            isReserveManager[ _address ] = result;
+
+        } else if ( _managing == MANAGING.LIQUIDITYDEPOSITOR ) { // 4
+            if ( requirements( LiquidityDepositorQueue, isLiquidityDepositor, _address ) ) {
+                liquidityDepositors.push( _address );
+                LiquidityDepositorQueue[ _address ] = 0;
+                if( !listContains( liquidityDepositors, _address ) ) {
+                    liquidityDepositors.push( _address );
+                }
+            }
+            result = !isLiquidityDepositor[ _address ];
+            isLiquidityDepositor[ _address ] = result;
+
+        } else if ( _managing == MANAGING.LIQUIDITYTOKEN ) { // 5
+            if ( requirements( LiquidityTokenQueue, isLiquidityToken, _address ) ) {
+                LiquidityTokenQueue[ _address ] = 0;
+                if( !listContains( liquidityTokens, _address ) && !listContains( reserveTokens, _address ) ) {
+                    liquidityTokens.push( _address );
+                }
+            }
+            result = !isLiquidityToken[ _address ];
+            require(!result || !isReserveToken[_address], "Do not add to both types of token");
+            isLiquidityToken[ _address ] = result;
+            bondCalculator[ _address ] = _calculator;
+
+        } else if ( _managing == MANAGING.LIQUIDITYMANAGER ) { // 6
+            if ( requirements( LiquidityManagerQueue, isLiquidityManager, _address ) ) {
+                LiquidityManagerQueue[ _address ] = 0;
+                if( !listContains( liquidityManagers, _address ) ) {
+                    liquidityManagers.push( _address );
+                }
+            }
+            result = !isLiquidityManager[ _address ];
+            isLiquidityManager[ _address ] = result;
+
+        } else if ( _managing == MANAGING.DEBTOR ) { // 7
+            if ( requirements( debtorQueue, isDebtor, _address ) ) {
+                debtorQueue[ _address ] = 0;
+                if( !listContains( debtors, _address ) ) {
+                    debtors.push( _address );
+                }
+            }
+            result = !isDebtor[ _address ];
+            isDebtor[ _address ] = result;
+
+        } else if ( _managing == MANAGING.REWARDMANAGER ) { // 8
+            if ( requirements( rewardManagerQueue, isRewardManager, _address ) ) {
+                rewardManagerQueue[ _address ] = 0;
+                if( !listContains( rewardManagers, _address ) ) {
+                    rewardManagers.push( _address );
+                }
+            }
+            result = !isRewardManager[ _address ];
+            isRewardManager[ _address ] = result;
+
+        } else if ( _managing == MANAGING.SOHM ) { // 9
+            sOHMQueue = 0;
+            sCunoro = IERC20(_address);
+            result = true;
+
+        } else return false;
+
+        emit ChangeActivated( _managing, _address, result );
+        return true;
+    }
+
+    /**
+        @notice checks requirements and returns altered structs
+        @param queue_ mapping( address => uint )
+        @param status_ mapping( address => bool )
+        @param _address address
+        @return bool 
+     */
+    function requirements( 
+        mapping( address => uint32 ) storage queue_, 
+        mapping( address => bool ) storage status_, 
+        address _address 
+    ) internal view returns ( bool ) {
+        if ( !status_[ _address ] ) {
+            require( queue_[ _address ] != 0, "Must queue" );
+            require( queue_[ _address ] <= uint32(block.timestamp), "Queue not expired" );
+            return true;
+        } return false;
+    }
+
+    /**
+        @notice checks array to ensure against duplicate
+        @param _list address[]
+        @param _token address
+        @return bool
+     */
+    function listContains( address[] storage _list, address _token ) internal view returns ( bool ) {
+        for( uint i = 0; i < _list.length; i++ ) {
+            if( _list[ i ] == _token ) {
+                return true;
+            }
         }
-        permissionQueue[_index].executed = true;
-        emit Permissioned(info.toPermit, info.managing, true);
+        return false;
     }
 
-    /**
-     * @notice cancel timelocked action
-     * @param _index uint256
-     */
-    function nullify(uint256 _index) external onlyGovernor {
-        permissionQueue[_index].nullify = true;
+    function addTotalReserves( uint _amount, address _token ) external onlyOwner {
+        require( isReserveToken[ _token ] || isLiquidityToken[ _token ], "Not accepted" );
+        IERC20( _token ).safeTransferFrom( msg.sender, address(this), _amount );
+
+        uint value = valueOf(_token, _amount);
+        totalReserves = totalReserves.add(value);
     }
 
-    /**
-     * @notice disables timelocked functions
-     */
-    function disableTimelock() external onlyGovernor {
-        require(timelockEnabled == true, "timelock already disabled");
-        if (onChainGovernanceTimelock != 0 && onChainGovernanceTimelock <= block.number) {
-            timelockEnabled = false;
-        } else {
-            onChainGovernanceTimelock = block.number.add(blocksNeededForQueue.mul(7)); // 7-day timelock
-        }
-    }
-
-    /**
-     * @notice enables timelocks after initilization
-     */
-    function initialize() external onlyGovernor {
-        require(initialized == false, "Already initialized");
-        timelockEnabled = true;
-        initialized = true;
-    }
-
-    /* ========== VIEW FUNCTIONS ========== */
-
-    /**
-     * @notice returns excess reserves not backing tokens
-     * @return uint
-     */
-    function excessReserves() public view override returns (uint256) {
-        return totalReserves.sub(NORO.totalSupply().sub(totalDebt));
-    }
-
-    /**
-     * @notice returns NORO valuation of asset
-     * @param _token address
-     * @param _amount uint256
-     * @return value_ uint256
-     */
-    function tokenValue(address _token, uint256 _amount) public view override returns (uint256 value_) {
-        value_ = _amount.mul(10**IERC20Metadata(address(NORO)).decimals()).div(10**IERC20Metadata(_token).decimals());
-
-        if (permissions[STATUS.LIQUIDITYTOKEN][_token]) {
-            value_ = IBondingCalculator(bondCalculator[_token]).valuation(_token, _amount);
-        }
-    }
-
-    /**
-     * @notice returns supply metric that cannot be manipulated by debt
-     * @dev use this any time you need to query supply
-     * @return uint256
-     */
-    function baseSupply() external view override returns (uint256) {
-        return NORO.totalSupply() - noroDebt;
-    }
 }
