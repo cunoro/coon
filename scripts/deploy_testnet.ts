@@ -19,9 +19,9 @@ async function main() {
     console.log("===================================================================");
 
     const INIT_INDEX = Math.pow(10, 9);
-    const EPOCH_LEGNTH = 900;
+    const EPOCH_LEGNTH = 28800;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1648656000;
+    const FIRST_EPOCH_TIME = 1655459705;
     const REWARD_RATE = 300;
 
     const CONTROL_VARIABLE = 40;

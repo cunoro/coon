@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { PangolinRouter, Bend, CunoroERC20Token, SCunoroERC20Token, CunoroTreasury, CunoroStaking, Distributor, StakingHelper, StakingWarmup, CunoroBondDepository, AvaxBondDepository, CunoroBondingCalculator, WsNORO } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Olympus DAO Test", function () {
+describe("Cunoro Finance Test", function () {
 	// let factory : PangolinFactory;
 	let router : PangolinRouter;
 	let bend : Bend;
@@ -70,7 +70,7 @@ describe("Olympus DAO Test", function () {
 
 	    await bend.transfer(accounts[1].address, 1000000000);
 	    console.log("BEND balance of account 1 : ", await bend.balanceOf(accounts[1].address));
-	    
+
 	    console.log("Bend Deployed.", bend.address);
 
 	// NORO token deploy
