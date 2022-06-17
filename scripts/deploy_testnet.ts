@@ -22,7 +22,7 @@ async function main() {
     const EPOCH_LEGNTH = 28800;
     const FIRST_EPOCH_NUM = 1;
     const FIRST_EPOCH_TIME = 1655459705;
-    const REWARD_RATE = 300;
+    const REWARD_RATE = 100;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
