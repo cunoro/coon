@@ -15,7 +15,6 @@
     "deploy:fuji": "npx hardhat run --network fuji scripts/deploy_testnet.ts",
     "deploy:mainnet": "npx hardhat run --network mainnet scripts/deploy.ts",
     "clean": "npx hardhat clean",
-    "test": "npx hardhat test",
     "gas": "REPORT_GAS=true hardhat test",
     "coverage": "HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
     "typechain": "TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
