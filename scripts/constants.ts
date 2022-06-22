@@ -10,9 +10,9 @@ export const CONTRACTS: Record<string, string> = {
     bondingCalculator: "CunoroBondingCalculator",
     authority: "CunoroAuthority",
     migrator: "CunoroTokenMigrator",
-    FRAX: "Frax",
-    DAI: "DAI",
-};
+//     FRAX: "Frax",
+//     DAI: "DAI",
+// };
 
 // Constructor Arguments
 export const TREASURY_TIMELOCK = 0;

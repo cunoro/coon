@@ -431,7 +431,7 @@ contract Distributor is Ownable {
      */
     function addRecipient( address _recipient, uint _rewardRate ) external onlyOwner {
         require( _recipient != address(0), "IA" );
-        require(_rewardRate <= 5000, "Too high reward rate");
+        require(_rewardRate <= 100000, "Too high reward rate");
         require(info.length <= 4, "limit recipients max to 5");
         info.push( Info({
             recipient: _recipient,
@@ -462,7 +462,7 @@ contract Distributor is Ownable {
         @param _target uint
      */
     function setAdjustment( uint _index, bool _add, uint _rate, uint _target ) external onlyOwner {
-        require(_target <= 5000, "Too high reward rate");
+        require(_target <= 100000, "Too high reward rate");
         adjustments[ _index ] = Adjust({
             add: _add,
             rate: _rate,
