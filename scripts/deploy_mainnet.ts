@@ -14,28 +14,28 @@ function sleep(ms = 0) {
 
 async function main() {
     const [deployer] = await ethers.getSigners();
-    console.log("Deploying contracts on TESTNET with the account: " + deployer.address);
+    console.log("Deploying contracts on MAINNET with the account: " + deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
     console.log("===================================================================");
 
     const INIT_INDEX = Math.pow(10, 9);
     const EPOCH_LEGNTH = 28800;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1655459705;
+    const FIRST_EPOCH_TIME = 1655895547;
     const REWARD_RATE = 100000;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
-    const MAX_PAYOUT = 10000;
+    const MAX_PAYOUT = 35000;
     const BOND_FEE = 0;
     const MAX_DEBT = Math.pow(10, 15);
     const VESTING_TERM = 5*24*3600;
 
-    const DAO = "0x0E8125aE8373b79DB639196529bbF6dA8a366891";
-    const BEND = "0x19a1165A79AFAAeFd805969B32a0640d4Db9f131";
-    const WAVAX = "0xd00ae08403B9bbb9124bB305C09058E32C39A48c";
+    const DAO = "0x813C38214799535c1375606188aD7E8Fd1762651";
+    const BEND = "0x3160591776e34C319F2Ad28Ba8c1F4829adc3907";
+    const WAVAX = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    const AVAX_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD";
+    const AVAX_FEED = "0x0A77230d17318075983913bC2145DB16C7366156";
 
 // NORO token deploy
     const Cunoro = await ethers.getContractFactory("CunoroERC20Token");

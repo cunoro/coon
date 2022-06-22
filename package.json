@@ -13,7 +13,7 @@
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy_testnet.ts",
     "deploy:hardhat": "npx hardhat run --network hardhat scripts/deploy_testnet.ts",
     "deploy:fuji": "npx hardhat run --network fuji scripts/deploy_testnet.ts",
-    "deploy:mainnet": "npx hardhat run --network mainnet scripts/deploy.ts",
+    "deploy:mainnet": "npx hardhat run --network mainnet scripts/deploy_mainnet.ts",
     "clean": "npx hardhat clean",
     "gas": "REPORT_GAS=true hardhat test",
     "coverage": "HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
