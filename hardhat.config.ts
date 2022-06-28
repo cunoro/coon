@@ -67,11 +67,11 @@ const config: HardhatUserConfig = {
       gasPrice: 225000000000,
       chainId: 31337 // !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
     },
-    localhost: {
-      url: 'http://127.0.0.1:8545/ext/bc/C/rpc', // 'http://127.0.0.1:8545/ext/bc/C/rpc',  // http://127.0.0.1:8545
-      accounts: 
-      { mnemonic: process.env.LOCAL_MNEMONIC },
-    },
+    // localhost: {
+    //   url: 'http://127.0.0.1:8545/ext/bc/C/rpc', // 'http://127.0.0.1:8545/ext/bc/C/rpc',  // http://127.0.0.1:8545
+    //   accounts:
+    //   { mnemonic: process.env.LOCAL_MNEMONIC },
+    // },
     fuji: {
       url: 'https://api.avax-test.network/ext/bc/C/rpc',
       // gasPrice: 30000000000,
