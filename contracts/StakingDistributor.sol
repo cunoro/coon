@@ -102,8 +102,8 @@ library Address {
     }
 
     function functionCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
@@ -114,9 +114,9 @@ library Address {
     }
 
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -128,9 +128,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -160,8 +160,8 @@ library Address {
     }
 
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -176,8 +176,8 @@ library Address {
     }
 
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -186,8 +186,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -287,43 +287,43 @@ interface ITreasury {
 contract Distributor is Ownable {
     using LowGasSafeMath for uint;
     using LowGasSafeMath for uint32;
-    
-    
-    
+
+
+
     /* ====== VARIABLES ====== */
 
     IERC20 public immutable Cunoro;
     ITreasury public immutable treasury;
-    
+
     uint32 public immutable epochLength;
     uint32 public nextEpochTime;
-    
+
     mapping( uint => Adjust ) public adjustments;
 
     event LogDistribute(address indexed recipient, uint amount);
     event LogAdjust(uint initialRate, uint currentRate, uint targetRate);
     event LogAddRecipient(address indexed recipient, uint rate);
     event LogRemoveRecipient(address indexed recipient);
-    
+
     /* ====== STRUCTS ====== */
-        
+
     struct Info {
         uint rate; // in ten-thousandths ( 5000 = 0.5% )
         address recipient;
     }
     Info[] public info;
-    
+
     struct Adjust {
         bool add;
         uint rate;
         uint target;
     }
-    
-    
-    
+
+
+
     /* ====== CONSTRUCTOR ====== */
 
-    constructor( address _treasury, address _noro, uint32 _epochLength, uint32 _nextEpochTime ) {        
+    constructor( address _treasury, address _noro, uint32 _epochLength, uint32 _nextEpochTime ) {
         require( _treasury != address(0) );
         treasury = ITreasury(_treasury);
         require( _noro != address(0) );
@@ -331,39 +331,39 @@ contract Distributor is Ownable {
         epochLength = _epochLength;
         nextEpochTime = _nextEpochTime;
     }
-    
-    
-    
+
+
+
     /* ====== PUBLIC FUNCTIONS ====== */
-    
+
     /**
         @notice send epoch reward to staking contract
      */
     function distribute() external returns ( bool ) {
         if ( nextEpochTime <= uint32(block.timestamp) ) {
             nextEpochTime = nextEpochTime.add32( epochLength ); // set next epoch time
-            
+
             // distribute rewards to each recipient
             for ( uint i = 0; i < info.length; i++ ) {
                 if ( info[ i ].rate > 0 ) {
                     treasury.mintRewards( // mint and send from treasury
-                        info[ i ].recipient, 
-                        nextRewardAt( info[ i ].rate ) 
+                        info[ i ].recipient,
+                        nextRewardAt( info[ i ].rate )
                     );
                     adjust( i ); // check for adjustment
                 }
                 emit LogDistribute(info[ i ].recipient, nextRewardAt( info[ i ].rate ));
             }
             return true;
-        } else { 
-            return false; 
+        } else {
+            return false;
         }
     }
 
-    
-    
-    
-    
+
+
+
+
     /* ====== INTERNAL FUNCTIONS ====== */
 
     /**
@@ -391,9 +391,9 @@ contract Distributor is Ownable {
             emit LogAdjust(initial, rate, adjustment.target);
         }
     }
-    
-    
-    
+
+
+
     /* ====== VIEW FUNCTIONS ====== */
 
     /**
@@ -419,9 +419,9 @@ contract Distributor is Ownable {
         }
         return reward;
     }
-    
-    
-    
+
+
+
     /* ====== POLICY FUNCTIONS ====== */
 
     /**
@@ -431,7 +431,7 @@ contract Distributor is Ownable {
      */
     function addRecipient( address _recipient, uint _rewardRate ) external onlyOwner {
         require( _recipient != address(0), "IA" );
-        require(_rewardRate <= 5000, "Too high reward rate");
+        // require(_rewardRate <= 5000, "Too high reward rate");
         require(info.length <= 4, "limit recipients max to 5");
         info.push( Info({
             recipient: _recipient,

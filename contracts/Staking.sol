@@ -231,9 +231,9 @@ library Address {
      * _Available since v3.1._
      */
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -245,9 +245,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -289,8 +289,8 @@ library Address {
      * _Available since v3.3._
      */
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -317,8 +317,8 @@ library Address {
      * _Available since v3.3._
      */
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -329,8 +329,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -405,8 +405,8 @@ library SafeERC20 {
     }
 
     function safeDecreaseAllowance(
-        IERC20 token, 
-        address spender, 
+        IERC20 token,
+        address spender,
         uint256 value
     ) internal {
         uint256 newAllowance = token.allowance(address(this), spender)
@@ -501,7 +501,7 @@ interface ISCunoro is IERC20 {
     function gonsForBalance( uint amount ) external view returns ( uint );
 
     function balanceForGons( uint gons ) external view returns ( uint );
-    
+
     function index() external view returns ( uint );
 }
 
@@ -532,9 +532,9 @@ contract CunoroStaking is Ownable {
     Epoch public epoch;
 
     IDistributor public distributor;
-    
+
     uint public totalBonus;
-    
+
     IWarmup public warmupContract;
     uint public warmupPeriod;
 
@@ -546,10 +546,10 @@ contract CunoroStaking is Ownable {
     event LogRebase(uint256 distribute);
     event LogSetContract(CONTRACTS contractType, address indexed _contract);
     event LogWarmupPeriod(uint period);
-    
-    constructor ( 
-        address _Cunoro, 
-        address _sCunoro, 
+
+    constructor (
+        address _Cunoro,
+        address _sCunoro,
         uint32 _epochLength,
         uint _firstEpochNumber,
         uint32 _firstEpochTime
@@ -558,7 +558,7 @@ contract CunoroStaking is Ownable {
         Cunoro = IERC20(_Cunoro);
         require( _sCunoro != address(0) );
         sCunoro = ISCunoro(_sCunoro);
-        
+
         epoch = Epoch({
             length: _epochLength,
             number: _firstEpochNumber,
@@ -582,19 +582,19 @@ contract CunoroStaking is Ownable {
      */
     function stake( uint _amount, address _recipient ) external returns ( bool ) {
         rebase();
-        
+
         Cunoro.safeTransferFrom( msg.sender, address(this), _amount );
 
         Claim memory info = warmupInfo[ _recipient ];
         require( !info.lock, "Deposits for account are locked" );
 
-        warmupInfo[ _recipient ] = Claim ({
+        warmupInfo[ _recipient ] = Claim({
             deposit: info.deposit.add( _amount ),
             gons: info.gons.add( sCunoro.gonsForBalance( _amount ) ),
             expiry: epoch.number.add( warmupPeriod ),
             lock: false
         });
-        
+
         sCunoro.safeTransfer( address(warmupContract), _amount );
         emit LogStake(_recipient, _amount);
         return true;
@@ -604,7 +604,7 @@ contract CunoroStaking is Ownable {
         @notice retrieve sNORO from warmup
         @param _recipient address
      */
-    function claim ( address _recipient ) external {
+    function claim( address _recipient ) external {
         Claim memory info = warmupInfo[ _recipient ];
         if ( epoch.number >= info.expiry && info.expiry != 0 ) {
             delete warmupInfo[ _recipient ];
@@ -666,7 +666,7 @@ contract CunoroStaking is Ownable {
 
             epoch.endTime = epoch.endTime.add32( epoch.length );
             epoch.number++;
-            
+
             if ( address(distributor) != address(0) ) {
                 distributor.distribute();   //Cunoro mint should be updated
             }
@@ -706,7 +706,7 @@ contract CunoroStaking is Ownable {
         }
         emit LogSetContract(_contract, _address);
     }
-    
+
     /**
      * @notice set warmup period in epoch's numbers for new stakers
      * @param _warmupPeriod uint

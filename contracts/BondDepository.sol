@@ -147,8 +147,8 @@ library Address {
     }
 
     function functionCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
@@ -159,9 +159,9 @@ library Address {
     }
 
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -173,9 +173,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -205,8 +205,8 @@ library Address {
     }
 
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -221,8 +221,8 @@ library Address {
     }
 
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -233,8 +233,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -502,7 +502,7 @@ contract CunoroBondDepository is Ownable {
         uint32 vesting; // Seconds left to vest
     }
 
-    // Info for incremental adjustments to control variable 
+    // Info for incremental adjustments to control variable
     struct Adjust {
         bool add; // addition or subtraction
         uint rate; // increment
@@ -521,11 +521,11 @@ contract CunoroBondDepository is Ownable {
 
     /* ======== INITIALIZATION ======== */
 
-    constructor ( 
+    constructor (
         address _Cunoro,
         address _principle,
-        address _treasury, 
-        address _DAO, 
+        address _treasury,
+        address _DAO,
         address _bondCalculator
     ) {
         require( _Cunoro != address(0) );
@@ -550,8 +550,8 @@ contract CunoroBondDepository is Ownable {
      *  @param _fee uint
      *  @param _maxDebt uint
      */
-    function initializeBondTerms( 
-        uint _controlVariable, 
+    function initializeBondTerms(
+        uint _controlVariable,
         uint _minimumPrice,
         uint _maxPayout,
         uint _fee,
@@ -560,7 +560,7 @@ contract CunoroBondDepository is Ownable {
     ) external onlyOwner() {
         require( terms.controlVariable == 0, "Bonds must be initialized from 0" );
         require( _controlVariable >= 40, "Can lock adjustment" );
-        require( _maxPayout <= 10000, "Payout cannot be above 10 percent" );
+        require( _maxPayout <= 45000, "Payout cannot be above 10 percent" );
         require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
         require( _fee <= 10000, "DAO fee cannot exceed payout" );
         terms = Terms ({
@@ -577,7 +577,7 @@ contract CunoroBondDepository is Ownable {
 
 
 
-    
+
     /* ======== POLICY FUNCTIONS ======== */
 
     enum PARAMETER { VESTING, PAYOUT, FEE, DEBT, MINPRICE }
@@ -588,13 +588,13 @@ contract CunoroBondDepository is Ownable {
      */
     function setBondTerms ( PARAMETER _parameter, uint _input ) external onlyOwner() {
         if ( _parameter == PARAMETER.VESTING ) { // 0
-            require( _input >= 129600, "Vesting must be longer than 36 hours" );
+            // require( _input >= 129600, "Vesting must be longer than 36 hours" );
             terms.vestingTerm = uint32(_input);
         } else if ( _parameter == PARAMETER.PAYOUT ) { // 1
-            require( _input <= 10000, "Payout cannot be above 10 percent" );
+            // require( _input <= 10000, "Payout cannot be above 10 percent" );
             terms.maxPayout = _input;
         } else if ( _parameter == PARAMETER.FEE ) { // 2
-            require( _input <= 10000, "DAO fee cannot exceed payout" );
+            // require( _input <= 10000, "DAO fee cannot exceed payout" );
             terms.fee = _input;
         } else if ( _parameter == PARAMETER.DEBT ) { // 3
             terms.maxDebt = _input;
@@ -611,11 +611,11 @@ contract CunoroBondDepository is Ownable {
      *  @param _target uint
      *  @param _buffer uint
      */
-    function setAdjustment ( 
+    function setAdjustment (
         bool _addition,
-        uint _increment, 
+        uint _increment,
         uint _target,
-        uint32 _buffer 
+        uint32 _buffer
     ) external onlyOwner() {
         require( _increment <= terms.controlVariable.mul( 25 ) / 1000 , "Increment too large" );
         require(_target >= 40, "Next Adjustment could be locked");
@@ -648,17 +648,17 @@ contract CunoroBondDepository is Ownable {
 
     function allowZapper(address zapper) external onlyOwner {
         require(zapper != address(0), "ZNA");
-        
+
         allowedZappers[zapper] = true;
     }
 
     function removeZapper(address zapper) external onlyOwner {
-       
+
         allowedZappers[zapper] = false;
     }
 
 
-    
+
 
     /* ======== USER FUNCTIONS ======== */
 
@@ -669,16 +669,16 @@ contract CunoroBondDepository is Ownable {
      *  @param _depositor address
      *  @return uint
      */
-    function deposit( 
-        uint _amount, 
+    function deposit(
+        uint _amount,
         uint _maxPrice,
         address _depositor
     ) external returns ( uint ) {
         require( _depositor != address(0), "Invalid address" );
         require(msg.sender == _depositor || allowedZappers[msg.sender], "LFNA");
         decayDebt();
-        
-        
+
+
         uint priceInUSD = bondPriceInUSD(); // Stored in bond info
         uint nativePrice = _bondPrice();
 
@@ -707,8 +707,8 @@ contract CunoroBondDepository is Ownable {
         principle.approve( address( treasury ), receiveAmount );
         treasury.deposit( receiveAmount, address(principle), value, payout );
 
-        if ( fee != 0 ) { // fee is transferred to dao 
-            Cunoro.safeTransfer( DAO, fee ); 
+        if ( fee != 0 ) { // fee is transferred to dao
+            Cunoro.safeTransfer( DAO, fee );
         }
 
         // total debt is increased
@@ -716,7 +716,7 @@ contract CunoroBondDepository is Ownable {
         payout = payout.sub(fee);
 
         // depositor info is stored
-        bondInfo[ _depositor ] = Bond({ 
+        bondInfo[ _depositor ] = Bond({
             payout: bondInfo[ _depositor ].payout.add( payout ),
             vesting: terms.vestingTerm,
             lastTime: uint32(block.timestamp),
@@ -728,15 +728,15 @@ contract CunoroBondDepository is Ownable {
         emit BondPriceChanged( bondPriceInUSD(), _bondPrice(), debtRatio() );
         adjust(); // control variable is adjusted
 
-        return payout; 
+        return payout;
     }
 
-    /** 
+    /**
      *  @notice redeem bond for user
      *  @param _recipient address
      *  @param _stake bool
      *  @return uint
-     */ 
+     */
     function redeem( address _recipient, bool _stake ) external returns ( uint ) {
         require(msg.sender == _recipient, "NA");
         Bond memory info = bondInfo[ _recipient ];
@@ -763,9 +763,9 @@ contract CunoroBondDepository is Ownable {
             return stakeOrSend( _recipient, _stake, payout );
         }
     }
-    
 
-    
+
+
     /* ======== INTERNAL HELPER FUNCTIONS ======== */
 
     /**
@@ -851,7 +851,7 @@ contract CunoroBondDepository is Ownable {
      *  @notice calculate current bond premium
      *  @return price_ uint
      */
-    function bondPrice() public view returns ( uint price_ ) {        
+    function bondPrice() public view returns ( uint price_ ) {
         price_ = terms.controlVariable.mul( debtRatio() ).add( 1000000000 ) / 1e7;
         if ( price_ < terms.minimumPrice ) {
             price_ = terms.minimumPrice;
@@ -865,7 +865,7 @@ contract CunoroBondDepository is Ownable {
     function _bondPrice() internal returns ( uint price_ ) {
         price_ = terms.controlVariable.mul( debtRatio() ).add( 1000000000 ) / 1e7;
         if ( price_ < terms.minimumPrice ) {
-            price_ = terms.minimumPrice;        
+            price_ = terms.minimumPrice;
         } else if ( terms.minimumPrice != 0 ) {
             terms.minimumPrice = 0;
         }
@@ -895,10 +895,10 @@ contract CunoroBondDepository is Ownable {
      *  @notice calculate current ratio of debt to Cunoro supply
      *  @return debtRatio_ uint
      */
-    function debtRatio() public view returns ( uint debtRatio_ ) {   
+    function debtRatio() public view returns ( uint debtRatio_ ) {
         uint supply = Cunoro.totalSupply();
-        debtRatio_ = FixedPoint.fraction( 
-            currentDebt().mul( 1e9 ), 
+        debtRatio_ = FixedPoint.fraction(
+            currentDebt().mul( 1e9 ),
             supply
         ).decode112with18() / 1e18;
     }
@@ -996,5 +996,5 @@ contract CunoroBondDepository is Ownable {
     function setAssetPrice(uint _tokenPrice) external onlyOwner {
         tokenPrice_ = _tokenPrice;
     }
-    
+
 }
