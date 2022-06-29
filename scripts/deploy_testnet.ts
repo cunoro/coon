@@ -21,7 +21,7 @@ async function main() {
     const INIT_INDEX = Math.pow(10, 9);
     const EPOCH_LEGNTH = 900;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1648656000;
+    const FIRST_EPOCH_TIME = 1656433532;
     const REWARD_RATE = 300;
 
     const CONTROL_VARIABLE = 40;
@@ -35,7 +35,7 @@ async function main() {
     const BEND = "0x19a1165A79AFAAeFd805969B32a0640d4Db9f131";
     const WAVAX = "0xd00ae08403B9bbb9124bB305C09058E32C39A48c";
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    const AVAX_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD";
+    const AVAX_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD"; // 0x0A77230d17318075983913bC2145DB16C7366156
 
 // NORO token deploy
     const Cunoro = await ethers.getContractFactory("CunoroERC20Token");
