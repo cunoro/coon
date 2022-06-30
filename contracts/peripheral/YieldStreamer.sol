@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {IgOHM} from "../interfaces/IgOHM.sol";
+import {IgNORO} from "../interfaces/IgNORO.sol";
 import {SafeERC20} from "../libraries/SafeERC20.sol";
 import {IYieldStreamer} from "../interfaces/IYieldStreamer.sol";
 import {IUniswapV2Router} from "../interfaces/IUniswapV2Router.sol";
@@ -19,14 +19,14 @@ error YieldStreamer_InvalidAmount();
 
 /**
     @title YieldStreamer
-    @notice This contract allows users to deposit their gOhm and have their yield
+    @notice This contract allows users to deposit their gNoro and have their yield
             converted into a streamToken(normally DAI) and sent to their address every interval.
  */
 contract YieldStreamer is IYieldStreamer, YieldSplitter {
     using SafeERC20 for IERC20;
 
-    address public immutable OHM;
-    address public immutable gOHM;
+    address public immutable NORO;
+    address public immutable gNORO;
     address public immutable streamToken; // Default is DAI but can be any token
     IUniswapV2Router public immutable sushiRouter;
     address[] public sushiRouterPath = new address[](2);
@@ -61,22 +61,22 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
 
     /**
         @notice Constructor
-        @param gOHM_ Address of gOHM.
-        @param sOHM_ Address of sOHM.
-        @param OHM_ Address of OHM.
-        @param streamToken_ Address of the token the ohm will be swapped to.
+        @param gNORO_ Address of gNORO.
+        @param sNORO_ Address of sNORO.
+        @param NORO_ Address of NORO.
+        @param streamToken_ Address of the token the noro will be swapped to.
         @param sushiRouter_ Address of sushiswap router.
-        @param staking_ Address of sOHM staking contract.
-        @param authority_ Address of Olympus authority contract.
-        @param maxSwapSlippagePercent_ Maximum acceptable slippage when swapping OHM to streamTokens as percentage 6 decimals.
+        @param staking_ Address of sNORO staking contract.
+        @param authority_ Address of Cunoro authority contract.
+        @param maxSwapSlippagePercent_ Maximum acceptable slippage when swapping NORO to streamTokens as percentage 6 decimals.
         @param feeToDaoPercent_ How much of yield goes to DAO before swapping to streamTokens as percentage 6 decimals.
         @param minimumTokenThreshold_ Minimum a user can set threshold for amount of tokens accumulated as yield 
                                     before sending to recipient's wallet.
     */
     constructor(
-        address gOHM_,
-        address sOHM_,
-        address OHM_,
+        address gNORO_,
+        address sNORO_,
+        address NORO_,
         address streamToken_,
         address sushiRouter_,
         address staking_,
@@ -85,26 +85,26 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         uint128 maxSwapSlippagePercent_,
         uint128 feeToDaoPercent_,
         uint256 minimumTokenThreshold_
-    ) YieldSplitter(sOHM_, authority_) {
-        gOHM = gOHM_;
-        OHM = OHM_;
+    ) YieldSplitter(sNORO_, authority_) {
+        gNORO = gNORO_;
+        NORO = NORO_;
         streamToken = streamToken_;
         sushiRouter = IUniswapV2Router(sushiRouter_);
         staking = IStaking(staking_);
         priceConverterOracleWrapper = AggregatorV3Interface(priceConverterOracleWrapper_);
-        sushiRouterPath[0] = OHM;
+        sushiRouterPath[0] = NORO;
         sushiRouterPath[1] = streamToken;
         maxSwapSlippagePercent = maxSwapSlippagePercent_;
         feeToDaoPercent = feeToDaoPercent_;
         minimumTokenThreshold = minimumTokenThreshold_;
 
-        IERC20(gOHM).approve(address(staking), type(uint256).max);
-        IERC20(OHM).approve(address(sushiRouter), type(uint256).max);
+        IERC20(gNORO).approve(address(staking), type(uint256).max);
+        IERC20(NORO).approve(address(sushiRouter), type(uint256).max);
     }
 
     /**
-        @notice Deposit gOHM, creates a deposit in the active deposit pool to be unkept.
-        @param amount_ Amount of gOHM.
+        @notice Deposit gNORO, creates a deposit in the active deposit pool to be unkept.
+        @param amount_ Amount of gNORO.
         @param recipient_ Address to direct staking yield and vault shares to.
         @param paymentInterval_ How much time must elapse before yield is able to be swapped for stream tokens.
         @param userMinimumAmountThreshold_ Minimum amount of stream tokens a user must have during upkeep for it to be sent to their wallet.
@@ -132,22 +132,22 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         activeDepositIds.push(depositId);
         recipientIds[recipient_].push(depositId);
 
-        IERC20(gOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(gNORO).safeTransferFrom(msg.sender, address(this), amount_);
 
         emit Deposited(msg.sender, amount_);
     }
 
     /**
-        @notice Add more gOHM to your principal deposit.
+        @notice Add more gNORO to your principal deposit.
         @param id_ Id of the deposit.
-        @param amount_ Amount of gOHM to add.
+        @param amount_ Amount of gNORO to add.
     */
     function addToDeposit(uint256 id_, uint256 amount_) external override {
         if (depositDisabled) revert YieldStreamer_DepositDisabled();
 
         _addToDeposit(id_, amount_, msg.sender);
 
-        IERC20(gOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(gNORO).safeTransferFrom(msg.sender, address(this), amount_);
 
         emit Deposited(msg.sender, amount_);
     }
@@ -157,18 +157,18 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         @dev If withdrawing all your principal, all accumulated yield will be sent to recipient 
              and deposit will be closed.
         @param id_ Id of the deposit.
-        @param amount_ Amount of gOHM to withdraw.
+        @param amount_ Amount of gNORO to withdraw.
     */
     function withdrawPrincipal(uint256 id_, uint256 amount_) external override {
         if (withdrawDisabled) revert YieldStreamer_WithdrawDisabled();
 
-        if (amount_ < IgOHM(gOHM).balanceTo(depositInfo[id_].principalAmount)) {
+        if (amount_ < IgNORO(gNORO).balanceTo(depositInfo[id_].principalAmount)) {
             _withdrawPrincipal(id_, amount_, msg.sender);
-            IERC20(gOHM).safeTransfer(msg.sender, amount_);
+            IERC20(gNORO).safeTransfer(msg.sender, amount_);
         } else {
             address recipient = recipientInfo[id_].recipientAddress;
             uint256 unclaimedStreamTokens = recipientInfo[id_].unclaimedStreamTokens;
-            (uint256 principal, uint256 totalGOHM) = _closeDeposit(id_, msg.sender);
+            (uint256 principal, uint256 totalGNORO) = _closeDeposit(id_, msg.sender);
             delete recipientInfo[id_];
 
             uint256 depositLength = activeDepositIds.length;
@@ -192,8 +192,8 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
                 }
             }
 
-            IERC20(gOHM).safeTransfer(msg.sender, principal);
-            IERC20(gOHM).safeTransfer(recipient, totalGOHM - principal);
+            IERC20(gNORO).safeTransfer(msg.sender, principal);
+            IERC20(gNORO).safeTransfer(recipient, totalGNORO - principal);
             if (unclaimedStreamTokens != 0) {
                 IERC20(streamToken).safeTransfer(recipient, unclaimedStreamTokens);
             }
@@ -203,7 +203,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
     }
 
     /**
-        @notice Withdraw excess yield from your deposit in gOHM.
+        @notice Withdraw excess yield from your deposit in gNORO.
         @dev  Use withdrawYieldInStreamTokens() to withdraw yield in stream tokens.
         @param id_ Id of the deposit.
     */
@@ -214,11 +214,11 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         uint256 yield = _redeemYield(id_);
         recipientInfo[id_].lastUpkeepTimestamp = uint128(block.timestamp);
 
-        IERC20(gOHM).safeTransfer(msg.sender, yield);
+        IERC20(gNORO).safeTransfer(msg.sender, yield);
     }
 
     /**
-        @notice Withdraw all excess yield from your all deposits you are the recipient of in gOHM.
+        @notice Withdraw all excess yield from your all deposits you are the recipient of in gNORO.
         @dev  Use withdrawYieldInStreamTokens() to withdraw yield in stream tokens.
     */
     function withdrawAllYield() external override {
@@ -232,7 +232,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
             recipientInfo[receiptIds[i]].lastUpkeepTimestamp = uint128(block.timestamp);
         }
 
-        IERC20(gOHM).safeTransfer(msg.sender, total);
+        IERC20(gNORO).safeTransfer(msg.sender, total);
     }
 
     /**
@@ -259,7 +259,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         amount_ = _redeemYield(id_);
         recipientInfo[id_].lastUpkeepTimestamp = uint128(block.timestamp);
 
-        IERC20(gOHM).safeTransfer(recipientInfo[id_].recipientAddress, amount_);
+        IERC20(gNORO).safeTransfer(recipientInfo[id_].recipientAddress, amount_);
     }
 
     /**
@@ -277,7 +277,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
             recipientInfo[receiptIds[i]].lastUpkeepTimestamp = uint128(block.timestamp);
         }
 
-        IERC20(gOHM).safeTransfer(recipient_, amount_);
+        IERC20(gNORO).safeTransfer(recipient_, amount_);
     }
 
     /**
@@ -305,33 +305,33 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
 
     /**
         @notice Upkeeps all deposits if they are eligible.
-                Upkeep consists of converting all eligible deposits yield from gOhm into streamToken(usually DAI).
+                Upkeep consists of converting all eligible deposits yield from gNoro into streamToken(usually DAI).
                 Sends the yield to recipient wallets if above user set threshold.
                 Eligible for upkeep means enough time(payment interval) has passed since their last upkeep.
     */
     function upkeep() external override {
         if (upkeepDisabled) revert YieldStreamer_UpkeepDisabled();
 
-        uint256 totalGOHM;
+        uint256 totalGNORO;
         uint256 depositLength = activeDepositIds.length;
 
         for (uint256 i = 0; i < depositLength; i++) {
             uint256 currentId = activeDepositIds[i];
 
             if (_isUpkeepEligible(currentId)) {
-                totalGOHM += redeemableBalance(currentId);
+                totalGNORO += redeemableBalance(currentId);
             }
         }
 
-        uint256 feeToDao = (totalGOHM * feeToDaoPercent) / sixDecimalMaxNumber;
-        IERC20(gOHM).safeTransfer(authority.governor(), feeToDao);
+        uint256 feeToDao = (totalGNORO * feeToDaoPercent) / sixDecimalMaxNumber;
+        IERC20(gNORO).safeTransfer(authority.governor(), feeToDao);
 
-        uint256 totalOhmToSwap = staking.unstake(address(this), totalGOHM - feeToDao, false, false);
+        uint256 totalNoroToSwap = staking.unstake(address(this), totalGNORO - feeToDao, false, false);
 
-        (, int256 ohmOraclePrice, , , ) = priceConverterOracleWrapper.latestRoundData();
+        (, int256 noroOraclePrice, , , ) = priceConverterOracleWrapper.latestRoundData();
         uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
-            totalOhmToSwap,
-            (uint256(ohmOraclePrice) * (sixDecimalMaxNumber - maxSwapSlippagePercent)) / sixDecimalMaxNumber,
+            totalNoroToSwap,
+            (uint256(noroOraclePrice) * (sixDecimalMaxNumber - maxSwapSlippagePercent)) / sixDecimalMaxNumber,
             sushiRouterPath,
             address(this),
             block.timestamp
@@ -346,7 +346,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
 
                 currentrecipientInfo.lastUpkeepTimestamp = uint128(block.timestamp);
                 currentrecipientInfo.unclaimedStreamTokens += uint128(
-                    (amounts[1] * _redeemYield(currentId)) / totalGOHM
+                    (amounts[1] * _redeemYield(currentId)) / totalGNORO
                 );
 
                 if (currentrecipientInfo.unclaimedStreamTokens >= currentrecipientInfo.userMinimumAmountThreshold) {
@@ -365,21 +365,21 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
      ************************/
 
     /**
-        @notice Returns the total amount of yield in gOhm the user can withdraw from all deposits. 
+        @notice Returns the total amount of yield in gNoro the user can withdraw from all deposits. 
                 Does not include harvestable stream tokens which is found in recipientInfo.
         @param recipient_ Address of recipient.
     */
-    function totalRedeemableBalance(address recipient_) external view override returns (uint256 totalGOHM) {
+    function totalRedeemableBalance(address recipient_) external view override returns (uint256 totalGNORO) {
         for (uint256 i = 0; i < recipientIds[recipient_].length; i++) {
-            totalGOHM += redeemableBalance(recipientIds[recipient_][i]);
+            totalGNORO += redeemableBalance(recipientIds[recipient_][i]);
         }
     }
 
     /**
-        @notice Gets the number of deposits eligible for upkeep and amount of ohm of yield available to swap.
+        @notice Gets the number of deposits eligible for upkeep and amount of noro of yield available to swap.
                 Eligible for upkeep means enough time(payment interval of deposit) has passed since last upkeep.
         @return numberOfDepositsEligible : number of deposits eligible for upkeep.
-        @return amountOfYieldToSwap : total amount of yield in gOHM ready to be swapped in next upkeep.
+        @return amountOfYieldToSwap : total amount of yield in gNORO ready to be swapped in next upkeep.
      */
     function upkeepEligibility() external view returns (uint256 numberOfDepositsEligible, uint256 amountOfYieldToSwap) {
         for (uint256 i = 0; i < activeDepositIds.length; i++) {
@@ -399,11 +399,11 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
     }
 
     /**
-        @notice Get deposits principal amount in gOhm
+        @notice Get deposits principal amount in gNoro
         @param id_ Id of the deposit.
      */
-    function getPrincipalInGOHM(uint256 id_) external view returns (uint256) {
-        return IgOHM(gOHM).balanceTo(depositInfo[id_].principalAmount);
+    function getPrincipalInGNORO(uint256 id_) external view returns (uint256) {
+        return IgNORO(gNORO).balanceTo(depositInfo[id_].principalAmount);
     }
 
     /**

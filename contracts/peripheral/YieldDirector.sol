@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {IsOHM} from "../interfaces/IsOHM.sol";
+import {IsNORO} from "../interfaces/IsNORO.sol";
 import {IStaking} from "../interfaces/IStaking.sol";
 import {IYieldDirector} from "../interfaces/IYieldDirector.sol";
 import {SafeERC20} from "../libraries/SafeERC20.sol";
@@ -10,9 +10,9 @@ import {YieldSplitter} from "../types/YieldSplitter.sol";
 
 /**
     @title  YieldDirector (codename Tyche) 
-    @notice This contract allows donors to deposit their gOHM and donate their rebases
-            to any address. Donors will be able to withdraw the sOHM equivalent of their principal
-            gOHM at any time. Donation recipients can also redeem accrued rebases at any time.
+    @notice This contract allows donors to deposit their gNORO and donate their rebases
+            to any address. Donors will be able to withdraw the sNORO equivalent of their principal
+            gNORO at any time. Donation recipients can also redeem accrued rebases at any time.
     @dev    Any functions dealing with initial deposits will take an address (because no ID has been
             assigned). After a user has deposited, all functions dealing with deposits (like
             withdraw or redeem functions) will take the ID of the deposit. All functions that return
@@ -30,8 +30,8 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     error YieldDirector_WithdrawalsDisabled();
     error YieldDirector_RedeemsDisabled();
 
-    address public immutable sOHM;
-    address public immutable gOHM;
+    address public immutable sNORO;
+    address public immutable gNORO;
     IStaking public immutable staking;
 
     mapping(address => uint256[]) public recipientIds; // address -> array of deposit id's donating yield to the user
@@ -49,19 +49,19 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     event EmergencyShutdown(bool active_);
 
     constructor(
-        address sOhm_,
-        address gOhm_,
+        address sNoro_,
+        address gNoro_,
         address staking_,
         address authority_
-    ) YieldSplitter(sOhm_, authority_) {
-        if (sOhm_ == address(0) || gOhm_ == address(0) || staking_ == address(0) || authority_ == address(0))
+    ) YieldSplitter(sNoro_, authority_) {
+        if (sNoro_ == address(0) || gNoro_ == address(0) || staking_ == address(0) || authority_ == address(0))
             revert YieldDirector_InvalidAddress();
 
-        sOHM = sOhm_;
-        gOHM = gOhm_;
+        sNORO = sNoro_;
+        gNORO = gNoro_;
         staking = IStaking(staking_);
 
-        IERC20(sOHM).safeApprove(address(staking), type(uint256).max);
+        IERC20(sNORO).safeApprove(address(staking), type(uint256).max);
     }
 
     /************************
@@ -84,77 +84,77 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
      ************************/
 
     /**
-        @notice Deposit gOHM, records sender address and assign rebases to recipient
-        @param amount_ Amount of gOHM debt issued from donor to recipient
+        @notice Deposit gNORO, records sender address and assign rebases to recipient
+        @param amount_ Amount of gNORO debt issued from donor to recipient
         @param recipient_ Address to direct staking yield and vault shares to
     */
     function deposit(uint256 amount_, address recipient_) external override returns (uint256 depositId) {
         depositId = _createDeposit(amount_, recipient_);
 
-        IERC20(gOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(gNORO).safeTransferFrom(msg.sender, address(this), amount_);
     }
 
     /**
-        @notice Deposit sOHM, wrap to gOHM, and records sender address and assign rebases to recipeint
-        @param amount_ Amount of sOHM debt issued from donor to recipient
+        @notice Deposit sNORO, wrap to gNORO, and records sender address and assign rebases to recipeint
+        @param amount_ Amount of sNORO debt issued from donor to recipient
         @param recipient_ Address to direct staking yield and vault shares to
     */
-    function depositSohm(uint256 amount_, address recipient_) external override returns (uint256 depositId) {
-        uint256 gohmAmount = _toAgnostic(amount_);
-        depositId = _createDeposit(gohmAmount, recipient_);
+    function depositSnoro(uint256 amount_, address recipient_) external override returns (uint256 depositId) {
+        uint256 gnoroAmount = _toAgnostic(amount_);
+        depositId = _createDeposit(gnoroAmount, recipient_);
 
-        IERC20(sOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(sNORO).safeTransferFrom(msg.sender, address(this), amount_);
         staking.wrap(address(this), amount_);
     }
 
     /**
-        @notice Deposit additional gOHM, and update deposit record
-        @param depositId_ Deposit ID to direct additional gOHM to
-        @param amount_ Amount of new gOHM debt issued from donor to recipient
+        @notice Deposit additional gNORO, and update deposit record
+        @param depositId_ Deposit ID to direct additional gNORO to
+        @param amount_ Amount of new gNORO debt issued from donor to recipient
     */
     function addToDeposit(uint256 depositId_, uint256 amount_) external override {
         _increaseDeposit(depositId_, amount_);
 
-        IERC20(gOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(gNORO).safeTransferFrom(msg.sender, address(this), amount_);
     }
 
     /**
-        @notice Deposit additional sOHM, wrap to gOHM, and update deposit record
-        @param depositId_ Deposit ID to direct additional gOHM to
-        @param amount_ Amount of new sOHM debt issued from donor to recipient
+        @notice Deposit additional sNORO, wrap to gNORO, and update deposit record
+        @param depositId_ Deposit ID to direct additional gNORO to
+        @param amount_ Amount of new sNORO debt issued from donor to recipient
     */
-    function addToSohmDeposit(uint256 depositId_, uint256 amount_) external override {
-        uint256 gohmAmount = _toAgnostic(amount_);
-        _increaseDeposit(depositId_, gohmAmount);
+    function addToSnoroDeposit(uint256 depositId_, uint256 amount_) external override {
+        uint256 gnoroAmount = _toAgnostic(amount_);
+        _increaseDeposit(depositId_, gnoroAmount);
 
-        IERC20(sOHM).safeTransferFrom(msg.sender, address(this), amount_);
+        IERC20(sNORO).safeTransferFrom(msg.sender, address(this), amount_);
         staking.wrap(address(this), amount_);
     }
 
     /**
-        @notice Withdraw donor's gOHM from vault
-        @param depositId_ Deposit ID to remove gOHM deposit from
-        @param amount_ Amount of gOHM deposit to remove and return to donor
+        @notice Withdraw donor's gNORO from vault
+        @param depositId_ Deposit ID to remove gNORO deposit from
+        @param amount_ Amount of gNORO deposit to remove and return to donor
     */
     function withdrawPrincipal(uint256 depositId_, uint256 amount_) external override {
         uint256 amountWithdrawn = _withdraw(depositId_, amount_);
 
-        IERC20(gOHM).safeTransfer(msg.sender, amountWithdrawn);
+        IERC20(gNORO).safeTransfer(msg.sender, amountWithdrawn);
     }
 
     /**
-        @notice Withdraw donor's gOHM from vault, and return it as sOHM
-        @param depositId_ Deposit ID to remove gOHM debt from
-        @param amount_ Amount of gOHM debt to remove and return to donor as sOHM
+        @notice Withdraw donor's gNORO from vault, and return it as sNORO
+        @param depositId_ Deposit ID to remove gNORO debt from
+        @param amount_ Amount of gNORO debt to remove and return to donor as sNORO
     */
-    function withdrawPrincipalAsSohm(uint256 depositId_, uint256 amount_) external override {
+    function withdrawPrincipalAsSnoro(uint256 depositId_, uint256 amount_) external override {
         uint256 amountWithdrawn = _withdraw(depositId_, amount_);
 
         staking.unwrap(msg.sender, amountWithdrawn);
     }
 
     /**
-        @notice Withdraw all gOHM from all donor positions
+        @notice Withdraw all gNORO from all donor positions
     */
     function withdrawAll() external override {
         if (withdrawDisabled) revert YieldDirector_WithdrawalsDisabled();
@@ -178,7 +178,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
 
         emit AllWithdrawn(msg.sender, agnosticAmount);
 
-        IERC20(gOHM).safeTransfer(msg.sender, agnosticAmount);
+        IERC20(gNORO).safeTransfer(msg.sender, agnosticAmount);
     }
 
     /************************
@@ -186,8 +186,8 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
      ************************/
 
     /**
-        @notice Get deposited gOHM amounts for specific recipient (updated to current index
-                based on sOHM equivalent amount deposit)
+        @notice Get deposited gNORO amounts for specific recipient (updated to current index
+                based on sNORO equivalent amount deposit)
         @param donor_ Address of user donating yield
         @param recipient_ Address of user receiving donated yield
     */
@@ -207,8 +207,8 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Return total amount of donor's gOHM deposited (updated to current index based
-                on sOHM equivalent amount deposited)
+        @notice Return total amount of donor's gNORO deposited (updated to current index based
+                on sNORO equivalent amount deposited)
         @param donor_ Address of user donating yield
     */
     function totalDeposits(address donor_) external view override returns (uint256) {
@@ -223,8 +223,8 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Return arrays of donor's recipients and deposit amounts (gOHM value based on
-                sOHM equivalent deposit), matched by index
+        @notice Return arrays of donor's recipients and deposit amounts (gNORO value based on
+                sNORO equivalent deposit), matched by index
         @param donor_ Address of user donating yield
     */
     function getAllDeposits(address donor_) external view override returns (address[] memory, uint256[] memory) {
@@ -249,7 +249,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Return total amount of gOHM donated to recipient since last full redemption
+        @notice Return total amount of gNORO donated to recipient since last full redemption
         @param donor_ Address of user donating yield
         @param recipient_ Address of user recieiving donated yield
     */
@@ -267,7 +267,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Return total amount of gOHM donated from donor since last full redemption
+        @notice Return total amount of gNORO donated from donor since last full redemption
         @param donor_ Address of user donating yield
     */
     function totalDonated(address donor_) external view override returns (uint256) {
@@ -291,7 +291,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
      ************************/
 
     /**
-        @notice Get redeemable gOHM balance of a specific deposit
+        @notice Get redeemable gNORO balance of a specific deposit
         @param depositId_ Deposit ID for this donation
     */
     function redeemableBalance(uint256 depositId_) public view override returns (uint256) {
@@ -301,7 +301,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Get redeemable gOHM balance of a recipient address
+        @notice Get redeemable gNORO balance of a recipient address
         @param recipient_ Address of user receiving donated yield
      */
     function totalRedeemableBalance(address recipient_) external view override returns (uint256) {
@@ -326,38 +326,38 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Redeem recipient's donated amount of sOHM at current index from one donor as gOHM
+        @notice Redeem recipient's donated amount of sNORO at current index from one donor as gNORO
         @param depositId_ Deposit ID for this donation
     */
     function redeemYield(uint256 depositId_) external override {
         uint256 amountRedeemed = _redeem(depositId_, msg.sender);
 
-        IERC20(gOHM).safeTransfer(msg.sender, amountRedeemed);
+        IERC20(gNORO).safeTransfer(msg.sender, amountRedeemed);
     }
 
     /**
-        @notice Redeem recipient's donated amount of sOHM at current index
+        @notice Redeem recipient's donated amount of sNORO at current index
         @param depositId_ Deposit id for this donation
     */
-    function redeemYieldAsSohm(uint256 depositId_) external override {
+    function redeemYieldAsSnoro(uint256 depositId_) external override {
         uint256 amountRedeemed = _redeem(depositId_, msg.sender);
 
         staking.unwrap(msg.sender, amountRedeemed);
     }
 
     /**
-        @notice Redeem recipient's full donated amount of sOHM at current index as gOHM
+        @notice Redeem recipient's full donated amount of sNORO at current index as gNORO
     */
     function redeemAllYield() external override {
         uint256 amountRedeemed = _redeemAll(msg.sender);
 
-        IERC20(gOHM).safeTransfer(msg.sender, amountRedeemed);
+        IERC20(gNORO).safeTransfer(msg.sender, amountRedeemed);
     }
 
     /**
-        @notice Redeem recipient's full donated amount of sOHM at current index as gOHM
+        @notice Redeem recipient's full donated amount of sNORO at current index as gNORO
     */
-    function redeemAllYieldAsSohm() external override {
+    function redeemAllYieldAsSnoro() external override {
         uint256 amountRedeemed = _redeemAll(msg.sender);
 
         staking.unwrap(msg.sender, amountRedeemed);
@@ -374,7 +374,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
 
         amount_ = _redeem(id_, recipient);
 
-        IERC20(gOHM).safeTransfer(recipient, amount_);
+        IERC20(gNORO).safeTransfer(recipient, amount_);
     }
 
     /**
@@ -386,7 +386,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
 
         amount_ = _redeemAll(recipient_);
 
-        IERC20(gOHM).safeTransfer(recipient_, amount_);
+        IERC20(gNORO).safeTransfer(recipient_, amount_);
     }
 
     /************************
@@ -394,9 +394,9 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
      ************************/
 
     /**
-        @notice Creates a new deposit directing the yield from the deposited gOHM amount
+        @notice Creates a new deposit directing the yield from the deposited gNORO amount
                 to the prescribed recipient
-        @param amount_ Quantity of gOHM deposited redirecting yield to the recipient
+        @param amount_ Quantity of gNORO deposited redirecting yield to the recipient
         @param recipient_ The address of the user who will be entitled to claim the donated yield
     */
     function _createDeposit(uint256 amount_, address recipient_) internal returns (uint256 depositId) {
@@ -410,9 +410,9 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Increases the amount of gOHM directing yield to a recipient
+        @notice Increases the amount of gNORO directing yield to a recipient
         @param depositId_ The global ID number of the deposit to add the additional deposit to
-        @param amount_ Quantity of new gOHM deposited redirecting yield to the current deposit's recipient
+        @param amount_ Quantity of new gNORO deposited redirecting yield to the current deposit's recipient
     */
     function _increaseDeposit(uint256 depositId_, uint256 amount_) internal {
         if (isInvalidUpdate(depositId_, amount_)) revert YieldDirector_InvalidUpdate();
@@ -423,9 +423,9 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Withdraw gOHM deposit from vault
-        @param depositId_ Deposit ID to remove gOHM deposit from
-        @param amount_ Amount of gOHM deposit to remove and return to donor 
+        @notice Withdraw gNORO deposit from vault
+        @param depositId_ Deposit ID to remove gNORO deposit from
+        @param amount_ Amount of gNORO deposit to remove and return to donor 
     */
     function _withdraw(uint256 depositId_, uint256 amount_) internal returns (uint256 amountWithdrawn) {
         if (isInvalidWithdrawal(amount_)) revert YieldDirector_InvalidWithdrawal();
@@ -441,8 +441,8 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Redeem available gOHM yield from a specific deposit
-        @param depositId_ Deposit ID to withdraw gOHM yield from
+        @notice Redeem available gNORO yield from a specific deposit
+        @param depositId_ Deposit ID to withdraw gNORO yield from
         @param recipient_ address of recipient
     */
     function _redeem(uint256 depositId_, address recipient_) internal returns (uint256 amountRedeemed) {
@@ -474,7 +474,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     }
 
     /**
-        @notice Redeem all available gOHM yield from the vault
+        @notice Redeem all available gNORO yield from the vault
         @param recipient_ address of recipient
     */
     function _redeemAll(address recipient_) internal returns (uint256 amountRedeemed) {

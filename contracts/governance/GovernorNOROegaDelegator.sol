@@ -1,14 +1,14 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./GovernorOHMegaInterfaces.sol";
+import "./GovernorNOROegaInterfaces.sol";
 
-contract GovernorOHMegaDelegator is GovernorOHMegaDelegatorStorage, GovernorOHMegaEvents {
+contract GovernorNOROegaDelegator is GovernorNOROegaDelegatorStorage, GovernorNOROegaEvents {
     /// @notice change from original contract
     constructor(
         address timelock_,
-        address sOHM_,
-        address gOHM_,
+        address sNORO_,
+        address gNORO_,
         address admin_,
         address implementation_,
         uint256 votingPeriod_,
@@ -23,8 +23,8 @@ contract GovernorOHMegaDelegator is GovernorOHMegaDelegatorStorage, GovernorOHMe
             abi.encodeWithSignature(
                 "initialize(address,address,address,uint256,uint256,uint256)",
                 timelock_,
-                sOHM_,
-                gOHM_,
+                sNORO_,
+                gNORO_,
                 votingPeriod_,
                 votingDelay_,
                 proposalThreshold_

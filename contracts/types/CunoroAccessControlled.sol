@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.5;
 
-import "../interfaces/IOlympusAuthority.sol";
+import "../interfaces/ICunoroAuthority.sol";
 
-abstract contract OlympusAccessControlled {
+abstract contract CunoroAccessControlled {
     /* ========== EVENTS ========== */
 
-    event AuthorityUpdated(IOlympusAuthority indexed authority);
+    event AuthorityUpdated(ICunoroAuthority indexed authority);
 
     string UNAUTHORIZED = "UNAUTHORIZED"; // save gas
 
     /* ========== STATE VARIABLES ========== */
 
-    IOlympusAuthority public authority;
+    ICunoroAuthority public authority;
 
     /* ========== Constructor ========== */
 
-    constructor(IOlympusAuthority _authority) {
+    constructor(ICunoroAuthority _authority) {
         authority = _authority;
         emit AuthorityUpdated(_authority);
     }
@@ -45,7 +45,7 @@ abstract contract OlympusAccessControlled {
 
     /* ========== GOV ONLY ========== */
 
-    function setAuthority(IOlympusAuthority _newAuthority) external onlyGovernor {
+    function setAuthority(ICunoroAuthority _newAuthority) external onlyGovernor {
         authority = _newAuthority;
         emit AuthorityUpdated(_newAuthority);
     }
