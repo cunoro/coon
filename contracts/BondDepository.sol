@@ -1,1000 +1,569 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.7.5;
-pragma abicoder v2;
+pragma solidity ^0.8.10;
 
-interface IOwnable {
-    function policy() external view returns (address);
+import "./types/NoteKeeper.sol";
 
-    function renounceManagement() external;
+import "./libraries/SafeERC20.sol";
 
-    function pushManagement( address newOwner_ ) external;
+import "./interfaces/IERC20Metadata.sol";
+import "./interfaces/IBondDepository.sol";
 
-    function pullManagement() external;
-}
+/// @title Olympus Bond Depository V2
+/// @author Zeus, Indigo
+/// Review by: JeffX
 
-contract OwnableData {
-    address public owner;
-    address public pendingOwner;
-}
+contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
+    /* ======== DEPENDENCIES ======== */
 
-contract Ownable is OwnableData {
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    /// @notice `owner` defaults to msg.sender on construction.
-    constructor() {
-        owner = msg.sender;
-        emit OwnershipTransferred(address(0), msg.sender);
-    }
-
-    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
-    /// Can only be invoked by the current `owner`.
-    /// @param newOwner Address of the new owner.
-    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
-    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
-    function transferOwnership(
-        address newOwner,
-        bool direct,
-        bool renounce
-    ) public onlyOwner {
-        if (direct) {
-            // Checks
-            require(newOwner != address(0) || renounce, "Ownable: zero address");
-
-            // Effects
-            emit OwnershipTransferred(owner, newOwner);
-            owner = newOwner;
-            pendingOwner = address(0);
-        } else {
-            // Effects
-            pendingOwner = newOwner;
-        }
-    }
-
-    /// @notice Needs to be called by `pendingOwner` to claim ownership.
-    function claimOwnership() public {
-        address _pendingOwner = pendingOwner;
-
-        // Checks
-        require(msg.sender == _pendingOwner, "Ownable: caller != pending owner");
-
-        // Effects
-        emit OwnershipTransferred(owner, _pendingOwner);
-        owner = _pendingOwner;
-        pendingOwner = address(0);
-    }
-
-    /// @notice Only allows the `owner` to execute the function.
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Ownable: caller is not the owner");
-        _;
-    }
-}
-
-library LowGasSafeMath {
-    /// @notice Returns x + y, reverts if sum overflows uint256
-    /// @param x The augend
-    /// @param y The addend
-    /// @return z The sum of x and y
-    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x);
-    }
-
-    function add32(uint32 x, uint32 y) internal pure returns (uint32 z) {
-        require((z = x + y) >= x);
-    }
-
-    function add8(uint8 x, uint8 y) internal pure returns (uint8 z) {
-        require((z = x + y) >= x);
-    }
-
-    /// @notice Returns x - y, reverts if underflows
-    /// @param x The minuend
-    /// @param y The subtrahend
-    /// @return z The difference of x and y
-    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x - y) <= x);
-    }
-
-    function sub32(uint32 x, uint32 y) internal pure returns (uint32 z) {
-        require((z = x - y) <= x);
-    }
-
-    /// @notice Returns x * y, reverts if overflows
-    /// @param x The multiplicand
-    /// @param y The multiplier
-    /// @return z The product of x and y
-    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require(x == 0 || (z = x * y) / x == y);
-    }
-
-    /// @notice Returns x + y, reverts if overflows or underflows
-    /// @param x The augend
-    /// @param y The addend
-    /// @return z The sum of x and y
-    function add(int256 x, int256 y) internal pure returns (int256 z) {
-        require((z = x + y) >= x == (y >= 0));
-    }
-
-    /// @notice Returns x - y, reverts if overflows or underflows
-    /// @param x The minuend
-    /// @param y The subtrahend
-    /// @return z The difference of x and y
-    function sub(int256 x, int256 y) internal pure returns (int256 z) {
-        require((z = x - y) <= x == (y >= 0));
-    }
-}
-
-library Address {
-
-    function isContract(address account) internal view returns (bool) {
-
-        uint256 size;
-        // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
-        return size > 0;
-    }
-
-    function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, "Address: insufficient balance");
-
-        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{ value: amount }("");
-        require(success, "Address: unable to send value, recipient may have reverted");
-    }
-
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-      return functionCall(target, data, "Address: low-level call failed");
-    }
-
-    function functionCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
-        return _functionCallWithValue(target, data, 0, errorMessage);
-    }
-
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
-    }
-
-    function functionCallWithValue(
-        address target,
-        bytes memory data,
-        uint256 value,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
-        require(address(this).balance >= value, "Address: insufficient balance for call");
-        require(isContract(target), "Address: call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{ value: value }(data);
-        return _verifyCallResult(success, returndata, errorMessage);
-    }
-
-    function _functionCallWithValue(
-        address target,
-        bytes memory data,
-        uint256 weiValue,
-        string memory errorMessage
-    ) private returns (bytes memory) {
-        require(isContract(target), "Address: call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);
-        if (success) {
-            return returndata;
-        } else {
-            // Look for revert reason and bubble it up if present
-            if (returndata.length > 0) {
-                // The easiest way to bubble the revert reason is using memory via assembly
-
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    let returndata_size := mload(returndata)
-                    revert(add(32, returndata), returndata_size)
-                }
-            } else {
-                revert(errorMessage);
-            }
-        }
-    }
-
-    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
-        return functionStaticCall(target, data, "Address: low-level static call failed");
-    }
-
-    function functionStaticCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal view returns (bytes memory) {
-        require(isContract(target), "Address: static call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.staticcall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
-    }
-
-    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
-    }
-
-    function functionDelegateCall(
-        address target,
-        bytes memory data,
-        string memory errorMessage
-    ) internal returns (bytes memory) {
-        require(isContract(target), "Address: delegate call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.delegatecall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
-    }
-
-    function _verifyCallResult(
-        bool success,
-        bytes memory returndata,
-        string memory errorMessage
-    ) private pure returns(bytes memory) {
-        if (success) {
-            return returndata;
-        } else {
-            if (returndata.length > 0) {
-
-                assembly {
-                    let returndata_size := mload(returndata)
-                    revert(add(32, returndata), returndata_size)
-                }
-            } else {
-                revert(errorMessage);
-            }
-        }
-    }
-
-    function addressToString(address _address) internal pure returns(string memory) {
-        bytes32 _bytes = bytes32(uint256(_address));
-        bytes memory HEX = "0123456789abcdef";
-        bytes memory _addr = new bytes(42);
-
-        _addr[0] = '0';
-        _addr[1] = 'x';
-
-        for(uint256 i = 0; i < 20; i++) {
-            _addr[2+i*2] = HEX[uint8(_bytes[i + 12] >> 4)];
-            _addr[3+i*2] = HEX[uint8(_bytes[i + 12] & 0x0f)];
-        }
-
-        return string(_addr);
-
-    }
-}
-
-interface IERC20 {
-    function decimals() external view returns (uint8);
-
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-library SafeERC20 {
-    using LowGasSafeMath for uint256;
-    using Address for address;
-
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
-    }
-
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
-
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
-
-        require((value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender)
-            .sub(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
-
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
-        if (returndata.length > 0) { // Return data is optional
-            // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-        }
-    }
-}
-
-library FullMath {
-    function fullMul(uint256 x, uint256 y) private pure returns (uint256 l, uint256 h) {
-        uint256 mm = mulmod(x, y, uint256(-1));
-        l = x * y;
-        h = mm - l;
-        if (mm < l) h -= 1;
-    }
-
-    function fullDiv(
-        uint256 l,
-        uint256 h,
-        uint256 d
-    ) private pure returns (uint256) {
-        uint256 pow2 = d & -d;
-        d /= pow2;
-        l /= pow2;
-        l += h * ((-pow2) / pow2 + 1);
-        uint256 r = 1;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        r *= 2 - d * r;
-        return l * r;
-    }
-
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) internal pure returns (uint256) {
-        (uint256 l, uint256 h) = fullMul(x, y);
-        uint256 mm = mulmod(x, y, d);
-        if (mm > l) h -= 1;
-        l -= mm;
-        require(h < d, 'FullMath::mulDiv: overflow');
-        return fullDiv(l, h, d);
-    }
-}
-
-library FixedPoint {
-
-    struct uq112x112 {
-        uint224 _x;
-    }
-
-    struct uq144x112 {
-        uint256 _x;
-    }
-
-    uint8 private constant RESOLUTION = 112;
-    uint256 private constant Q112 = 0x10000000000000000000000000000;
-    uint256 private constant Q224 = 0x100000000000000000000000000000000000000000000000000000000;
-    uint256 private constant LOWER_MASK = 0xffffffffffffffffffffffffffff; // decimal of UQ*x112 (lower 112 bits)
-
-    function decode(uq112x112 memory self) internal pure returns (uint112) {
-        return uint112(self._x >> RESOLUTION);
-    }
-
-    function decode112with18(uq112x112 memory self) internal pure returns (uint) {
-
-        return uint(self._x) / 5192296858534827;
-    }
-
-    function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq112x112 memory) {
-        require(denominator > 0, 'FixedPoint::fraction: division by zero');
-        if (numerator == 0) return FixedPoint.uq112x112(0);
-
-        if (numerator <= uint144(-1)) {
-            uint256 result = (numerator << RESOLUTION) / denominator;
-            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
-            return uq112x112(uint224(result));
-        } else {
-            uint256 result = FullMath.mulDiv(numerator, Q112, denominator);
-            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
-            return uq112x112(uint224(result));
-        }
-    }
-}
-
-interface ITreasury {
-    function deposit( uint _amount, address _token, uint _value, uint _payout ) external;
-    function valueOf( address _token, uint _amount ) external view returns ( uint value_ );
-    function withdraw( uint _amount, address _token ) external;
-}
-
-interface IBondCalculator {
-    function valuation( address _LP, uint _amount ) external view returns ( uint );
-    function markdown( address _LP ) external view returns ( uint );
-}
-
-interface IStaking {
-    function stake( uint _amount, address _recipient ) external returns ( bool );
-}
-
-interface IStakingHelper {
-    function stake( uint _amount, address _recipient ) external;
-}
-
-contract CunoroBondDepository is Ownable {
-
-    using FixedPoint for *;
     using SafeERC20 for IERC20;
-    using LowGasSafeMath for uint;
-    using LowGasSafeMath for uint32;
-    using LowGasSafeMath for uint8;
-
-
-
 
     /* ======== EVENTS ======== */
 
-    event BondCreated( uint deposit, uint indexed payout, uint indexed expires, uint indexed priceInUSD );
-    event BondRedeemed( address indexed recipient, uint payout, uint remaining );
-    event BondPriceChanged( uint indexed priceInUSD, uint indexed internalPrice, uint indexed debtRatio );
-    event ControlVariableAdjustment( uint initialBCV, uint newBCV, uint adjustment, bool addition );
-    event InitTerms( Terms terms);
-    event LogSetTerms(PARAMETER param, uint value);
-    event LogSetAdjustment( Adjust adjust);
-    event LogSetStaking( address indexed stakingContract, bool isHelper);
-    event LogRecoverLostToken( address indexed tokenToRecover, uint amount);
-
-
+    event CreateMarket(uint256 indexed id, address indexed baseToken, address indexed quoteToken, uint256 initialPrice);
+    event CloseMarket(uint256 indexed id);
+    event Bond(uint256 indexed id, uint256 amount, uint256 price);
+    event Tuned(uint256 indexed id, uint64 oldControlVariable, uint64 newControlVariable);
 
     /* ======== STATE VARIABLES ======== */
 
-    IERC20 public immutable Cunoro; // token given as payment for bond
-    IERC20 public immutable principle; // token used to create bond
-    ITreasury public immutable treasury; // mints Cunoro when receives principle
-    address public immutable DAO; // receives profit share from bond
+    // Storage
+    Market[] public markets; // persistent market data
+    Terms[] public terms; // deposit construction data
+    Metadata[] public metadata; // extraneous market data
+    mapping(uint256 => Adjustment) public adjustments; // control variable changes
 
-    bool public immutable isLiquidityBond; // LP and Reserve bonds are treated slightly different
-    IBondCalculator public immutable bondCalculator; // calculates value of LP tokens
+    // Queries
+    mapping(address => uint256[]) public marketsForQuote; // market IDs for quote token
 
-    IStaking public staking; // to auto-stake payout
-    IStakingHelper public stakingHelper; // to stake and claim if no staking warmup
-    bool public useHelper;
+    /* ======== CONSTRUCTOR ======== */
 
-    Terms public terms; // stores terms for new bonds
-    Adjust public adjustment; // stores adjustment to BCV data
-
-    mapping( address => Bond ) public bondInfo; // stores bond information for depositors
-
-    uint public totalDebt; // total value of outstanding bonds; used for pricing
-    uint32 public lastDecay; // reference time for debt decay
-
-    mapping (address => bool) public allowedZappers;
-
-    /* ======== STRUCTS ======== */
-
-    // Info for creating new bonds
-    struct Terms {
-        uint controlVariable; // scaling variable for price
-        uint minimumPrice; // vs principle value
-        uint maxPayout; // in thousandths of a %. i.e. 500 = 0.5%
-        uint fee; // as % of bond payout, in hundreths. ( 500 = 5% = 0.05 for every 1 paid)
-        uint maxDebt; // 9 decimal debt ratio, max % total supply created as debt
-        uint32 vestingTerm; // in seconds
+    constructor(
+        IOlympusAuthority _authority,
+        IERC20 _ohm,
+        IgOHM _gohm,
+        IStaking _staking,
+        ITreasury _treasury
+    ) NoteKeeper(_authority, _ohm, _gohm, _staking, _treasury) {
+        // save gas for users by bulk approving stake() transactions
+        _ohm.approve(address(_staking), 1e45);
     }
 
-    // Info for bond holder
-    struct Bond {
-        uint payout; // Cunoro remaining to be paid
-        uint pricePaid; // In DAI, for front end viewing
-        uint32 lastTime; // Last interaction
-        uint32 vesting; // Seconds left to vest
-    }
-
-    // Info for incremental adjustments to control variable
-    struct Adjust {
-        bool add; // addition or subtraction
-        uint rate; // increment
-        uint target; // BCV when adjustment finished
-        uint32 buffer; // minimum length (in seconds) between adjustments
-        uint32 lastTime; // time when last adjustment made
-    }
-
-    uint8 private taxReserveBurn_ = 2;
-    uint8 private taxReserveReward_ = 2;
-    uint8 private taxReserveLiquify_ = 2;
-
-    uint private tokenPrice_ = 10 ** 5;
-
-
-
-    /* ======== INITIALIZATION ======== */
-
-    constructor (
-        address _Cunoro,
-        address _principle,
-        address _treasury,
-        address _DAO,
-        address _bondCalculator
-    ) {
-        require( _Cunoro != address(0) );
-        Cunoro = IERC20(_Cunoro);
-        require( _principle != address(0) );
-        principle = IERC20(_principle);
-        require( _treasury != address(0) );
-        treasury = ITreasury(_treasury);
-        require( _DAO != address(0) );
-        DAO = _DAO;
-        // bondCalculator should be address(0) if not LP bond
-        bondCalculator = IBondCalculator(_bondCalculator);
-        isLiquidityBond = ( _bondCalculator != address(0) );
-    }
+    /* ======== DEPOSIT ======== */
 
     /**
-     *  @notice initializes bond parameters
-     *  @param _controlVariable uint
-     *  @param _vestingTerm uint32
-     *  @param _minimumPrice uint
-     *  @param _maxPayout uint
-     *  @param _fee uint
-     *  @param _maxDebt uint
-     */
-    function initializeBondTerms(
-        uint _controlVariable,
-        uint _minimumPrice,
-        uint _maxPayout,
-        uint _fee,
-        uint _maxDebt,
-        uint32 _vestingTerm
-    ) external onlyOwner() {
-        require( terms.controlVariable == 0, "Bonds must be initialized from 0" );
-        require( _controlVariable >= 40, "Can lock adjustment" );
-        require( _maxPayout <= 45000, "Payout cannot be above 10 percent" );
-        require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
-        require( _fee <= 10000, "DAO fee cannot exceed payout" );
-        terms = Terms ({
-            controlVariable: _controlVariable,
-            minimumPrice: _minimumPrice,
-            maxPayout: _maxPayout,
-            fee: _fee,
-            maxDebt: _maxDebt,
-            vestingTerm: _vestingTerm
-        });
-        lastDecay = uint32(block.timestamp);
-        emit InitTerms(terms);
-    }
-
-
-
-
-    /* ======== POLICY FUNCTIONS ======== */
-
-    enum PARAMETER { VESTING, PAYOUT, FEE, DEBT, MINPRICE }
-    /**
-     *  @notice set parameters for new bonds
-     *  @param _parameter PARAMETER
-     *  @param _input uint
-     */
-    function setBondTerms ( PARAMETER _parameter, uint _input ) external onlyOwner() {
-        if ( _parameter == PARAMETER.VESTING ) { // 0
-            // require( _input >= 129600, "Vesting must be longer than 36 hours" );
-            terms.vestingTerm = uint32(_input);
-        } else if ( _parameter == PARAMETER.PAYOUT ) { // 1
-            // require( _input <= 10000, "Payout cannot be above 10 percent" );
-            terms.maxPayout = _input;
-        } else if ( _parameter == PARAMETER.FEE ) { // 2
-            // require( _input <= 10000, "DAO fee cannot exceed payout" );
-            terms.fee = _input;
-        } else if ( _parameter == PARAMETER.DEBT ) { // 3
-            terms.maxDebt = _input;
-        } else if ( _parameter == PARAMETER.MINPRICE ) { // 4
-            terms.minimumPrice = _input;
-        }
-        emit LogSetTerms(_parameter, _input);
-    }
-
-    /**
-     *  @notice set control variable adjustment
-     *  @param _addition bool
-     *  @param _increment uint
-     *  @param _target uint
-     *  @param _buffer uint
-     */
-    function setAdjustment (
-        bool _addition,
-        uint _increment,
-        uint _target,
-        uint32 _buffer
-    ) external onlyOwner() {
-        require( _increment <= terms.controlVariable.mul( 25 ) / 1000 , "Increment too large" );
-        require(_target >= 40, "Next Adjustment could be locked");
-        adjustment = Adjust({
-            add: _addition,
-            rate: _increment,
-            target: _target,
-            buffer: _buffer,
-            lastTime: uint32(block.timestamp)
-        });
-        emit LogSetAdjustment(adjustment);
-    }
-
-    /**
-     *  @notice set contract for auto stake
-     *  @param _staking address
-     *  @param _helper bool
-     */
-    function setStaking( address _staking, bool _helper ) external onlyOwner() {
-        require( _staking != address(0), "IA" );
-        if ( _helper ) {
-            useHelper = true;
-            stakingHelper = IStakingHelper(_staking);
-        } else {
-            useHelper = false;
-            staking = IStaking(_staking);
-        }
-        emit LogSetStaking(_staking, _helper);
-    }
-
-    function allowZapper(address zapper) external onlyOwner {
-        require(zapper != address(0), "ZNA");
-
-        allowedZappers[zapper] = true;
-    }
-
-    function removeZapper(address zapper) external onlyOwner {
-
-        allowedZappers[zapper] = false;
-    }
-
-
-
-
-    /* ======== USER FUNCTIONS ======== */
-
-    /**
-     *  @notice deposit bond
-     *  @param _amount uint
-     *  @param _maxPrice uint
-     *  @param _depositor address
-     *  @return uint
+     * @notice             deposit quote tokens in exchange for a bond from a specified market
+     * @param _id          the ID of the market
+     * @param _amount      the amount of quote token to spend
+     * @param _maxPrice    the maximum price at which to buy
+     * @param _user        the recipient of the payout
+     * @param _referral    the front end operator address
+     * @return payout_     the amount of gOHM due
+     * @return expiry_     the timestamp at which payout is redeemable
+     * @return index_      the user index of the Note (used to redeem or query information)
      */
     function deposit(
-        uint _amount,
-        uint _maxPrice,
-        address _depositor
-    ) external returns ( uint ) {
-        require( _depositor != address(0), "Invalid address" );
-        require(msg.sender == _depositor || allowedZappers[msg.sender], "LFNA");
-        decayDebt();
+        uint256 _id,
+        uint256 _amount,
+        uint256 _maxPrice,
+        address _user,
+        address _referral
+    )
+        external
+        override
+        returns (
+            uint256 payout_,
+            uint256 expiry_,
+            uint256 index_
+        )
+    {
+        Market storage market = markets[_id];
+        Terms memory term = terms[_id];
+        uint48 currentTime = uint48(block.timestamp);
 
+        // Markets end at a defined timestamp
+        // |-------------------------------------| t
+        require(currentTime < term.conclusion, "Depository: market concluded");
 
-        uint priceInUSD = bondPriceInUSD(); // Stored in bond info
-        uint nativePrice = _bondPrice();
+        // Debt and the control variable decay over time
+        _decay(_id, currentTime);
 
-        require( _maxPrice >= nativePrice, "Slippage limit: more than max price" ); // slippage protection
-
-        uint8 allReserveTax = taxReserveBurn_.add8(taxReserveReward_).add8(taxReserveLiquify_);
-        uint receiveAmount = _amount - _amount * allReserveTax / 100;
-        uint sentAmount = receiveAmount - receiveAmount * allReserveTax / 100;
-
-        uint value = treasury.valueOf( address(principle), sentAmount );
-        value = value.mul( assetPrice() ) / 10**8;
-        uint payout = payoutFor( value ); // payout to bonder is computed
-        require( totalDebt.add(value) <= terms.maxDebt, "Max capacity reached" );
-        require( payout >= 10000000, "Bond too small" ); // must be > 0.01 Cunoro ( underflow protection )
-        require( payout <= maxPayout(), "Bond too large"); // size protection because there is no slippage
-
-        // profits are calculated
-        uint fee = payout.mul( terms.fee ) / 10000 ;
+        // Users input a maximum price, which protects them from price changes after
+        // entering the mempool. max price is a slippage mitigation measure
+        uint256 price = _marketPrice(_id);
+        require(price <= _maxPrice, "Depository: more than max price");
 
         /**
-            principle is transferred in
-            approved and
-            deposited into the treasury, returning (_amount - profit) Cunoro
+         * payout for the deposit = amount / price
+         *
+         * where
+         * payout = OHM out
+         * amount = quote tokens in
+         * price = quote tokens : ohm (i.e. 42069 DAI : OHM)
+         *
+         * 1e18 = OHM decimals (9) + price decimals (9)
          */
-        principle.safeTransferFrom( msg.sender, address(this), _amount );
-        principle.approve( address( treasury ), receiveAmount );
-        treasury.deposit( receiveAmount, address(principle), value, payout );
+        payout_ = ((_amount * 1e18) / price) / (10**metadata[_id].quoteDecimals);
 
-        if ( fee != 0 ) { // fee is transferred to dao
-            Cunoro.safeTransfer( DAO, fee );
+        // markets have a max payout amount, capping size because deposits
+        // do not experience slippage. max payout is recalculated upon tuning
+        require(payout_ <= market.maxPayout, "Depository: max size exceeded");
+
+        /*
+         * each market is initialized with a capacity
+         *
+         * this is either the number of OHM that the market can sell
+         * (if capacity in quote is false),
+         *
+         * or the number of quote tokens that the market can buy
+         * (if capacity in quote is true)
+         */
+        market.capacity -= market.capacityInQuote ? _amount : payout_;
+
+        /**
+         * bonds mature with a cliff at a set timestamp
+         * prior to the expiry timestamp, no payout tokens are accessible to the user
+         * after the expiry timestamp, the entire payout can be redeemed
+         *
+         * there are two types of bonds: fixed-term and fixed-expiration
+         *
+         * fixed-term bonds mature in a set amount of time from deposit
+         * i.e. term = 1 week. when alice deposits on day 1, her bond
+         * expires on day 8. when bob deposits on day 2, his bond expires day 9.
+         *
+         * fixed-expiration bonds mature at a set timestamp
+         * i.e. expiration = day 10. when alice deposits on day 1, her term
+         * is 9 days. when bob deposits on day 2, his term is 8 days.
+         */
+        expiry_ = term.fixedTerm ? term.vesting + currentTime : term.vesting;
+
+        // markets keep track of how many quote tokens have been
+        // purchased, and how much OHM has been sold
+        market.purchased += _amount;
+        market.sold += uint64(payout_);
+
+        // incrementing total debt raises the price of the next bond
+        market.totalDebt += uint64(payout_);
+
+        emit Bond(_id, _amount, price);
+
+        /**
+         * user data is stored as Notes. these are isolated array entries
+         * storing the amount due, the time created, the time when payout
+         * is redeemable, the time when payout was redeemed, and the ID
+         * of the market deposited into
+         */
+        index_ = addNote(_user, payout_, uint48(expiry_), uint48(_id), _referral);
+
+        // transfer payment to treasury
+        market.quoteToken.safeTransferFrom(msg.sender, address(treasury), _amount);
+
+        // if max debt is breached, the market is closed
+        // this a circuit breaker
+        if (term.maxDebt < market.totalDebt) {
+            market.capacity = 0;
+            emit CloseMarket(_id);
+        } else {
+            // if market will continue, the control variable is tuned to hit targets on time
+            _tune(_id, currentTime);
         }
-
-        // total debt is increased
-        totalDebt = totalDebt.add( value );
-        payout = payout.sub(fee);
-
-        // depositor info is stored
-        bondInfo[ _depositor ] = Bond({
-            payout: bondInfo[ _depositor ].payout.add( payout ),
-            vesting: terms.vestingTerm,
-            lastTime: uint32(block.timestamp),
-            pricePaid: priceInUSD
-        });
-
-        // indexed events are emitted
-        emit BondCreated( _amount, payout, block.timestamp.add( terms.vestingTerm ), priceInUSD );
-        emit BondPriceChanged( bondPriceInUSD(), _bondPrice(), debtRatio() );
-        adjust(); // control variable is adjusted
-
-        return payout;
     }
 
     /**
-     *  @notice redeem bond for user
-     *  @param _recipient address
-     *  @param _stake bool
-     *  @return uint
+     * @notice             decay debt, and adjust control variable if there is an active change
+     * @param _id          ID of market
+     * @param _time        uint48 timestamp (saves gas when passed in)
      */
-    function redeem( address _recipient, bool _stake ) external returns ( uint ) {
-        require(msg.sender == _recipient, "NA");
-        Bond memory info = bondInfo[ _recipient ];
-        // (seconds since last interaction / vesting term remaining)
-        uint percentVested = percentVestedFor( _recipient );
+    function _decay(uint256 _id, uint48 _time) internal {
+        // Debt decay
 
-        if ( percentVested >= 10000 ) { // if fully vested
-            delete bondInfo[ _recipient ]; // delete user info
-            emit BondRedeemed( _recipient, info.payout, 0 ); // emit bond data
-            return stakeOrSend( _recipient, _stake, info.payout ); // pay user everything due
+        /*
+         * Debt is a time-decayed sum of tokens spent in a market
+         * Debt is added when deposits occur and removed over time
+         * |
+         * |    debt falls with
+         * |   / \  inactivity       / \
+         * | /     \              /\/    \
+         * |         \           /         \
+         * |           \      /\/            \
+         * |             \  /  and rises       \
+         * |                with deposits
+         * |
+         * |------------------------------------| t
+         */
+        markets[_id].totalDebt -= debtDecay(_id);
+        metadata[_id].lastDecay = _time;
 
-        } else { // if unfinished
-            // calculate payout vested
-            uint payout = info.payout.mul( percentVested ) / 10000 ;
-            // store updated deposit info
-            bondInfo[ _recipient ] = Bond({
-                payout: info.payout.sub( payout ),
-                vesting: info.vesting.sub32( uint32( block.timestamp ).sub32( info.lastTime ) ),
-                lastTime: uint32(block.timestamp),
-                pricePaid: info.pricePaid
-            });
+        // Control variable decay
 
-            emit BondRedeemed( _recipient, payout, bondInfo[ _recipient ].payout );
-            return stakeOrSend( _recipient, _stake, payout );
-        }
-    }
+        // The bond control variable is continually tuned. When it is lowered (which
+        // lowers the market price), the change is carried out smoothly over time.
+        if (adjustments[_id].active) {
+            Adjustment storage adjustment = adjustments[_id];
 
+            (uint64 adjustBy, uint48 secondsSince, bool stillActive) = _controlDecay(_id);
+            terms[_id].controlVariable -= adjustBy;
 
-
-    /* ======== INTERNAL HELPER FUNCTIONS ======== */
-
-    /**
-     *  @notice allow user to stake payout automatically
-     *  @param _stake bool
-     *  @param _amount uint
-     *  @return uint
-     */
-    function stakeOrSend( address _recipient, bool _stake, uint _amount ) internal returns ( uint ) {
-        if ( !_stake ) { // if user does not want to stake
-            Cunoro.transfer( _recipient, _amount ); // send payout
-        } else { // if user wants to stake
-            if ( useHelper ) { // use if staking warmup is 0
-                Cunoro.approve( address(stakingHelper), _amount );
-                stakingHelper.stake( _amount, _recipient );
+            if (stillActive) {
+                adjustment.change -= adjustBy;
+                adjustment.timeToAdjusted -= secondsSince;
+                adjustment.lastAdjustment = _time;
             } else {
-                Cunoro.approve( address(staking), _amount );
-                staking.stake( _amount, _recipient );
+                adjustment.active = false;
             }
         }
-        return _amount;
     }
 
     /**
-     *  @notice makes incremental adjustment to control variable
+     * @notice             auto-adjust control variable to hit capacity/spend target
+     * @param _id          ID of market
+     * @param _time        uint48 timestamp (saves gas when passed in)
      */
-    function adjust() internal {
-        uint timeCanAdjust = adjustment.lastTime.add32( adjustment.buffer );
-        if( adjustment.rate != 0 && block.timestamp >= timeCanAdjust ) {
-            uint initial = terms.controlVariable;
-            uint bcv = initial;
-            if ( adjustment.add ) {
-                bcv = bcv.add(adjustment.rate);
-                if ( bcv >= adjustment.target ) {
-                    adjustment.rate = 0;
-                    bcv = adjustment.target;
-                }
+    function _tune(uint256 _id, uint48 _time) internal {
+        Metadata memory meta = metadata[_id];
+
+        if (_time >= meta.lastTune + meta.tuneInterval) {
+            Market memory market = markets[_id];
+
+            // compute seconds remaining until market will conclude
+            uint256 timeRemaining = terms[_id].conclusion - _time;
+            uint256 price = _marketPrice(_id);
+
+            // standardize capacity into an base token amount
+            // ohm decimals (9) + price decimals (9)
+            uint256 capacity = market.capacityInQuote
+                ? ((market.capacity * 1e18) / price) / (10**meta.quoteDecimals)
+                : market.capacity;
+
+            /**
+             * calculate the correct payout to complete on time assuming each bond
+             * will be max size in the desired deposit interval for the remaining time
+             *
+             * i.e. market has 10 days remaining. deposit interval is 1 day. capacity
+             * is 10,000 OHM. max payout would be 1,000 OHM (10,000 * 1 / 10).
+             */
+            markets[_id].maxPayout = uint64((capacity * meta.depositInterval) / timeRemaining);
+
+            // calculate the ideal total debt to satisfy capacity in the remaining time
+            uint256 targetDebt = (capacity * meta.length) / timeRemaining;
+
+            // derive a new control variable from the target debt and current supply
+            uint64 newControlVariable = uint64((price * treasury.baseSupply()) / targetDebt);
+
+            emit Tuned(_id, terms[_id].controlVariable, newControlVariable);
+
+            if (newControlVariable >= terms[_id].controlVariable) {
+                terms[_id].controlVariable = newControlVariable;
             } else {
-                bcv = bcv.sub(adjustment.rate);
-                if ( bcv <= adjustment.target ) {
-                    adjustment.rate = 0;
-                    bcv = adjustment.target;
-                }
+                // if decrease, control variable change will be carried out over the tune interval
+                // this is because price will be lowered
+                uint64 change = terms[_id].controlVariable - newControlVariable;
+                adjustments[_id] = Adjustment(change, _time, meta.tuneInterval, true);
             }
-            terms.controlVariable = bcv;
-            adjustment.lastTime = uint32(block.timestamp);
-            emit ControlVariableAdjustment( initial, bcv, adjustment.rate, adjustment.add );
+            metadata[_id].lastTune = _time;
         }
     }
 
+    /* ======== CREATE ======== */
+
     /**
-     *  @notice reduce total debt
+     * @notice             creates a new market type
+     * @dev                current price should be in 9 decimals.
+     * @param _quoteToken  token used to deposit
+     * @param _market      [capacity (in OHM or quote), initial price / OHM (9 decimals), debt buffer (3 decimals)]
+     * @param _booleans    [capacity in quote, fixed term]
+     * @param _terms       [vesting length (if fixed term) or vested timestamp, conclusion timestamp]
+     * @param _intervals   [deposit interval (seconds), tune interval (seconds)]
+     * @return id_         ID of new bond market
      */
-    function decayDebt() internal {
-        totalDebt = totalDebt.sub( debtDecay() );
-        lastDecay = uint32(block.timestamp);
+    function create(
+        IERC20 _quoteToken,
+        uint256[3] memory _market,
+        bool[2] memory _booleans,
+        uint256[2] memory _terms,
+        uint32[2] memory _intervals
+    ) external override onlyPolicy returns (uint256 id_) {
+        // the length of the program, in seconds
+        uint256 secondsToConclusion = _terms[1] - block.timestamp;
+
+        // the decimal count of the quote token
+        uint256 decimals = IERC20Metadata(address(_quoteToken)).decimals();
+
+        /*
+         * initial target debt is equal to capacity (this is the amount of debt
+         * that will decay over in the length of the program if price remains the same).
+         * it is converted into base token terms if passed in in quote token terms.
+         *
+         * 1e18 = ohm decimals (9) + initial price decimals (9)
+         */
+        uint64 targetDebt = uint64(_booleans[0] ? ((_market[0] * 1e18) / _market[1]) / 10**decimals : _market[0]);
+
+        /*
+         * max payout is the amount of capacity that should be utilized in a deposit
+         * interval. for example, if capacity is 1,000 OHM, there are 10 days to conclusion,
+         * and the preferred deposit interval is 1 day, max payout would be 100 OHM.
+         */
+        uint64 maxPayout = uint64((targetDebt * _intervals[0]) / secondsToConclusion);
+
+        /*
+         * max debt serves as a circuit breaker for the market. let's say the quote
+         * token is a stablecoin, and that stablecoin depegs. without max debt, the
+         * market would continue to buy until it runs out of capacity. this is
+         * configurable with a 3 decimal buffer (1000 = 1% above initial price).
+         * note that its likely advisable to keep this buffer wide.
+         * note that the buffer is above 100%. i.e. 10% buffer = initial debt * 1.1
+         */
+        uint256 maxDebt = targetDebt + ((targetDebt * _market[2]) / 1e5); // 1e5 = 100,000. 10,000 / 100,000 = 10%.
+
+        /*
+         * the control variable is set so that initial price equals the desired
+         * initial price. the control variable is the ultimate determinant of price,
+         * so we compute this last.
+         *
+         * price = control variable * debt ratio
+         * debt ratio = total debt / supply
+         * therefore, control variable = price / debt ratio
+         */
+        uint256 controlVariable = (_market[1] * treasury.baseSupply()) / targetDebt;
+
+        // depositing into, or getting info for, the created market uses this ID
+        id_ = markets.length;
+
+        markets.push(
+            Market({
+                quoteToken: _quoteToken,
+                capacityInQuote: _booleans[0],
+                capacity: _market[0],
+                totalDebt: targetDebt,
+                maxPayout: maxPayout,
+                purchased: 0,
+                sold: 0
+            })
+        );
+
+        terms.push(
+            Terms({
+                fixedTerm: _booleans[1],
+                controlVariable: uint64(controlVariable),
+                vesting: uint48(_terms[0]),
+                conclusion: uint48(_terms[1]),
+                maxDebt: uint64(maxDebt)
+            })
+        );
+
+        metadata.push(
+            Metadata({
+                lastTune: uint48(block.timestamp),
+                lastDecay: uint48(block.timestamp),
+                length: uint48(secondsToConclusion),
+                depositInterval: _intervals[0],
+                tuneInterval: _intervals[1],
+                quoteDecimals: uint8(decimals)
+            })
+        );
+
+        marketsForQuote[address(_quoteToken)].push(id_);
+
+        emit CreateMarket(id_, address(ohm), address(_quoteToken), _market[1]);
     }
 
+    /**
+     * @notice             disable existing market
+     * @param _id          ID of market to close
+     */
+    function close(uint256 _id) external override onlyPolicy {
+        terms[_id].conclusion = uint48(block.timestamp);
+        markets[_id].capacity = 0;
+        emit CloseMarket(_id);
+    }
 
-
-
-    /* ======== VIEW FUNCTIONS ======== */
+    /* ======== EXTERNAL VIEW ======== */
 
     /**
-     *  @notice determine maximum bond size
-     *  @return uint
+     * @notice             calculate current market price of quote token in base token
+     * @dev                accounts for debt and control variable decay since last deposit (vs _marketPrice())
+     * @param _id          ID of market
+     * @return             price for market in OHM decimals
+     *
+     * price is derived from the equation
+     *
+     * p = cv * dr
+     *
+     * where
+     * p = price
+     * cv = control variable
+     * dr = debt ratio
+     *
+     * dr = d / s
+     *
+     * where
+     * d = debt
+     * s = supply of token at market creation
+     *
+     * d -= ( d * (dt / l) )
+     *
+     * where
+     * dt = change in time
+     * l = length of program
      */
-    function maxPayout() public view returns ( uint ) {
-        return Cunoro.totalSupply().mul( terms.maxPayout ) / 100000 ;
+    function marketPrice(uint256 _id) public view override returns (uint256) {
+        return (currentControlVariable(_id) * debtRatio(_id)) / (10**metadata[_id].quoteDecimals);
     }
 
     /**
-     *  @notice calculate interest due for new bond
-     *  @param _value uint
-     *  @return uint
+     * @notice             payout due for amount of quote tokens
+     * @dev                accounts for debt and control variable decay so it is up to date
+     * @param _amount      amount of quote tokens to spend
+     * @param _id          ID of market
+     * @return             amount of OHM to be paid in OHM decimals
+     *
+     * @dev 1e18 = ohm decimals (9) + market price decimals (9)
      */
-    function payoutFor( uint _value ) public view returns ( uint ) {
-        return FixedPoint.fraction( _value, bondPrice() ).decode112with18() / 1e16 ;
+    function payoutFor(uint256 _amount, uint256 _id) external view override returns (uint256) {
+        Metadata memory meta = metadata[_id];
+        return (_amount * 1e18) / marketPrice(_id) / 10**meta.quoteDecimals;
     }
 
+    /**
+     * @notice             calculate current ratio of debt to supply
+     * @dev                uses current debt, which accounts for debt decay since last deposit (vs _debtRatio())
+     * @param _id          ID of market
+     * @return             debt ratio for market in quote decimals
+     */
+    function debtRatio(uint256 _id) public view override returns (uint256) {
+        return (currentDebt(_id) * (10**metadata[_id].quoteDecimals)) / treasury.baseSupply();
+    }
 
     /**
-     *  @notice calculate current bond premium
-     *  @return price_ uint
+     * @notice             calculate debt factoring in decay
+     * @dev                accounts for debt decay since last deposit
+     * @param _id          ID of market
+     * @return             current debt for market in OHM decimals
      */
-    function bondPrice() public view returns ( uint price_ ) {
-        price_ = terms.controlVariable.mul( debtRatio() ).add( 1000000000 ) / 1e7;
-        if ( price_ < terms.minimumPrice ) {
-            price_ = terms.minimumPrice;
+    function currentDebt(uint256 _id) public view override returns (uint256) {
+        return markets[_id].totalDebt - debtDecay(_id);
+    }
+
+    /**
+     * @notice             amount of debt to decay from total debt for market ID
+     * @param _id          ID of market
+     * @return             amount of debt to decay
+     */
+    function debtDecay(uint256 _id) public view override returns (uint64) {
+        Metadata memory meta = metadata[_id];
+
+        uint256 secondsSince = block.timestamp - meta.lastDecay;
+
+        return uint64((markets[_id].totalDebt * secondsSince) / meta.length);
+    }
+
+    /**
+     * @notice             up to date control variable
+     * @dev                accounts for control variable adjustment
+     * @param _id          ID of market
+     * @return             control variable for market in OHM decimals
+     */
+    function currentControlVariable(uint256 _id) public view returns (uint256) {
+        (uint64 decay, , ) = _controlDecay(_id);
+        return terms[_id].controlVariable - decay;
+    }
+
+    /**
+     * @notice             is a given market accepting deposits
+     * @param _id          ID of market
+     */
+    function isLive(uint256 _id) public view override returns (bool) {
+        return (markets[_id].capacity != 0 && terms[_id].conclusion > block.timestamp);
+    }
+
+    /**
+     * @notice returns an array of all active market IDs
+     */
+    function liveMarkets() external view override returns (uint256[] memory) {
+        uint256 num;
+        for (uint256 i = 0; i < markets.length; i++) {
+            if (isLive(i)) num++;
         }
-    }
 
-    /**
-     *  @notice calculate current bond price and remove floor if above
-     *  @return price_ uint
-     */
-    function _bondPrice() internal returns ( uint price_ ) {
-        price_ = terms.controlVariable.mul( debtRatio() ).add( 1000000000 ) / 1e7;
-        if ( price_ < terms.minimumPrice ) {
-            price_ = terms.minimumPrice;
-        } else if ( terms.minimumPrice != 0 ) {
-            terms.minimumPrice = 0;
+        uint256[] memory ids = new uint256[](num);
+        uint256 nonce;
+        for (uint256 i = 0; i < markets.length; i++) {
+            if (isLive(i)) {
+                ids[nonce] = i;
+                nonce++;
+            }
         }
+        return ids;
     }
 
     /**
-     *  @notice get asset price from chainlink
+     * @notice             returns an array of all active market IDs for a given quote token
+     * @param _token       quote token to check for
      */
-    function assetPrice() public view returns (uint) {
-        return tokenPrice_;
-    }
+    function liveMarketsFor(address _token) external view override returns (uint256[] memory) {
+        uint256[] memory mkts = marketsForQuote[_token];
+        uint256 num;
 
-    /**
-     *  @notice converts bond price to DAI value
-     *  @return price_ uint
-     */
-    function bondPriceInUSD() public view returns ( uint price_ ) {
-        if( isLiquidityBond ) {
-            price_ = bondPrice().mul( bondCalculator.markdown( address(principle) ) ) / 100 ;
-        } else {
-            price_ = bondPrice().mul( 10 ** principle.decimals() ) / 100;
+        for (uint256 i = 0; i < mkts.length; i++) {
+            if (isLive(mkts[i])) num++;
         }
-    }
 
+        uint256[] memory ids = new uint256[](num);
+        uint256 nonce;
 
-    /**
-     *  @notice calculate current ratio of debt to Cunoro supply
-     *  @return debtRatio_ uint
-     */
-    function debtRatio() public view returns ( uint debtRatio_ ) {
-        uint supply = Cunoro.totalSupply();
-        debtRatio_ = FixedPoint.fraction(
-            currentDebt().mul( 1e9 ),
-            supply
-        ).decode112with18() / 1e18;
-    }
-
-    /**
-     *  @notice debt ratio in same terms for reserve or liquidity bonds
-     *  @return uint
-     */
-    function standardizedDebtRatio() external view returns ( uint ) {
-        if ( isLiquidityBond ) {
-            return debtRatio().mul( bondCalculator.markdown( address(principle) ) ) / 1e9;
-        } else {
-            return debtRatio().mul( uint( assetPrice() ) )/ 10**8;
+        for (uint256 i = 0; i < mkts.length; i++) {
+            if (isLive(mkts[i])) {
+                ids[nonce] = mkts[i];
+                nonce++;
+            }
         }
+        return ids;
+    }
+
+    /* ======== INTERNAL VIEW ======== */
+
+    /**
+     * @notice                  calculate current market price of quote token in base token
+     * @dev                     see marketPrice() for explanation of price computation
+     * @dev                     uses info from storage because data has been updated before call (vs marketPrice())
+     * @param _id               market ID
+     * @return                  price for market in OHM decimals
+     */
+    function _marketPrice(uint256 _id) internal view returns (uint256) {
+        return (terms[_id].controlVariable * _debtRatio(_id)) / (10**metadata[_id].quoteDecimals);
     }
 
     /**
-     *  @notice calculate debt factoring in decay
-     *  @return uint
+     * @notice                  calculate debt factoring in decay
+     * @dev                     uses info from storage because data has been updated before call (vs debtRatio())
+     * @param _id               market ID
+     * @return                  current debt for market in quote decimals
      */
-    function currentDebt() public view returns ( uint ) {
-        return totalDebt.sub( debtDecay() );
+    function _debtRatio(uint256 _id) internal view returns (uint256) {
+        return (markets[_id].totalDebt * (10**metadata[_id].quoteDecimals)) / treasury.baseSupply();
     }
 
     /**
-     *  @notice amount to decay total debt by
-     *  @return decay_ uint
+     * @notice                  amount to decay control variable by
+     * @param _id               ID of market
+     * @return decay_           change in control variable
+     * @return secondsSince_    seconds since last change in control variable
+     * @return active_          whether or not change remains active
      */
-    function debtDecay() public view returns ( uint decay_ ) {
-        uint32 timeSinceLast = uint32(block.timestamp).sub32( lastDecay );
-        decay_ = totalDebt.mul( timeSinceLast ) / terms.vestingTerm;
-        if ( decay_ > totalDebt ) {
-            decay_ = totalDebt;
-        }
+    function _controlDecay(uint256 _id)
+        internal
+        view
+        returns (
+            uint64 decay_,
+            uint48 secondsSince_,
+            bool active_
+        )
+    {
+        Adjustment memory info = adjustments[_id];
+        if (!info.active) return (0, 0, false);
+
+        secondsSince_ = uint48(block.timestamp) - info.lastAdjustment;
+
+        active_ = secondsSince_ < info.timeToAdjusted;
+        decay_ = active_ ? (info.change * secondsSince_) / info.timeToAdjusted : info.change;
     }
-
-
-    /**
-     *  @notice calculate how far into vesting a depositor is
-     *  @param _depositor address
-     *  @return percentVested_ uint
-     */
-    function percentVestedFor( address _depositor ) public view returns ( uint percentVested_ ) {
-        Bond memory bond = bondInfo[ _depositor ];
-        uint secondsSinceLast = uint32(block.timestamp).sub32( bond.lastTime );
-        uint vesting = bond.vesting;
-
-        if ( vesting > 0 ) {
-            percentVested_ = secondsSinceLast.mul( 10000 ) / vesting;
-        } else {
-            percentVested_ = 0;
-        }
-    }
-
-    /**
-     *  @notice calculate amount of Cunoro available for claim by depositor
-     *  @param _depositor address
-     *  @return pendingPayout_ uint
-     */
-    function pendingPayoutFor( address _depositor ) external view returns ( uint pendingPayout_ ) {
-        uint percentVested = percentVestedFor( _depositor );
-        uint payout = bondInfo[ _depositor ].payout;
-
-        if ( percentVested >= 10000 ) {
-            pendingPayout_ = payout;
-        } else {
-            pendingPayout_ = payout.mul( percentVested ) / 10000;
-        }
-    }
-
-
-
-
-    /* ======= AUXILLIARY ======= */
-
-    /**
-     *  @notice allow anyone to send lost tokens (excluding principle or Cunoro) to the DAO
-     *  @return bool
-     */
-    function recoverLostToken(IERC20 _token ) external returns ( bool ) {
-        require( _token != Cunoro, "NAT" );
-        require( _token != principle, "NAP" );
-        uint balance = _token.balanceOf( address(this));
-        _token.safeTransfer( DAO,  balance );
-        emit LogRecoverLostToken(address(_token), balance);
-        return true;
-    }
-
-    function setReserveParams(uint8 _burn, uint8 _reward, uint8 _liquify) external onlyOwner {
-        taxReserveBurn_ = _burn;
-        taxReserveReward_ = _reward;
-        taxReserveLiquify_ = _liquify;
-    }
-
-    function setAssetPrice(uint _tokenPrice) external onlyOwner {
-        tokenPrice_ = _tokenPrice;
-    }
-
 }

@@ -1,4 +1,8 @@
-node_modules
-artifacts
-cache
-coverage
+export/
+deployments/
+artifacts/
+cache/
+coverage/
+node_modules/
+package.json
+typechain/

@@ -1,98 +1,165 @@
-import * as dotenv from "dotenv";
-
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "@openzeppelin/hardhat-upgrades";
 
-dotenv.config();
+import "hardhat-deploy";
 
-const FORK_FUJI = true
-const FORK_MAINNET = false
-const forkingData = FORK_FUJI ? {
-  url: 'https://api.avax-test.network/ext/bc/C/rpc',
-} : FORK_MAINNET ? {
-  url: 'https://api.avax.network/ext/bc/C/rpc'
-} : undefined
+import { resolve } from "path";
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
+import { config as dotenvConfig } from "dotenv";
+import { HardhatUserConfig } from "hardhat/config";
+import { NetworkUserConfig } from "hardhat/types";
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
+dotenvConfig({ path: resolve(__dirname, "./.env") });
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const chainIds = {
+    hardhat: 1337,
+    ethereum: 1,
+    ropsten: 3,
+    rinkeby: 4,
+    goerli: 5,
+    kovan: 42,
+    fuji: 43113,
+    avax: 43114
+};
+
+// Ensure that we have all the environment variables we need.
+const privateKey = process.env.PRIVATE_KEY ?? "NO_PRIVATE_KEY";
+// Make sure node is setup on Alchemy website
+const alchemyApiKey = process.env.ALCHEMY_API_KEY ?? "NO_ALCHEMY_API_KEY";
+
+function getEthConfig(network: keyof typeof chainIds): NetworkUserConfig {
+    const url = `https://eth-${network}.alchemyapi.io/v2/${alchemyApiKey}`;
+    return {
+        accounts: [`${privateKey}`],
+        chainId: chainIds[network],
+        url,
+    };
+}
+
+function getAvaxConfig(network: keyof typeof chainIds): NetworkUserConfig {
+    return {
+        accounts: [`${privateKey}`],
+        chainId: chainIds[network],
+        url: chainIds[network] === 43113 ? 'https://api.avax-test.network/ext/bc/C/rpc' : 'https://api.avax.network/ext/bc/C/rpc
+    };
+}
 
 const config: HardhatUserConfig = {
-  solidity: {
-    compilers : [
-      {
-        version : "0.8.0",
-        settings : {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        },
-      },
-      {
-        version : "0.7.5",
-        settings : {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        },
-      },
-      {
-        version : "0.5.16",
-        settings : {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        },
-      },
-    ],
-  },
-  networks: {
-    hardhat: {
-      gasPrice: 225000000000,
-      chainId: 31337 // !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
+    defaultNetwork: "hardhat",
+    gasReporter: {
+        currency: "USD",
+        enabled: process.env.REPORT_GAS ? true : false,
+        excludeContracts: [],
+        src: "./contracts",
     },
-    // localhost: {
-    //   url: 'http://127.0.0.1:8545/ext/bc/C/rpc', // 'http://127.0.0.1:8545/ext/bc/C/rpc',  // http://127.0.0.1:8545
-    //   accounts:
-    //   { mnemonic: process.env.LOCAL_MNEMONIC },
-    // },
-    fuji: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      // gasPrice: 30000000000,
-      gas: 3000000,
-      chainId: 43113,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [ process.env.PRIVATE_KEY ] : []
+    networks: {
+        hardhat: {
+            forking: {
+                url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+            },
+            chainId: chainIds.hardhat,
+        },
+        fuji: getAvaxConfig(43113),
+        avax: getAvaxConfig(43114),
+        // Uncomment for testing. Commented due to CI issues
+        // ethereum: getEthConfig("ethereum"),
+        // rinkeby: getEthConfig("rinkeby"),
+        // ropsten: getEthConfig("ropsten"),
     },
-    mainnet: {
-      url: 'https://api.avax.network/ext/bc/C/rpc',
-      // gasPrice: 1125000000000,
-      chainId: 43114,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [ process.env.PRIVATE_KEY ] : []
+    paths: {
+        artifacts: "./artifacts",
+        cache: "./cache",
+        sources: "./contracts",
+        tests: "./test",
+        deploy: "./scripts/deploy",
+        deployments: "./deployments",
     },
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
-  },
-  etherscan: {
-    apiKey: process.env.SNOWTRACE_API_KEY,
-  },
+    solidity: {
+        compilers: [
+            {
+                version: "0.8.10",
+                settings: {
+                    metadata: {
+                        bytecodeHash: "none",
+                    },
+                    optimizer: {
+                        enabled: true,
+                        runs: 800,
+                    },
+                },
+            },
+            {
+                version: "0.8.10",
+                settings: {
+                    metadata: {
+                        bytecodeHash: "none",
+                    },
+                    optimizer: {
+                        enabled: true,
+                        runs: 800,
+                    },
+                },
+            },
+            {
+                version: "0.7.5",
+                settings: {
+                    metadata: {
+                        bytecodeHash: "none",
+                    },
+                    optimizer: {
+                        enabled: true,
+                        runs: 800,
+                    },
+                },
+            },
+            {
+                version: "0.5.16",
+            },
+            {
+                version: "0.8.10",
+                settings: {
+                    metadata: {
+                        bytecodeHash: "none",
+                    },
+                    optimizer: {
+                        enabled: true,
+                        runs: 800,
+                    },
+                },
+            },
+        ],
+        settings: {
+            outputSelection: {
+                "*": {
+                    "*": ["storageLayout"],
+                },
+            },
+        },
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0,
+        },
+        daoMultisig: {
+            // Avax
+            1: "0x813C38214799535c1375606188aD7E8Fd1762651",
+        },
+    },
+    typechain: {
+        outDir: "types",
+        target: "ethers-v5",
+    },
+    etherscan: {
+        apiKey: process.env.ETHERSCAN_API_KEY,
+    },
+    mocha: {
+        timeout: 1000000,
+    },
 };
 
 export default config;

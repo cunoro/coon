@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { CunoroERC20Token__factory } from "../../types";
+import { OlympusERC20Token__factory } from "../../types";
 import { CONTRACTS } from "../constants";
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -9,18 +9,18 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
     const signer = await ethers.provider.getSigner(deployer);
 
-    const noroDeployment = await deployments.get(CONTRACTS.noro);
-    const noro = await CunoroERC20Token__factory.connect(noroDeployment.address, signer);
+    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
+    const ohm = await OlympusERC20Token__factory.connect(ohmDeployment.address, signer);
 
     await deploy(CONTRACTS.bondingCalculator, {
         from: deployer,
-        args: [noro.address],
+        args: [ohm.address],
         log: true,
         skipIfAlreadyDeployed: true,
     });
 };
 
 func.tags = [CONTRACTS.bondingCalculator, "staking", "bonding"];
-func.dependencies = [CONTRACTS.noro];
+func.dependencies = [CONTRACTS.ohm];
 
 export default func;

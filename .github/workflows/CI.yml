@@ -5,7 +5,7 @@ name: Smart Contract CI
 
 on:
     push:
-        branches: [Version-1.1, Version-2]
+        branches: ["*"]
     pull_request:
         branches: ["*"]
 
@@ -13,7 +13,7 @@ jobs:
     build:
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 os: [ubuntu-latest]
                 # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
         runs-on: ${{ matrix.os }}
@@ -30,6 +30,7 @@ jobs:
                   restore-keys: |
                       ${{ matrix.os }}-yarn-
             - run: yarn --frozen-lockfile
+            - run: yarn format
             - run: yarn compile
             - run: cp .env.example .env
             - run: yarn test

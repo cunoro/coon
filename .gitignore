@@ -3,8 +3,7 @@ cache/
 artifacts/
 
 coverage*
-types/
-typechain/
+/types/
 
 .vscode/*
 !.vscode/settings.json.default
@@ -15,16 +14,16 @@ node_modules/
 .env
 yarn-error.log
 .package-lock.json
-verify.cmd
 
 .yalc
 yalc.lock
 
 contractsInfo.json
-deployments/hardhat
-deployments/localhost
 deployments/**/solcinputs
 
 /.dapp
 
+
+# OpenZeppelin upgradeable files
+.openzeppelin/unknown-*.json
 /flatten

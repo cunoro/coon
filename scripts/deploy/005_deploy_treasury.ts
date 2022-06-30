@@ -1,8 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { CONTRACTS, TREASURY_TIMELOCK } from "../constants";
-//import { DAI, FRAX, CunoroERC20Token, CunoroTreasury } from "../types";
-import { CunoroTreasury__factory } from "../../types";
+//import { DAI, FRAX, OlympusERC20Token, OlympusTreasury } from "../types";
+import { OlympusTreasury__factory } from "../../types";
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts, ethers } = hre;
@@ -11,22 +11,22 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
     const signer = await ethers.provider.getSigner(deployer);
 
-    const noroDeployment = await deployments.get(CONTRACTS.noro);
+    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
 
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
 
     // TODO: TIMELOCK SET TO 0 FOR NOW, CHANGE FOR ACTUAL DEPLOYMENT
     const treasuryDeployment = await deploy(CONTRACTS.treasury, {
         from: deployer,
-        args: [noroDeployment.address, TREASURY_TIMELOCK, authorityDeployment.address],
+        args: [ohmDeployment.address, TREASURY_TIMELOCK, authorityDeployment.address],
         log: true,
         skipIfAlreadyDeployed: true,
     });
 
-    await CunoroTreasury__factory.connect(treasuryDeployment.address, signer);
+    await OlympusTreasury__factory.connect(treasuryDeployment.address, signer);
 };
 
 func.tags = [CONTRACTS.treasury, "treasury"];
-func.dependencies = [CONTRACTS.noro];
+func.dependencies = [CONTRACTS.ohm];
 
 export default func;
