@@ -1,7 +1,7 @@
 export const CONTRACTS: Record<string, string> = {
     noro: "CunoroERC20Token",
     sNoro: "sCunoro",
-    gNoro: "gOHM",
+    gNoro: "gNORO",
     staking: "CunoroStaking",
     distributor: "Distributor",
     treasury: "CunoroTreasury",

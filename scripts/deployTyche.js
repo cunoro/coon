@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 
 async function main() {
     const [deployer] = await ethers.getSigners();
-    // Mainnet sOHM contract
+    // Mainnet sNORO contract
     const sNoroMainnet = "0x04906695D6D12CF5459975d7C3C03356E4Ccd460";
     const gNoroMainnet = "0x0ab87046fBb341D058F17CBC4c1133F25a20a52f";
     const stakingMainnet = "0xB63cac384247597756545b500253ff8E607a8020";
@@ -27,7 +27,7 @@ async function main() {
         authorityMainnet
     );
 
-    //console.log("SOHM DEPLOYED AT", mockSNoro.address);
+    //console.log("SNORO DEPLOYED AT", mockSNoro.address);
     console.log("YIELD DIRECTOR DEPLOYED AT", yieldDirector.address);
 }
 

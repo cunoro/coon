@@ -6,23 +6,23 @@ async function main() {
 
     const firstEpochNumber = "";
     const firstBlockNumber = "";
-    const gOHM = "";
+    const gNORO = "";
     const authority = "";
 
-    const OHM = await ethers.getContractFactory("CunoroERC20Token");
-    const noro = await OHM.deploy(authority);
+    const NORO = await ethers.getContractFactory("CunoroERC20Token");
+    const noro = await NORO.deploy(authority);
 
     const CunoroTreasury = await ethers.getContractFactory("CunoroTreasury");
     const cunoroTreasury = await CunoroTreasury.deploy(noro.address, "0", authority);
 
-    const SOHM = await ethers.getContractFactory("sCunoro");
-    const sOHM = await SOHM.deploy();
+    const SNORO = await ethers.getContractFactory("sCunoro");
+    const sNORO = await SNORO.deploy();
 
     const CunoroStaking = await ethers.getContractFactory("CunoroStaking");
     const staking = await CunoroStaking.deploy(
         noro.address,
-        sOHM.address,
-        gOHM,
+        sNORO.address,
+        gNORO,
         "2200",
         firstEpochNumber,
         firstBlockNumber,
@@ -37,13 +37,13 @@ async function main() {
         authority
     );
 
-    await sOHM.setIndex("");
-    await sOHM.setgOHM(gOHM);
-    await sOHM.initialize(staking.address, cunoroTreasury.address);
+    await sNORO.setIndex("");
+    await sNORO.setgNORO(gNORO);
+    await sNORO.initialize(staking.address, cunoroTreasury.address);
 
-    console.log("OHM: " + noro.address);
+    console.log("NORO: " + noro.address);
     console.log("Cunoro Treasury: " + cunoroTreasury.address);
-    console.log("Staked Cunoro: " + sOHM.address);
+    console.log("Staked Cunoro: " + sNORO.address);
     console.log("Staking Contract: " + staking.address);
     console.log("Distributor: " + distributor.address);
 }

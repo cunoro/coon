@@ -8,7 +8,7 @@ import {
     CunoroERC20Token__factory,
     CunoroStaking__factory,
     SCunoro__factory,
-    GOHM__factory,
+    GNORO__factory,
     CunoroTreasury__factory,
     LUSDAllocator__factory,
 } from "../../types";
@@ -34,7 +34,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     );
     const noro = CunoroERC20Token__factory.connect(noroDeployment.address, signer);
     const sNoro = SCunoro__factory.connect(sNoroDeployment.address, signer);
-    const gNoro = GOHM__factory.connect(gNoroDeployment.address, signer);
+    const gNoro = GNORO__factory.connect(gNoroDeployment.address, signer);
     const distributor = Distributor__factory.connect(distributorDeployment.address, signer);
     const staking = CunoroStaking__factory.connect(stakingDeployment.address, signer);
     const treasury = CunoroTreasury__factory.connect(treasuryDeployment.address, signer);
@@ -52,10 +52,10 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await waitFor(staking.setDistributor(distributor.address));
     console.log("Setup -- staking.setDistributor:  distributor set on staking");
 
-    // Step 4: Initialize sOHM and set the index
-    if ((await sNoro.gOHM()) == ethers.constants.AddressZero) {
+    // Step 4: Initialize sNORO and set the index
+    if ((await sNoro.gNORO()) == ethers.constants.AddressZero) {
         await waitFor(sNoro.setIndex(INITIAL_INDEX)); // TODO
-        await waitFor(sNoro.setgOHM(gNoro.address));
+        await waitFor(sNoro.setgNORO(gNoro.address));
         await waitFor(sNoro.initialize(staking.address, treasuryDeployment.address));
     }
     console.log("Setup -- snoro initialized (index, gnoro)");
@@ -65,7 +65,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await waitFor(distributor.addRecipient(staking.address, INITIAL_REWARD_RATE));
     console.log("Setup -- distributor.setBounty && distributor.addRecipient");
 
-    // Approve staking contact to spend deployer's OHM
+    // Approve staking contact to spend deployer's NORO
     // TODO: Is this needed?
     // await noro.approve(staking.address, LARGE_APPROVAL);
 };

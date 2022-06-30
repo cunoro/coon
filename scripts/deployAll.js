@@ -5,10 +5,10 @@ async function main() {
     console.log("Deploying contracts with the account: " + deployer.address);
 
     const DAI = "0xB2180448f8945C8Cc8AE9809E67D6bd27d8B2f2C";
-    const oldOHM = "0xC0b491daBf3709Ee5Eb79E603D73289Ca6060932";
-    const oldsOHM = "0x1Fecda1dE7b6951B248C0B62CaeBD5BAbedc2084";
+    const oldNORO = "0xC0b491daBf3709Ee5Eb79E603D73289Ca6060932";
+    const oldsNORO = "0x1Fecda1dE7b6951B248C0B62CaeBD5BAbedc2084";
     const oldStaking = "0xC5d3318C0d74a72cD7C55bdf844e24516796BaB2";
-    const oldwsOHM = "0xe73384f11Bb748Aa0Bc20f7b02958DF573e6E2ad";
+    const oldwsNORO = "0xe73384f11Bb748Aa0Bc20f7b02958DF573e6E2ad";
     const sushiRouter = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
     const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
     const oldTreasury = "0x0d722D813601E48b7DAcb2DF9bae282cFd98c6E7";
@@ -26,11 +26,11 @@ async function main() {
 
     const Migrator = await ethers.getContractFactory("CunoroTokenMigrator");
     const migrator = await Migrator.deploy(
-        oldOHM,
-        oldsOHM,
+        oldNORO,
+        oldsNORO,
         oldTreasury,
         oldStaking,
-        oldwsOHM,
+        oldwsNORO,
         sushiRouter,
         uniRouter,
         "0",
@@ -40,16 +40,16 @@ async function main() {
     const firstEpochNumber = "550";
     const firstBlockNumber = "9505000";
 
-    const OHM = await ethers.getContractFactory("CunoroERC20Token");
-    const noro = await OHM.deploy(authority.address);
+    const NORO = await ethers.getContractFactory("CunoroERC20Token");
+    const noro = await NORO.deploy(authority.address);
 
-    const SOHM = await ethers.getContractFactory("sCunoro");
-    const sOHM = await SOHM.deploy();
+    const SNORO = await ethers.getContractFactory("sCunoro");
+    const sNORO = await SNORO.deploy();
 
-    const GOHM = await ethers.getContractFactory("gOHM");
-    const gOHM = await GOHM.deploy(migrator.address, sOHM.address);
+    const GNORO = await ethers.getContractFactory("gNORO");
+    const gNORO = await GNORO.deploy(migrator.address, sNORO.address);
 
-    await migrator.setgOHM(gOHM.address);
+    await migrator.setgNORO(gNORO.address);
 
     const CunoroTreasury = await ethers.getContractFactory("CunoroTreasury");
     const cunoroTreasury = await CunoroTreasury.deploy(noro.address, "0", authority.address);
@@ -65,8 +65,8 @@ async function main() {
     const CunoroStaking = await ethers.getContractFactory("CunoroStaking");
     const staking = await CunoroStaking.deploy(
         noro.address,
-        sOHM.address,
-        gOHM.address,
+        sNORO.address,
+        gNORO.address,
         "2200",
         firstEpochNumber,
         firstBlockNumber,
@@ -82,9 +82,9 @@ async function main() {
     );
 
     // Initialize snoro
-    await sOHM.setIndex("7675210820");
-    await sOHM.setgOHM(gOHM.address);
-    await sOHM.initialize(staking.address, cunoroTreasury.address);
+    await sNORO.setIndex("7675210820");
+    await sNORO.setgNORO(gNORO.address);
+    await sNORO.initialize(staking.address, cunoroTreasury.address);
 
     await staking.setDistributor(distributor.address);
 
@@ -95,9 +95,9 @@ async function main() {
     await cunoroTreasury.execute("4");
 
     console.log("Cunoro Authority: ", authority.address);
-    console.log("OHM: " + noro.address);
-    console.log("sNoro: " + sOHM.address);
-    console.log("gOHM: " + gOHM.address);
+    console.log("NORO: " + noro.address);
+    console.log("sNoro: " + sNORO.address);
+    console.log("gNORO: " + gNORO.address);
     console.log("Cunoro Treasury: " + cunoroTreasury.address);
     console.log("Staking Contract: " + staking.address);
     console.log("Distributor: " + distributor.address);
