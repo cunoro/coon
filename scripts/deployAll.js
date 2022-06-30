@@ -16,7 +16,7 @@ async function main() {
     const FRAX = "0x2f7249cb599139e560f0c81c269ab9b04799e453";
     const LUSD = "0x45754df05aa6305114004358ecf8d04ff3b84e26";
 
-    const Authority = await ethers.getContractFactory("OlympusAuthority");
+    const Authority = await ethers.getContractFactory("CunoroAuthority");
     const authority = await Authority.deploy(
         deployer.address,
         deployer.address,
@@ -24,7 +24,7 @@ async function main() {
         deployer.address
     );
 
-    const Migrator = await ethers.getContractFactory("OlympusTokenMigrator");
+    const Migrator = await ethers.getContractFactory("CunoroTokenMigrator");
     const migrator = await Migrator.deploy(
         oldOHM,
         oldsOHM,
@@ -40,10 +40,10 @@ async function main() {
     const firstEpochNumber = "550";
     const firstBlockNumber = "9505000";
 
-    const OHM = await ethers.getContractFactory("OlympusERC20Token");
-    const ohm = await OHM.deploy(authority.address);
+    const OHM = await ethers.getContractFactory("CunoroERC20Token");
+    const noro = await OHM.deploy(authority.address);
 
-    const SOHM = await ethers.getContractFactory("sOlympus");
+    const SOHM = await ethers.getContractFactory("sCunoro");
     const sOHM = await SOHM.deploy();
 
     const GOHM = await ethers.getContractFactory("gOHM");
@@ -51,20 +51,20 @@ async function main() {
 
     await migrator.setgOHM(gOHM.address);
 
-    const OlympusTreasury = await ethers.getContractFactory("OlympusTreasury");
-    const olympusTreasury = await OlympusTreasury.deploy(ohm.address, "0", authority.address);
+    const CunoroTreasury = await ethers.getContractFactory("CunoroTreasury");
+    const cunoroTreasury = await CunoroTreasury.deploy(noro.address, "0", authority.address);
 
-    await olympusTreasury.queueTimelock("0", migrator.address, migrator.address);
-    await olympusTreasury.queueTimelock("8", migrator.address, migrator.address);
-    await olympusTreasury.queueTimelock("2", DAI, DAI);
-    await olympusTreasury.queueTimelock("2", FRAX, FRAX);
-    await olympusTreasury.queueTimelock("2", LUSD, LUSD);
+    await cunoroTreasury.queueTimelock("0", migrator.address, migrator.address);
+    await cunoroTreasury.queueTimelock("8", migrator.address, migrator.address);
+    await cunoroTreasury.queueTimelock("2", DAI, DAI);
+    await cunoroTreasury.queueTimelock("2", FRAX, FRAX);
+    await cunoroTreasury.queueTimelock("2", LUSD, LUSD);
 
-    await authority.pushVault(olympusTreasury.address, true); // replaces ohm.setVault(treasury.address)
+    await authority.pushVault(cunoroTreasury.address, true); // replaces noro.setVault(treasury.address)
 
-    const OlympusStaking = await ethers.getContractFactory("OlympusStaking");
-    const staking = await OlympusStaking.deploy(
-        ohm.address,
+    const CunoroStaking = await ethers.getContractFactory("CunoroStaking");
+    const staking = await CunoroStaking.deploy(
+        noro.address,
         sOHM.address,
         gOHM.address,
         "2200",
@@ -75,30 +75,30 @@ async function main() {
 
     const Distributor = await ethers.getContractFactory("Distributor");
     const distributor = await Distributor.deploy(
-        olympusTreasury.address,
-        ohm.address,
+        cunoroTreasury.address,
+        noro.address,
         staking.address,
         authority.address
     );
 
-    // Initialize sohm
+    // Initialize snoro
     await sOHM.setIndex("7675210820");
     await sOHM.setgOHM(gOHM.address);
-    await sOHM.initialize(staking.address, olympusTreasury.address);
+    await sOHM.initialize(staking.address, cunoroTreasury.address);
 
     await staking.setDistributor(distributor.address);
 
-    await olympusTreasury.execute("0");
-    await olympusTreasury.execute("1");
-    await olympusTreasury.execute("2");
-    await olympusTreasury.execute("3");
-    await olympusTreasury.execute("4");
+    await cunoroTreasury.execute("0");
+    await cunoroTreasury.execute("1");
+    await cunoroTreasury.execute("2");
+    await cunoroTreasury.execute("3");
+    await cunoroTreasury.execute("4");
 
-    console.log("Olympus Authority: ", authority.address);
-    console.log("OHM: " + ohm.address);
-    console.log("sOhm: " + sOHM.address);
+    console.log("Cunoro Authority: ", authority.address);
+    console.log("OHM: " + noro.address);
+    console.log("sNoro: " + sOHM.address);
     console.log("gOHM: " + gOHM.address);
-    console.log("Olympus Treasury: " + olympusTreasury.address);
+    console.log("Cunoro Treasury: " + cunoroTreasury.address);
     console.log("Staking Contract: " + staking.address);
     console.log("Distributor: " + distributor.address);
     console.log("Migrator: " + migrator.address);

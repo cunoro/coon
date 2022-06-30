@@ -14,7 +14,7 @@ async function main() {
 
     const authorityAddress = "";
 
-    const Authority = await ethers.getContractFactory("OlympusAuthority");
+    const Authority = await ethers.getContractFactory("CunoroAuthority");
     const authority = await Authority.deploy(
         authorityAddress,
         authorityAddress,
@@ -22,7 +22,7 @@ async function main() {
         authorityAddress
     );
 
-    const Migrator = await ethers.getContractFactory("OlympusTokenMigrator");
+    const Migrator = await ethers.getContractFactory("CunoroTokenMigrator");
     const migrator = await Migrator.deploy(
         oldOHM,
         oldsOHM,

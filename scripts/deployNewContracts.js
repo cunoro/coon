@@ -9,18 +9,18 @@ async function main() {
     const gOHM = "";
     const authority = "";
 
-    const OHM = await ethers.getContractFactory("OlympusERC20Token");
-    const ohm = await OHM.deploy(authority);
+    const OHM = await ethers.getContractFactory("CunoroERC20Token");
+    const noro = await OHM.deploy(authority);
 
-    const OlympusTreasury = await ethers.getContractFactory("OlympusTreasury");
-    const olympusTreasury = await OlympusTreasury.deploy(ohm.address, "0", authority);
+    const CunoroTreasury = await ethers.getContractFactory("CunoroTreasury");
+    const cunoroTreasury = await CunoroTreasury.deploy(noro.address, "0", authority);
 
-    const SOHM = await ethers.getContractFactory("sOlympus");
+    const SOHM = await ethers.getContractFactory("sCunoro");
     const sOHM = await SOHM.deploy();
 
-    const OlympusStaking = await ethers.getContractFactory("OlympusStaking");
-    const staking = await OlympusStaking.deploy(
-        ohm.address,
+    const CunoroStaking = await ethers.getContractFactory("CunoroStaking");
+    const staking = await CunoroStaking.deploy(
+        noro.address,
         sOHM.address,
         gOHM,
         "2200",
@@ -31,19 +31,19 @@ async function main() {
 
     const Distributor = await ethers.getContractFactory("Distributor");
     const distributor = await Distributor.deploy(
-        olympusTreasury.address,
-        ohm.address,
+        cunoroTreasury.address,
+        noro.address,
         staking.address,
         authority
     );
 
     await sOHM.setIndex("");
     await sOHM.setgOHM(gOHM);
-    await sOHM.initialize(staking.address, olympusTreasury.address);
+    await sOHM.initialize(staking.address, cunoroTreasury.address);
 
-    console.log("OHM: " + ohm.address);
-    console.log("Olympus Treasury: " + olympusTreasury.address);
-    console.log("Staked Olympus: " + sOHM.address);
+    console.log("OHM: " + noro.address);
+    console.log("Cunoro Treasury: " + cunoroTreasury.address);
+    console.log("Staked Cunoro: " + sOHM.address);
     console.log("Staking Contract: " + staking.address);
     console.log("Distributor: " + distributor.address);
 }
