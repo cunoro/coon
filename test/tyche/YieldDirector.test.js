@@ -30,28 +30,28 @@ describe("YieldDirector", async () => {
     const triggerRebase = async () => {
         advanceEpoch(); // 8 hours per rebase
         await staking.rebase();
-        return await sOhm.index();
+        return await sNoro.index();
     };
 
     let deployer, alice, bob, carol;
     let erc20Factory;
     let stakingFactory;
-    let ohmFactory;
-    let sOhmFactory;
-    let gOhmFactory;
+    let noroFactory;
+    let sNoroFactory;
+    let gNoroFactory;
     let treasuryFactory;
     let distributorFactory;
     let authFactory;
-    let mockSOhmFactory;
+    let mockSNoroFactory;
     let tycheFactory;
 
     let auth;
     let dai;
     let lpToken;
-    let ohm;
-    let sOhm;
+    let noro;
+    let sNoro;
     let staking;
-    let gOhm;
+    let gNoro;
     let treasury;
     let distributor;
     let tyche;
@@ -59,14 +59,14 @@ describe("YieldDirector", async () => {
     before(async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
 
-        authFactory = await ethers.getContractFactory("OlympusAuthority");
+        authFactory = await ethers.getContractFactory("CunoroAuthority");
         erc20Factory = await ethers.getContractFactory("DAI");
 
-        stakingFactory = await ethers.getContractFactory("OlympusStaking");
-        ohmFactory = await ethers.getContractFactory("OlympusERC20Token");
-        sOhmFactory = await ethers.getContractFactory("sOlympus");
-        gOhmFactory = await ethers.getContractFactory("gOHM");
-        treasuryFactory = await ethers.getContractFactory("OlympusTreasury");
+        stakingFactory = await ethers.getContractFactory("CunoroStaking");
+        noroFactory = await ethers.getContractFactory("CunoroERC20Token");
+        sNoroFactory = await ethers.getContractFactory("sCunoro");
+        gNoroFactory = await ethers.getContractFactory("gNORO");
+        treasuryFactory = await ethers.getContractFactory("CunoroTreasury");
         distributorFactory = await ethers.getContractFactory("Distributor");
         tycheFactory = await ethers.getContractFactory("YieldDirector");
     });
@@ -79,31 +79,31 @@ describe("YieldDirector", async () => {
             deployer.address,
             deployer.address
         );
-        ohm = await ohmFactory.deploy(auth.address);
-        sOhm = await sOhmFactory.deploy();
-        gOhm = await gOhmFactory.deploy(deployer.address, sOhm.address);
+        noro = await noroFactory.deploy(auth.address);
+        sNoro = await sNoroFactory.deploy();
+        gNoro = await gNoroFactory.deploy(deployer.address, sNoro.address);
         const blockNumBefore = await ethers.provider.getBlockNumber();
         const blockBefore = await ethers.provider.getBlock(blockNumBefore);
         staking = await stakingFactory.deploy(
-            ohm.address,
-            sOhm.address,
-            gOhm.address,
+            noro.address,
+            sNoro.address,
+            gNoro.address,
             "28800", // 1 epoch = 8 hours
             "1",
             blockBefore.timestamp + 28800, // First epoch in 8 hours. Avoids first deposit to set epoch.distribute wrong
             auth.address
         );
-        await gOhm.migrate(staking.address, sOhm.address);
-        treasury = await treasuryFactory.deploy(ohm.address, "0", auth.address);
+        await gNoro.migrate(staking.address, sNoro.address);
+        treasury = await treasuryFactory.deploy(noro.address, "0", auth.address);
         distributor = await distributorFactory.deploy(
             treasury.address,
-            ohm.address,
+            noro.address,
             staking.address,
             auth.address
         );
         tyche = await tycheFactory.deploy(
-            sOhm.address,
-            gOhm.address,
+            sNoro.address,
+            gNoro.address,
             staking.address,
             auth.address
         );
@@ -114,17 +114,17 @@ describe("YieldDirector", async () => {
         await dai.mint(deployer.address, initialMint);
         await dai.approve(treasury.address, LARGE_APPROVAL);
 
-        // Needed to spend deployer's OHM
-        await ohm.approve(staking.address, LARGE_APPROVAL);
+        // Needed to spend deployer's NORO
+        await noro.approve(staking.address, LARGE_APPROVAL);
 
-        // To get past OHM contract guards
+        // To get past NORO contract guards
         await auth.pushVault(treasury.address, true);
 
-        // Initialization for sOHM contract.
+        // Initialization for sNORO contract.
         // Set index to 10
-        await sOhm.setIndex("10000000000");
-        await sOhm.setgOHM(gOhm.address);
-        await sOhm.initialize(staking.address, treasury.address);
+        await sNoro.setIndex("10000000000");
+        await sNoro.setgNORO(gNoro.address);
+        await sNoro.initialize(staking.address, treasury.address);
 
         // Set distributor staking contract
         await staking.setDistributor(distributor.address);
@@ -138,7 +138,7 @@ describe("YieldDirector", async () => {
         // queue and toggle DAI as reserve token
         await treasury.enable("2", dai.address, ZERO_ADDRESS);
 
-        // Deposit 10,000 DAI to treasury, 1,000 OHM gets minted to deployer with 9000 as excess reserves (ready to be minted)
+        // Deposit 10,000 DAI to treasury, 1,000 NORO gets minted to deployer with 9000 as excess reserves (ready to be minted)
         await treasury
             .connect(deployer)
             .deposit("10000000000000000000000", dai.address, "9000000000000");
@@ -146,48 +146,48 @@ describe("YieldDirector", async () => {
         // Add staking as recipient of distributor with a test reward rate
         await distributor.addRecipient(staking.address, initialRewardRate);
 
-        // Get sOHM in deployer wallet
-        const sohmAmount = "1000000000000";
-        await ohm.approve(staking.address, sohmAmount);
-        await staking.stake(deployer.address, sohmAmount, true, true);
+        // Get sNORO in deployer wallet
+        const snoroAmount = "1000000000000";
+        await noro.approve(staking.address, snoroAmount);
+        await staking.stake(deployer.address, snoroAmount, true, true);
         await triggerRebase(); // Trigger first rebase to set initial distribute amount. This rebase shouldn't update index.
 
-        // Transfer 100 sOHM to alice for testing
-        await sOhm.transfer(alice.address, "100000000000");
+        // Transfer 100 sNORO to alice for testing
+        await sNoro.transfer(alice.address, "100000000000");
 
-        // Alice should wrap ohm to gOhm. Should have 10gOhm
-        await sOhm.approve(staking.address, LARGE_APPROVAL);
+        // Alice should wrap noro to gNoro. Should have 10gNoro
+        await sNoro.approve(staking.address, LARGE_APPROVAL);
         await staking.wrap(deployer.address, "500000000000");
-        await sOhm.connect(alice).approve(staking.address, LARGE_APPROVAL);
+        await sNoro.connect(alice).approve(staking.address, LARGE_APPROVAL);
         await staking.connect(alice).wrap(alice.address, "100000000000");
 
-        await sOhm.approve(tyche.address, LARGE_APPROVAL);
-        await sOhm.connect(alice).approve(tyche.address, LARGE_APPROVAL);
-        await gOhm.approve(tyche.address, LARGE_APPROVAL);
-        await gOhm.connect(alice).approve(tyche.address, LARGE_APPROVAL);
+        await sNoro.approve(tyche.address, LARGE_APPROVAL);
+        await sNoro.connect(alice).approve(tyche.address, LARGE_APPROVAL);
+        await gNoro.approve(tyche.address, LARGE_APPROVAL);
+        await gNoro.connect(alice).approve(tyche.address, LARGE_APPROVAL);
     });
 
     it("should rebase properly", async () => {
-        await expect(await sOhm.index()).is.equal("10000000000");
+        await expect(await sNoro.index()).is.equal("10000000000");
 
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10010000000");
+        await expect(await sNoro.index()).is.equal("10010000000");
 
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10020010000");
+        await expect(await sNoro.index()).is.equal("10020010000");
 
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10030030010");
+        await expect(await sNoro.index()).is.equal("10030030010");
     });
 
     it("should set token addresses correctly", async () => {
         await tyche.deployed();
 
-        expect(await tyche.gOHM()).to.equal(gOhm.address);
+        expect(await tyche.gNORO()).to.equal(gNoro.address);
     });
 
-    it("should deposit gOHM tokens to recipient correctly", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+    it("should deposit gNORO tokens to recipient correctly", async () => {
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -198,10 +198,10 @@ describe("YieldDirector", async () => {
         await expect(donationInfo.agnosticAmount).is.equal(principal);
     });
 
-    it("should deposit sOHM tokens to recipient correctly", async () => {
-        // Deposit 10 sOHM into Tyche and donate to Bob
+    it("should deposit sNORO tokens to recipient correctly", async () => {
+        // Deposit 10 sNORO into Tyche and donate to Bob
         const principal = `10${e9}`;
-        await tyche.depositSohm(principal, bob.address);
+        await tyche.depositSnoro(principal, bob.address);
 
         // Verify donor info
         const donationInfo = await tyche.depositInfo("0");
@@ -212,7 +212,7 @@ describe("YieldDirector", async () => {
 
     it("should add deposits", async () => {
         const principal = `1${e18}`;
-        const sohmPrincipal = `1${e9}`;
+        const snoroPrincipal = `1${e9}`;
 
         await tyche.deposit(principal, bob.address);
         const donationInfo = await tyche.depositInfo("0");
@@ -226,7 +226,7 @@ describe("YieldDirector", async () => {
         await expect(donationInfo1.principalAmount).is.equal(`20${e9}`);
         await expect(donationInfo1.agnosticAmount).is.equal(`2${e18}`);
 
-        await tyche.addToSohmDeposit("0", sohmPrincipal);
+        await tyche.addToSnoroDeposit("0", snoroPrincipal);
         const donationInfo2 = await tyche.depositInfo("0");
         await expect(donationInfo2.depositor).is.equal(deployer.address);
         await expect(donationInfo2.principalAmount).is.equal(`21${e9}`);
@@ -237,7 +237,7 @@ describe("YieldDirector", async () => {
         await tyche.connect(bob).redeemAllYield();
 
         const donationInfo3 = await tyche.depositInfo("0");
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo3.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo3.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
     });
 
@@ -248,11 +248,11 @@ describe("YieldDirector", async () => {
         // Since entries in depositInfo are siloed by depositor, funds can't be exploited like this
         await tyche.connect(alice).deposit(BigNumber.from("1"), bob.address);
 
-        const balanceBefore = await gOhm.balanceOf(alice.address);
+        const balanceBefore = await gNoro.balanceOf(alice.address);
 
         await tyche.connect(alice).withdrawPrincipal("1", principal);
 
-        const balanceAfter = await gOhm.balanceOf(alice.address);
+        const balanceAfter = await gNoro.balanceOf(alice.address);
 
         await expect(balanceAfter.sub(balanceBefore)).is.equal("0");
     });
@@ -262,11 +262,11 @@ describe("YieldDirector", async () => {
         await tyche.deposit(principal, bob.address);
 
         await expect(tyche.connect(alice).withdrawPrincipal("0", principal)).to.be.reverted;
-        await expect(tyche.connect(alice).withdrawPrincipalAsSohm("0", principal)).to.be.reverted;
+        await expect(tyche.connect(alice).withdrawPrincipalAsSnoro("0", principal)).to.be.reverted;
     });
 
     it("should withdraw tokens", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -282,10 +282,10 @@ describe("YieldDirector", async () => {
 
         const donatedAmount = "10000000";
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo(donatedAmount)).add("1")
+            (await gNoro.balanceTo(donatedAmount)).add("1")
         );
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
 
         // Verify donor and recipient data is properly updated
@@ -294,7 +294,7 @@ describe("YieldDirector", async () => {
         await expect(donationInfo1.principalAmount).is.equal("0");
 
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo(donatedAmount)).add(1)
+            (await gNoro.balanceTo(donatedAmount)).add(1)
         );
     });
 
@@ -314,7 +314,7 @@ describe("YieldDirector", async () => {
 
         const donatedAmount = "10000000";
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo(donatedAmount)).add("1")
+            (await gNoro.balanceTo(donatedAmount)).add("1")
         );
 
         await tyche.withdrawPrincipal("0", principal);
@@ -325,12 +325,12 @@ describe("YieldDirector", async () => {
         await expect(donationInfo1.principalAmount).is.equal("0");
 
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo(donatedAmount)).add(1)
+            (await gNoro.balanceTo(donatedAmount)).add(1)
         );
     });
 
-    it("should withdraw to sOHM", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+    it("should withdraw to sNORO", async () => {
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -338,12 +338,12 @@ describe("YieldDirector", async () => {
 
         const donationInfo = await tyche.depositInfo("0");
 
-        const balanceBefore = await sOhm.balanceOf(deployer.address);
+        const balanceBefore = await sNoro.balanceOf(deployer.address);
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
-        await tyche.withdrawPrincipalAsSohm("0", withdrawableBalance);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
+        await tyche.withdrawPrincipalAsSnoro("0", withdrawableBalance);
 
-        const balanceAfter = await sOhm.balanceOf(deployer.address);
+        const balanceAfter = await sNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal(
             donationInfo.principalAmount.sub("1")
         );
@@ -358,23 +358,23 @@ describe("YieldDirector", async () => {
 
         await triggerRebase();
 
-        const balanceBefore = await gOhm.balanceOf(deployer.address);
+        const balanceBefore = await gNoro.balanceOf(deployer.address);
 
-        const withdrawalAmount = await gOhm.balanceTo("1000000000");
+        const withdrawalAmount = await gNoro.balanceTo("1000000000");
         await tyche.withdrawPrincipal("0", withdrawalAmount);
         await tyche.withdrawPrincipal("0", withdrawalAmount);
 
-        const balanceAfter = await gOhm.balanceOf(deployer.address);
+        const balanceAfter = await gNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal(
             BigNumber.from("2").mul(withdrawalAmount)
         );
 
         const donationInfo = await tyche.depositInfo("0");
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
 
-        const balanceAfter1 = await gOhm.balanceOf(deployer.address);
+        const balanceAfter1 = await gNoro.balanceOf(deployer.address);
         await expect(balanceAfter1.sub(balanceBefore)).is.equal("999000999200799200"); // this seems to be a bit larger than the usual precision error
 
         const redeemable = await tyche.redeemableBalance("0");
@@ -388,27 +388,27 @@ describe("YieldDirector", async () => {
         await expect(newDeposit.agnosticAmount).is.equal("0");
     });
 
-    it("should partial withdraw and full withdraw to sOHM", async () => {
+    it("should partial withdraw and full withdraw to sNORO", async () => {
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
         await triggerRebase();
 
-        const balanceBefore = await sOhm.balanceOf(deployer.address);
+        const balanceBefore = await sNoro.balanceOf(deployer.address);
 
-        const withdrawalAmount = await gOhm.balanceTo("1000000000");
-        await tyche.withdrawPrincipalAsSohm("0", withdrawalAmount);
-        await tyche.withdrawPrincipalAsSohm("0", withdrawalAmount);
+        const withdrawalAmount = await gNoro.balanceTo("1000000000");
+        await tyche.withdrawPrincipalAsSnoro("0", withdrawalAmount);
+        await tyche.withdrawPrincipalAsSnoro("0", withdrawalAmount);
 
-        const balanceAfter = await sOhm.balanceOf(deployer.address);
+        const balanceAfter = await sNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal("1999999998");
 
         const donationInfo = await tyche.depositInfo("0");
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
-        await tyche.withdrawPrincipalAsSohm("0", withdrawableBalance);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
+        await tyche.withdrawPrincipalAsSnoro("0", withdrawableBalance);
 
-        const balanceAfter1 = await sOhm.balanceOf(deployer.address);
+        const balanceAfter1 = await sNoro.balanceOf(deployer.address);
         await expect(balanceAfter1.sub(balanceBefore)).is.equal("9999999999");
     });
 
@@ -418,37 +418,37 @@ describe("YieldDirector", async () => {
 
         await triggerRebase();
 
-        const sohmBalanceBefore = await sOhm.balanceOf(deployer.address);
-        const gohmBalanceBefore = await gOhm.balanceOf(deployer.address);
+        const snoroBalanceBefore = await sNoro.balanceOf(deployer.address);
+        const gnoroBalanceBefore = await gNoro.balanceOf(deployer.address);
 
-        const withdrawalAmount = await gOhm.balanceTo("1000000000");
-        await tyche.withdrawPrincipalAsSohm("0", withdrawalAmount);
+        const withdrawalAmount = await gNoro.balanceTo("1000000000");
+        await tyche.withdrawPrincipalAsSnoro("0", withdrawalAmount);
         await tyche.withdrawPrincipal("0", withdrawalAmount);
 
-        const sohmBalanceAfter = await sOhm.balanceOf(deployer.address);
-        const gohmBalanceAfter = await gOhm.balanceOf(deployer.address);
-        await expect(sohmBalanceAfter.sub(sohmBalanceBefore)).is.equal("999999999");
-        await expect(gohmBalanceAfter.sub(gohmBalanceBefore)).is.equal(withdrawalAmount);
+        const snoroBalanceAfter = await sNoro.balanceOf(deployer.address);
+        const gnoroBalanceAfter = await gNoro.balanceOf(deployer.address);
+        await expect(snoroBalanceAfter.sub(snoroBalanceBefore)).is.equal("999999999");
+        await expect(gnoroBalanceAfter.sub(gnoroBalanceBefore)).is.equal(withdrawalAmount);
 
         const donationInfo = await tyche.depositInfo("0");
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
     });
 
     it("should not revert on second withdraw", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
         const donationInfo = await tyche.depositInfo("0");
 
         await triggerRebase();
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
 
         await tyche.addToDeposit("0", principal);
         const donationInfo1 = await tyche.depositInfo("0");
-        const withdrawableBalance2 = await gOhm.balanceTo(donationInfo1.principalAmount);
+        const withdrawableBalance2 = await gNoro.balanceTo(donationInfo1.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance2);
 
         const donationInfo2 = await tyche.depositInfo("0");
@@ -456,7 +456,7 @@ describe("YieldDirector", async () => {
     });
 
     it("should redeem tokens", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -464,13 +464,13 @@ describe("YieldDirector", async () => {
 
         await tyche.connect(bob).redeemYield("0");
 
-        const donatedAmount = await gOhm.balanceTo("10000000");
-        const bobBalance = await gOhm.balanceOf(bob.address);
+        const donatedAmount = await gNoro.balanceTo("10000000");
+        const bobBalance = await gNoro.balanceOf(bob.address);
         await expect(bobBalance).is.equal(donatedAmount.add("1"));
     });
 
     it("should redeem tokens on behalf of others", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -479,25 +479,25 @@ describe("YieldDirector", async () => {
         await tyche.givePermissionToRedeem(alice.address);
         await tyche.connect(alice).redeemYieldOnBehalfOf("0");
 
-        const donatedAmount = await gOhm.balanceTo("10000000");
-        const bobBalance = await gOhm.balanceOf(bob.address);
+        const donatedAmount = await gNoro.balanceTo("10000000");
+        const bobBalance = await gNoro.balanceOf(bob.address);
         await expect(bobBalance).is.equal(donatedAmount.add("1"));
 
         await tyche.revokePermissionToRedeem(alice.address);
         await expect(tyche.connect(alice).redeemYield("0")).to.be.reverted;
     });
 
-    it("should redeem tokens as sOHM", async () => {
+    it("should redeem tokens as sNORO", async () => {
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
         await triggerRebase();
 
-        const balanceBefore = await sOhm.balanceOf(bob.address);
+        const balanceBefore = await sNoro.balanceOf(bob.address);
 
-        await tyche.connect(bob).redeemYieldAsSohm("0");
+        await tyche.connect(bob).redeemYieldAsSnoro("0");
 
-        const balanceAfter = await sOhm.balanceOf(bob.address);
+        const balanceAfter = await sNoro.balanceOf(bob.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal("10000000");
     });
 
@@ -510,8 +510,8 @@ describe("YieldDirector", async () => {
 
         await tyche.connect(bob).redeemAllYield();
 
-        const donatedAmount = await gOhm.balanceTo("20000000");
-        const bobBalance = await gOhm.balanceOf(bob.address);
+        const donatedAmount = await gNoro.balanceTo("20000000");
+        const bobBalance = await gNoro.balanceOf(bob.address);
         await expect(bobBalance).is.equal(donatedAmount.add("2"));
     });
 
@@ -525,26 +525,26 @@ describe("YieldDirector", async () => {
         await tyche.givePermissionToRedeem(alice.address);
         await tyche.connect(alice).redeemAllYieldOnBehalfOf(bob.address);
 
-        const donatedAmount = await gOhm.balanceTo("20000000");
-        const bobBalance = await gOhm.balanceOf(bob.address);
+        const donatedAmount = await gNoro.balanceTo("20000000");
+        const bobBalance = await gNoro.balanceOf(bob.address);
         await expect(bobBalance).is.equal(donatedAmount.add("2"));
 
         await tyche.revokePermissionToRedeem(alice.address);
         await expect(tyche.connect(alice).redeemYield("0")).to.be.reverted;
     });
 
-    it("should redeem all tokens as sOHM", async () => {
+    it("should redeem all tokens as sNORO", async () => {
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
         await tyche.connect(alice).deposit(principal, bob.address);
 
         await triggerRebase();
 
-        const balanceBefore = await sOhm.balanceOf(bob.address);
+        const balanceBefore = await sNoro.balanceOf(bob.address);
 
-        await tyche.connect(bob).redeemAllYieldAsSohm();
+        await tyche.connect(bob).redeemAllYieldAsSnoro();
 
-        const balanceAfter = await sOhm.balanceOf(bob.address);
+        const balanceAfter = await sNoro.balanceOf(bob.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal("20000000");
     });
 
@@ -558,19 +558,19 @@ describe("YieldDirector", async () => {
     });
 
     it("should withdraw tokens before recipient redeems", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
         await triggerRebase();
 
-        const donatedAmount = await gOhm.balanceTo("10000000");
+        const donatedAmount = await gNoro.balanceTo("10000000");
         await expect(await tyche.redeemableBalance("0")).is.equal(donatedAmount.add("1"));
 
         const donationInfo = await tyche.depositInfo("0");
         await expect(donationInfo.agnosticAmount).is.equal(principal);
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
 
         // Redeemable amount should be unchanged
@@ -587,8 +587,8 @@ describe("YieldDirector", async () => {
         await expect(await tyche.redeemableBalance(bob.address)).is.equal("0");
     });
 
-    it("withdawable balance plus redeemable balance should equal deposited gOHM", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+    it("withdawable balance plus redeemable balance should equal deposited gNORO", async () => {
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -596,13 +596,13 @@ describe("YieldDirector", async () => {
 
         const donationInfo = await tyche.depositInfo("0");
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         const redeemable = await tyche.redeemableBalance("0");
         await expect(withdrawableBalance.add(redeemable).toString()).is.equal(principal);
     });
 
     it("should withdraw tokens after recipient redeems", async () => {
-        // Deposit 1 gOHM into Tyche and donate to Bob
+        // Deposit 1 gNORO into Tyche and donate to Bob
         const principal = `1${e18}`;
         await tyche.deposit(principal, bob.address);
 
@@ -618,7 +618,7 @@ describe("YieldDirector", async () => {
 
         await tyche.connect(bob).redeemYield("0");
 
-        await expect(await gOhm.balanceOf(bob.address)).is.equal(redeemablePerRebase);
+        await expect(await gNoro.balanceOf(bob.address)).is.equal(redeemablePerRebase);
 
         const donationInfo2 = await tyche.depositInfo("0");
         await expect(donationInfo2.agnosticAmount).is.equal("999000999000999000"); // 9.990~
@@ -628,27 +628,27 @@ describe("YieldDirector", async () => {
         // Second rebase
         await triggerRebase();
 
-        await expect(await tyche.redeemableBalance("0")).is.equal(await gOhm.balanceTo("10000000"));
+        await expect(await tyche.redeemableBalance("0")).is.equal(await gNoro.balanceTo("10000000"));
 
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
-        const balanceBefore = await gOhm.balanceOf(deployer.address);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
+        const balanceBefore = await gNoro.balanceOf(deployer.address);
         await tyche.withdrawPrincipal("0", `10000${e18}`);
-        const balanceAfter = await gOhm.balanceOf(deployer.address);
+        const balanceAfter = await gNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal(withdrawableBalance);
 
         // This amount should be the exact same as before withdrawal.
-        await expect(await tyche.redeemableBalance("0")).is.equal(await gOhm.balanceTo("10000000"));
+        await expect(await tyche.redeemableBalance("0")).is.equal(await gNoro.balanceTo("10000000"));
 
         // Redeem and make sure correct amount is present
-        const prevBalance = await gOhm.balanceOf(bob.address);
+        const prevBalance = await gNoro.balanceOf(bob.address);
         await tyche.connect(bob).redeemYield("0");
-        await expect(await gOhm.balanceOf(bob.address)).is.equal(
-            prevBalance.add(await gOhm.balanceTo("10000000"))
+        await expect(await gNoro.balanceOf(bob.address)).is.equal(
+            prevBalance.add(await gNoro.balanceTo("10000000"))
         );
     });
 
     it("should deposit from multiple sources", async () => {
-        // Both deployer and alice deposit 1 gOHM and donate to Bob
+        // Both deployer and alice deposit 1 gNORO and donate to Bob
         const principal = `1${e18}`;
 
         // Deposit from 2 accounts at different indexes
@@ -664,18 +664,18 @@ describe("YieldDirector", async () => {
         const aliceDonationInfo = await tyche.depositInfo("1");
 
         await expect(donationInfo.principalAmount).is.equal(`10${e9}`);
-        await expect(aliceDonationInfo.principalAmount).is.equal(await gOhm.balanceFrom(principal));
+        await expect(aliceDonationInfo.principalAmount).is.equal(await gNoro.balanceFrom(principal));
         await expect(donationInfo.agnosticAmount).is.equal(principal);
         await expect(aliceDonationInfo.agnosticAmount).is.equal(principal);
 
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
         await expect(await tyche.redeemableBalance("1")).is.equal("0");
     });
 
     it("should withdraw to multiple sources", async () => {
-        // Both deployer and alice deposit 1 gOHM and donate to Bob
+        // Both deployer and alice deposit 1 gNORO and donate to Bob
         const principal = `1${e18}`;
 
         // Deposit from 2 accounts
@@ -684,46 +684,46 @@ describe("YieldDirector", async () => {
 
         // Wait for some rebases
         await triggerRebase();
-        const index = await sOhm.index();
+        const index = await sNoro.index();
 
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
         await expect(await tyche.redeemableBalance("1")).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
 
         // Verify withdrawal
         const bobDonationInfo = await tyche.depositInfo("0");
 
-        const withdrawableBalance = await gOhm.balanceTo(bobDonationInfo.principalAmount);
-        const balanceBefore = await gOhm.balanceOf(deployer.address);
+        const withdrawableBalance = await gNoro.balanceTo(bobDonationInfo.principalAmount);
+        const balanceBefore = await gNoro.balanceOf(deployer.address);
         await expect(await tyche.withdrawPrincipal("0", withdrawableBalance));
 
-        const balanceAfter = await gOhm.balanceOf(deployer.address);
+        const balanceAfter = await gNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal(
-            await gOhm.balanceTo(bobDonationInfo.principalAmount)
+            await gNoro.balanceTo(bobDonationInfo.principalAmount)
         );
 
         await triggerRebase();
 
         // Verify withdrawal
-        const balanceBefore1 = await gOhm.balanceOf(alice.address);
+        const balanceBefore1 = await gNoro.balanceOf(alice.address);
 
         const aliceDonationInfo = await tyche.depositInfo("1");
-        const aliceWithdrawableBalance = await gOhm.balanceTo(aliceDonationInfo.principalAmount);
+        const aliceWithdrawableBalance = await gNoro.balanceTo(aliceDonationInfo.principalAmount);
 
-        const index1 = await sOhm.index();
+        const index1 = await sNoro.index();
         await tyche.connect(alice).withdrawPrincipal("1", aliceWithdrawableBalance);
 
-        const balanceAfter1 = await gOhm.balanceOf(alice.address);
+        const balanceAfter1 = await gNoro.balanceOf(alice.address);
         await expect(balanceAfter1.sub(balanceBefore1)).is.equal(
-            await gOhm.balanceTo(aliceDonationInfo.principalAmount)
+            await gNoro.balanceTo(aliceDonationInfo.principalAmount)
         );
     });
 
     it("should withdrawAll after donating to multiple sources", async () => {
-        // Both deployer and alice deposit 1 gOHM and donate to Bob
+        // Both deployer and alice deposit 1 gNORO and donate to Bob
         const principal = `1${e18}`;
 
         // Deposit from 2 accounts
@@ -734,18 +734,18 @@ describe("YieldDirector", async () => {
         await triggerRebase();
 
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
         await expect(await tyche.redeemableBalance("1")).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
 
         // Verify withdrawal
-        const balanceBefore = await gOhm.balanceOf(deployer.address);
+        const balanceBefore = await gNoro.balanceOf(deployer.address);
         await expect(await tyche.withdrawAll());
-        const balanceAfter = await gOhm.balanceOf(deployer.address);
+        const balanceAfter = await gNoro.balanceOf(deployer.address);
 
-        await expect(balanceAfter.sub(balanceBefore)).is.equal(await gOhm.balanceTo(`20${e9}`));
+        await expect(balanceAfter.sub(balanceBefore)).is.equal(await gNoro.balanceTo(`20${e9}`));
     });
 
     it("should allow redeem only once per epoch", async () => {
@@ -756,16 +756,16 @@ describe("YieldDirector", async () => {
 
         const donated = "10000000";
         await expect(await tyche.redeemableBalance("0")).is.equal(
-            (await gOhm.balanceTo(donated)).add("1")
+            (await gNoro.balanceTo(donated)).add("1")
         );
         await tyche.connect(bob).redeemAllYield();
-        await expect(await gOhm.balanceOf(bob.address)).is.equal(
-            (await gOhm.balanceTo(donated)).add("1")
+        await expect(await gNoro.balanceOf(bob.address)).is.equal(
+            (await gNoro.balanceTo(donated)).add("1")
         );
 
-        const balanceBefore = await gOhm.balanceOf(deployer.address);
+        const balanceBefore = await gNoro.balanceOf(deployer.address);
         await tyche.connect(bob).redeemAllYield();
-        const balanceAfter = await gOhm.balanceOf(deployer.address);
+        const balanceAfter = await gNoro.balanceOf(deployer.address);
         await expect(balanceAfter.sub(balanceBefore)).is.equal("0");
     });
 
@@ -775,10 +775,10 @@ describe("YieldDirector", async () => {
         await triggerRebase();
 
         await expect(await tyche.donatedTo(deployer.address, bob.address)).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
         await expect(await tyche.totalDonated(deployer.address)).is.equal(
-            (await gOhm.balanceTo("10000000")).add("1")
+            (await gNoro.balanceTo("10000000")).add("1")
         );
     });
 
@@ -790,16 +790,16 @@ describe("YieldDirector", async () => {
         await triggerRebase();
 
         await expect(await tyche.depositsTo(deployer.address, bob.address)).is.equal(
-            await gOhm.balanceTo(`10${e9}`)
+            await gNoro.balanceTo(`10${e9}`)
         );
         await expect(await tyche.depositsTo(deployer.address, alice.address)).is.equal(
-            await gOhm.balanceTo(`10${e9}`)
+            await gNoro.balanceTo(`10${e9}`)
         );
 
         await expect(await tyche.depositsTo(bob.address, alice.address)).is.equal("0");
 
         await expect(await tyche.totalDeposits(deployer.address)).is.equal(
-            await gOhm.balanceTo(`20${e9}`)
+            await gNoro.balanceTo(`20${e9}`)
         );
     });
 
@@ -810,11 +810,11 @@ describe("YieldDirector", async () => {
 
         await triggerRebase();
 
-        const totalDonation = await gOhm.balanceTo("20000000");
+        const totalDonation = await gNoro.balanceTo("20000000");
         await expect(await tyche.totalDonated(deployer.address)).is.equal(totalDonation.add("1"));
 
         const donationInfo = await tyche.depositInfo("0");
-        const withdrawableBalance = await gOhm.balanceTo(donationInfo.principalAmount);
+        const withdrawableBalance = await gNoro.balanceTo(donationInfo.principalAmount);
         await tyche.withdrawPrincipal("0", withdrawableBalance);
         await tyche.withdrawPrincipal("1", withdrawableBalance);
         await expect(await tyche.totalDonated(deployer.address)).is.equal(totalDonation.add("2"));
@@ -835,6 +835,6 @@ describe("YieldDirector", async () => {
         const allDeposits = await tyche.getAllDeposits(deployer.address);
         await expect(allDeposits[0].length).is.equal(2);
         await expect(allDeposits[0][0]).is.equal(bob.address);
-        await expect(allDeposits[1][0]).is.equal(await gOhm.balanceTo(`10${e9}`));
+        await expect(allDeposits[1][0]).is.equal(await gNoro.balanceTo(`10${e9}`));
     });
 });

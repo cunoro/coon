@@ -45,7 +45,7 @@ function getAvaxConfig(network: keyof typeof chainIds): NetworkUserConfig {
     return {
         accounts: [`${privateKey}`],
         chainId: chainIds[network],
-        url: chainIds[network] === 43113 ? 'https://api.avax-test.network/ext/bc/C/rpc' : 'https://api.avax.network/ext/bc/C/rpc
+        url: chainIds[network] === 43113 ? 'https://api.avax-test.network/ext/bc/C/rpc' : 'https://api.avax.network/ext/bc/C/rpc'
     };
 }
 
@@ -64,8 +64,8 @@ const config: HardhatUserConfig = {
             },
             chainId: chainIds.hardhat,
         },
-        fuji: getAvaxConfig(43113),
-        avax: getAvaxConfig(43114),
+        fuji: getAvaxConfig("fuji"),
+        avax: getAvaxConfig("avax"),
         // Uncomment for testing. Commented due to CI issues
         // ethereum: getEthConfig("ethereum"),
         // rinkeby: getEthConfig("rinkeby"),

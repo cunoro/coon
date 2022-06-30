@@ -3,13 +3,13 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { CONTRACTS } from "../constants";
 
 // Mainnet Addresses addresses
-const oldNORO = "0xC0b491daBf3709Ee5Eb79E603D73289Ca6060932";
-const oldsNORO = "0x1Fecda1dE7b6951B248C0B62CaeBD5BAbedc2084";
-const oldStaking = "0xC5d3318C0d74a72cD7C55bdf844e24516796BaB2";
-const oldwsNORO = "0xe73384f11Bb748Aa0Bc20f7b02958DF573e6E2ad";
-const sushiRouter = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
+const oldNORO = "0xb2ea5e36875ef456caBA4612D9567cEbe155975E";
+const oldsNORO = "0xe5a71723339eb0707dA9fa260C0F902dA618039C";
+const oldTreasury = "0x04899316411499990D9452a9fFb62ba45850dB3d";
+const oldStaking = "0xe5De80ef3EA62905234EF276c92268AbF86364B6";
+const oldwsNORO = "0x22a2B7A2b1dF17DB4Dd6B18fD292eb83c3f1695b";
+const joeRouter = "0xF5c7d9733e5f53abCC1695820c4818C59B457C2C";
 const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-const oldTreasury = "0x0d722D813601E48b7DAcb2DF9bae282cFd98c6E7";
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts } = hre;
@@ -26,7 +26,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
             oldTreasury,
             oldStaking,
             oldwsNORO,
-            sushiRouter,
+            joeRouter,
             uniRouter,
             "0",
             authorityDeployment.address,

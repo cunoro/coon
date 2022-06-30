@@ -8,12 +8,12 @@ import "../../../contracts/libraries/SafeMath.sol";
 import "../../../contracts/libraries/FixedPoint.sol";
 import "../../../contracts/libraries/FullMath.sol";
 import "../../../contracts/Staking.sol";
-import "../../../contracts/OlympusERC20.sol";
-import "../../../contracts/sOlympusERC20.sol";
-import "../../../contracts/governance/gOHM.sol";
+import "../../../contracts/CunoroERC20.sol";
+import "../../../contracts/sCunoroERC20.sol";
+import "../../../contracts/governance/gNORO.sol";
 import "../../../contracts/Treasury.sol";
 import "../../../contracts/StakingDistributor.sol";
-import "../../../contracts/OlympusAuthority.sol";
+import "../../../contracts/CunoroAuthority.sol";
 
 import "./util/Hevm.sol";
 import "./util/MockContract.sol";
@@ -23,14 +23,14 @@ contract StakingTest is DSTest {
     using SafeMath for uint256;
     using SafeMath for uint112;
 
-    OlympusStaking internal staking;
-    OlympusTreasury internal treasury;
-    OlympusAuthority internal authority;
+    CunoroStaking internal staking;
+    CunoroTreasury internal treasury;
+    CunoroAuthority internal authority;
     Distributor internal distributor;
 
-    OlympusERC20Token internal ohm;
-    sOlympus internal sohm;
-    gOHM internal gohm;
+    CunoroERC20Token internal noro;
+    sCunoro internal snoro;
+    gNORO internal gnoro;
 
     MockContract internal mockToken;
 
@@ -53,40 +53,40 @@ contract StakingTest is DSTest {
         mockToken.givenMethodReturnUint(abi.encodeWithSelector(ERC20.decimals.selector), 18);
         mockToken.givenMethodReturnBool(abi.encodeWithSelector(IERC20.transferFrom.selector), true);
 
-        authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
+        authority = new CunoroAuthority(address(this), address(this), address(this), address(this));
 
-        ohm = new OlympusERC20Token(address(authority));
-        gohm = new gOHM(address(this), address(this));
-        sohm = new sOlympus();
-        sohm.setIndex(10);
-        sohm.setgOHM(address(gohm));
+        noro = new CunoroERC20Token(address(authority));
+        gnoro = new gNORO(address(this), address(this));
+        snoro = new sCunoro();
+        snoro.setIndex(10);
+        snoro.setgNORO(address(gnoro));
 
-        treasury = new OlympusTreasury(address(ohm), 1, address(authority));
+        treasury = new CunoroTreasury(address(noro), 1, address(authority));
 
-        staking = new OlympusStaking(
-            address(ohm),
-            address(sohm),
-            address(gohm),
+        staking = new CunoroStaking(
+            address(noro),
+            address(snoro),
+            address(gnoro),
             EPOCH_LENGTH,
             START_TIME,
             NEXT_REBASE_TIME,
             address(authority)
         );
 
-        distributor = new Distributor(address(treasury), address(ohm), address(staking), address(authority));
+        distributor = new Distributor(address(treasury), address(noro), address(staking), address(authority));
         distributor.setBounty(BOUNTY);
         staking.setDistributor(address(distributor));
-        treasury.enable(OlympusTreasury.STATUS.REWARDMANAGER, address(distributor), address(0)); // Allows distributor to mint ohm.
-        treasury.enable(OlympusTreasury.STATUS.RESERVETOKEN, address(mockToken), address(0)); // Allow mock token to be deposited into treasury
-        treasury.enable(OlympusTreasury.STATUS.RESERVEDEPOSITOR, address(this), address(0)); // Allow this contract to deposit token into treeasury
+        treasury.enable(CunoroTreasury.STATUS.REWARDMANAGER, address(distributor), address(0)); // Allows distributor to mint noro.
+        treasury.enable(CunoroTreasury.STATUS.RESERVETOKEN, address(mockToken), address(0)); // Allow mock token to be deposited into treasury
+        treasury.enable(CunoroTreasury.STATUS.RESERVEDEPOSITOR, address(this), address(0)); // Allow this contract to deposit token into treeasury
 
-        sohm.initialize(address(staking), address(treasury));
-        gohm.migrate(address(staking), address(sohm));
+        snoro.initialize(address(staking), address(treasury));
+        gnoro.migrate(address(staking), address(snoro));
 
         // Give the treasury permissions to mint
         authority.pushVault(address(treasury), true);
 
-        // Deposit a token who's profit (3rd param) determines how much ohm the treasury can mint
+        // Deposit a token who's profit (3rd param) determines how much noro the treasury can mint
         uint256 depositAmount = 20e18;
         treasury.deposit(depositAmount, address(mockToken), BOUNTY.mul(2)); // Mints (depositAmount- 2xBounty) for this contract
     }
@@ -109,32 +109,32 @@ contract StakingTest is DSTest {
     }
 
     function testStake() public {
-        ohm.approve(address(staking), AMOUNT);
+        noro.approve(address(staking), AMOUNT);
         uint256 amountStaked = staking.stake(address(this), AMOUNT, true, true);
         assertEq(amountStaked, AMOUNT);
     }
 
-    function testStakeAtRebaseToGohm() public {
+    function testStakeAtRebaseToGnoro() public {
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
-        ohm.approve(address(staking), AMOUNT);
-        bool isSohm = false;
+        noro.approve(address(staking), AMOUNT);
+        bool isSnoro = false;
         bool claim = true;
-        uint256 gOHMRecieved = staking.stake(address(this), AMOUNT, isSohm, claim);
+        uint256 gNORORecieved = staking.stake(address(this), AMOUNT, isSnoro, claim);
 
-        uint256 expectedAmount = gohm.balanceTo(AMOUNT.add(BOUNTY));
-        assertEq(gOHMRecieved, expectedAmount);
+        uint256 expectedAmount = gnoro.balanceTo(AMOUNT.add(BOUNTY));
+        assertEq(gNORORecieved, expectedAmount);
     }
 
     function testStakeAtRebase() public {
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
-        ohm.approve(address(staking), AMOUNT);
-        bool isSohm = true;
+        noro.approve(address(staking), AMOUNT);
+        bool isSnoro = true;
         bool claim = true;
-        uint256 amountStaked = staking.stake(address(this), AMOUNT, isSohm, claim);
+        uint256 amountStaked = staking.stake(address(this), AMOUNT, isSnoro, claim);
 
         uint256 expectedAmount = AMOUNT.add(BOUNTY);
         assertEq(amountStaked, expectedAmount);
@@ -142,96 +142,96 @@ contract StakingTest is DSTest {
 
     function testUnstake() public {
         bool triggerRebase = true;
-        bool isSohm = true;
+        bool isSnoro = true;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
-        assertEq(amountStaked, initialOhmBalance);
+        // Stake the noro
+        uint256 initialNoroBalance = noro.balanceOf(address(this));
+        noro.approve(address(staking), initialNoroBalance);
+        uint256 amountStaked = staking.stake(address(this), initialNoroBalance, isSnoro, claim);
+        assertEq(amountStaked, initialNoroBalance);
 
         // Validate balances post stake
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
-        assertEq(sOhmBalance, initialOhmBalance);
+        uint256 noroBalance = noro.balanceOf(address(this));
+        uint256 sNoroBalance = snoro.balanceOf(address(this));
+        assertEq(noroBalance, 0);
+        assertEq(sNoroBalance, initialNoroBalance);
 
-        // Unstake sOHM
-        sohm.approve(address(staking), sOhmBalance);
-        staking.unstake(address(this), sOhmBalance, triggerRebase, isSohm);
+        // Unstake sNORO
+        snoro.approve(address(staking), sNoroBalance);
+        staking.unstake(address(this), sNoroBalance, triggerRebase, isSnoro);
 
         // Validate Balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, initialOhmBalance);
-        assertEq(sOhmBalance, 0);
+        noroBalance = noro.balanceOf(address(this));
+        sNoroBalance = snoro.balanceOf(address(this));
+        assertEq(noroBalance, initialNoroBalance);
+        assertEq(sNoroBalance, 0);
     }
 
     function testUnstakeAtRebase() public {
         bool triggerRebase = true;
-        bool isSohm = true;
+        bool isSnoro = true;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
-        assertEq(amountStaked, initialOhmBalance);
+        // Stake the noro
+        uint256 initialNoroBalance = noro.balanceOf(address(this));
+        noro.approve(address(staking), initialNoroBalance);
+        uint256 amountStaked = staking.stake(address(this), initialNoroBalance, isSnoro, claim);
+        assertEq(amountStaked, initialNoroBalance);
 
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
         // Validate balances post stake
-        // Post initial rebase, distribution amount is 0, so sOHM balance doens't change.
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
-        assertEq(sOhmBalance, initialOhmBalance);
+        // Post initial rebase, distribution amount is 0, so sNORO balance doens't change.
+        uint256 noroBalance = noro.balanceOf(address(this));
+        uint256 sNoroBalance = snoro.balanceOf(address(this));
+        assertEq(noroBalance, 0);
+        assertEq(sNoroBalance, initialNoroBalance);
 
-        // Unstake sOHM
-        sohm.approve(address(staking), sOhmBalance);
-        staking.unstake(address(this), sOhmBalance, triggerRebase, isSohm);
+        // Unstake sNORO
+        snoro.approve(address(staking), sNoroBalance);
+        staking.unstake(address(this), sNoroBalance, triggerRebase, isSnoro);
 
         // Validate balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        sOhmBalance = sohm.balanceOf(address(this));
-        uint256 expectedAmount = initialOhmBalance.add(BOUNTY); // Rebase earns a bounty
-        assertEq(ohmBalance, expectedAmount);
-        assertEq(sOhmBalance, 0);
+        noroBalance = noro.balanceOf(address(this));
+        sNoroBalance = snoro.balanceOf(address(this));
+        uint256 expectedAmount = initialNoroBalance.add(BOUNTY); // Rebase earns a bounty
+        assertEq(noroBalance, expectedAmount);
+        assertEq(sNoroBalance, 0);
     }
 
-    function testUnstakeAtRebaseFromGohm() public {
+    function testUnstakeAtRebaseFromGnoro() public {
         bool triggerRebase = true;
-        bool isSohm = false;
+        bool isSnoro = false;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
-        uint256 gohmAmount = gohm.balanceTo(initialOhmBalance);
-        assertEq(amountStaked, gohmAmount);
+        // Stake the noro
+        uint256 initialNoroBalance = noro.balanceOf(address(this));
+        noro.approve(address(staking), initialNoroBalance);
+        uint256 amountStaked = staking.stake(address(this), initialNoroBalance, isSnoro, claim);
+        uint256 gnoroAmount = gnoro.balanceTo(initialNoroBalance);
+        assertEq(amountStaked, gnoroAmount);
 
         // test the unstake
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
         // Validate balances post-stake
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 gohmBalance = gohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
-        assertEq(gohmBalance, gohmAmount);
+        uint256 noroBalance = noro.balanceOf(address(this));
+        uint256 gnoroBalance = gnoro.balanceOf(address(this));
+        assertEq(noroBalance, 0);
+        assertEq(gnoroBalance, gnoroAmount);
 
-        // Unstake gOHM
-        gohm.approve(address(staking), gohmBalance);
-        staking.unstake(address(this), gohmBalance, triggerRebase, isSohm);
+        // Unstake gNORO
+        gnoro.approve(address(staking), gnoroBalance);
+        staking.unstake(address(this), gnoroBalance, triggerRebase, isSnoro);
 
         // Validate balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        gohmBalance = gohm.balanceOf(address(this));
-        uint256 expectedOhm = initialOhmBalance.add(BOUNTY); // Rebase earns a bounty
-        assertEq(ohmBalance, expectedOhm);
-        assertEq(gohmBalance, 0);
+        noroBalance = noro.balanceOf(address(this));
+        gnoroBalance = gnoro.balanceOf(address(this));
+        uint256 expectedNoro = initialNoroBalance.add(BOUNTY); // Rebase earns a bounty
+        assertEq(noroBalance, expectedNoro);
+        assertEq(gnoroBalance, 0);
     }
 }

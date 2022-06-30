@@ -1,77 +1,77 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { MockSOHM__factory, MockSOHM } from "../../types";
+import { MockSNORO__factory, MockSNORO } from "../../types";
 
-describe("Mock sOhm Tests", () => {
-    // 100 sOHM
+describe("Mock sNoro Tests", () => {
+    // 100 sNORO
     const INITIAL_AMOUNT = "100000000000";
 
     let initializer: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
-    let sOhm: MockSOHM;
+    let sNoro: MockSNORO;
 
     beforeEach(async () => {
         [initializer, alice, bob] = await ethers.getSigners();
 
         // Initialize to index of 1 and rebase percentage of 1%
-        sOhm = await new MockSOHM__factory(initializer).deploy("1000000000", "10000000");
+        sNoro = await new MockSNORO__factory(initializer).deploy("1000000000", "10000000");
 
-        // Mint 100 sOHM for intializer account
-        await sOhm.mint(initializer.address, INITIAL_AMOUNT);
+        // Mint 100 sNORO for intializer account
+        await sNoro.mint(initializer.address, INITIAL_AMOUNT);
     });
 
     it("should rebase properly", async () => {
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("100000000000");
-        expect(await sOhm.index()).to.equal("1000000000");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("100000000000");
+        expect(await sNoro.index()).to.equal("1000000000");
 
-        await sOhm.rebase();
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("100000000000");
-        expect(await sOhm.balanceOf(initializer.address)).to.equal("101000000000");
-        expect(await sOhm.index()).to.equal("1010000000");
+        await sNoro.rebase();
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("100000000000");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal("101000000000");
+        expect(await sNoro.index()).to.equal("1010000000");
     });
 
     it("should transfer properly", async () => {
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("100000000000");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("100000000000");
 
-        //await sOhm.approve(bob.address, INITIAL_AMOUNT);
-        await sOhm.transfer(bob.address, INITIAL_AMOUNT);
+        //await sNoro.approve(bob.address, INITIAL_AMOUNT);
+        await sNoro.transfer(bob.address, INITIAL_AMOUNT);
 
-        expect(await sOhm.balanceOf(initializer.address)).to.equal("0");
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("0");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal("0");
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("0");
 
-        expect(await sOhm.balanceOf(bob.address)).to.equal(INITIAL_AMOUNT);
-        expect(await sOhm._agnosticBalance(bob.address)).to.equal("100000000000");
+        expect(await sNoro.balanceOf(bob.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro._agnosticBalance(bob.address)).to.equal("100000000000");
     });
 
     it("should transfer properly after rebase", async () => {
         const afterRebase = "101000000000";
 
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("100000000000");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("100000000000");
 
-        await sOhm.rebase();
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(afterRebase);
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("100000000000");
+        await sNoro.rebase();
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(afterRebase);
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("100000000000");
 
         const rebasedAmount = "1000000000";
-        await sOhm.transfer(bob.address, rebasedAmount); // Transfer rebased amount
+        await sNoro.transfer(bob.address, rebasedAmount); // Transfer rebased amount
 
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
-        expect(await sOhm._agnosticBalance(initializer.address)).to.equal("99009900991");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro._agnosticBalance(initializer.address)).to.equal("99009900991");
 
-        expect(await sOhm.balanceOf(bob.address)).to.equal(Number(rebasedAmount) - 1); // Precision error ;(
-        expect(await sOhm._agnosticBalance(bob.address)).to.equal("990099009");
+        expect(await sNoro.balanceOf(bob.address)).to.equal(Number(rebasedAmount) - 1); // Precision error ;(
+        expect(await sNoro._agnosticBalance(bob.address)).to.equal("990099009");
     });
 
     it("should drip funds to users", async () => {
-        expect(await sOhm.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
+        expect(await sNoro.balanceOf(initializer.address)).to.equal(INITIAL_AMOUNT);
 
-        await sOhm.drip();
+        await sNoro.drip();
 
-        expect(await sOhm.balanceOf(initializer.address)).to.equal("200000000000");
+        expect(await sNoro.balanceOf(initializer.address)).to.equal("200000000000");
     });
 });

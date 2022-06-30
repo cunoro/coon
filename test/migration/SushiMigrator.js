@@ -3,43 +3,43 @@ const impersonateAccount = require("../utils/impersonate_account");
 const chai = require("chai");
 const { assert, expect } = require("chai");
 const { solidity } = require("ethereum-waffle");
-const { olympus } = require("../utils/olympus");
+const { cunoro } = require("../utils/cunoro");
 
 chai.use(solidity);
 
 const sushiRouter = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-const olympusGovernor = "0x245cc372C84B3645Bf0Ffe6538620B04a217988B";
+const cunoroGovernor = "0x245cc372C84B3645Bf0Ffe6538620B04a217988B";
 
 describe("SushiMigrator", async () => {
-    let governor, treasury, ohmContract, SushiMigrator, sushiMigrator;
+    let governor, treasury, noroContract, SushiMigrator, sushiMigrator;
 
     beforeEach(async () => {
         await fork_network(14486473);
         treasury = await ethers.getContractAt(
-            "OlympusTreasury",
+            "CunoroTreasury",
             "0x9A315BdF513367C0377FB36545857d12e85813Ef"
         );
-        ohmContract = await ethers.getContractAt(
+        noroContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
             "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5"
         );
 
         SushiMigrator = await ethers.getContractFactory("SushiMigrator");
-        sushiMigrator = await SushiMigrator.deploy(olympus.authority);
+        sushiMigrator = await SushiMigrator.deploy(cunoro.authority);
 
-        impersonateAccount(olympusGovernor);
-        governor = await ethers.getSigner(olympusGovernor);
+        impersonateAccount(cunoroGovernor);
+        governor = await ethers.getSigner(cunoroGovernor);
     });
 
-    it("Migrate Sushi OHM/DAI pair to Uniswap OHM/DAI pair", async () => {
-        const sushiOhmDaiLpAddress = "0x055475920a8c93CfFb64d039A8205F7AcC7722d3";
-        const uniOhmDaiLpAddress = "0x1b851374b8968393c11e8fb30c2842cfc4e986a5";
+    it("Migrate Sushi NORO/DAI pair to Uniswap NORO/DAI pair", async () => {
+        const sushiNoroDaiLpAddress = "0x055475920a8c93CfFb64d039A8205F7AcC7722d3";
+        const uniNoroDaiLpAddress = "0x1b851374b8968393c11e8fb30c2842cfc4e986a5";
         const amount = "253163960111968806387";
 
         const uniswapLpContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
-            uniOhmDaiLpAddress
+            uniNoroDaiLpAddress
         );
         const daiContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
@@ -48,7 +48,7 @@ describe("SushiMigrator", async () => {
 
         await treasury.connect(governor).enable(3, sushiMigrator.address, sushiMigrator.address);
 
-        const ohmBalBeforeTx = await ohmContract.balanceOf(treasury.address);
+        const noroBalBeforeTx = await noroContract.balanceOf(treasury.address);
         const daiBalBeforeTx = await daiContract.balanceOf(treasury.address);
         const lpBalBeforeTx = await uniswapLpContract.balanceOf(treasury.address);
 
@@ -57,23 +57,23 @@ describe("SushiMigrator", async () => {
             .executeTx(
                 sushiRouter,
                 uniRouter,
-                sushiOhmDaiLpAddress,
-                uniOhmDaiLpAddress,
+                sushiNoroDaiLpAddress,
+                uniNoroDaiLpAddress,
                 amount,
                 990,
                 900
             );
 
         const tx = await sushiMigrator.amountsByMigrationId(0);
-        const ohmBalAfterTx = await ohmContract.balanceOf(treasury.address);
+        const noroBalAfterTx = await noroContract.balanceOf(treasury.address);
 
         const daiBalAfterTx = await daiContract.balanceOf(treasury.address);
         const lpBalAfterTx = await uniswapLpContract.balanceOf(treasury.address);
 
         if (tx.uniPoolToken0ReturnedToTreasury > 0) {
             assert.equal(
-                Number(ohmBalAfterTx),
-                Number(ohmBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
+                Number(noroBalAfterTx),
+                Number(noroBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
             );
         }
 
@@ -87,14 +87,14 @@ describe("SushiMigrator", async () => {
         assert.equal(Number(lpBalBeforeTx) + Number(tx.uniPoolLpReceived), Number(lpBalAfterTx));
     });
 
-    it("Migrate Sushi OHM/ETH pair to Uniswap OHM/ETH pair", async () => {
-        const sushiOhmEthLpAddress = "0x69b81152c5A8d35A67B32A4D3772795d96CaE4da";
-        const uniOhmEthLpAddress = "0x88b8555CB3fdeE7077491e673a5bDdFB7144744f";
+    it("Migrate Sushi NORO/ETH pair to Uniswap NORO/ETH pair", async () => {
+        const sushiNoroEthLpAddress = "0x69b81152c5A8d35A67B32A4D3772795d96CaE4da";
+        const uniNoroEthLpAddress = "0x88b8555CB3fdeE7077491e673a5bDdFB7144744f";
         const amount = "1364756451373102957";
 
         const uniswapLpContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
-            uniOhmEthLpAddress
+            uniNoroEthLpAddress
         );
         const wethContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
@@ -103,7 +103,7 @@ describe("SushiMigrator", async () => {
         const router = await ethers.getContractAt("IUniswapV2Router", uniRouter);
 
         const SushiMigrator = await ethers.getContractFactory("SushiMigrator");
-        const sushiMigrator = await SushiMigrator.deploy(olympus.authority);
+        const sushiMigrator = await SushiMigrator.deploy(cunoro.authority);
 
         await treasury.connect(governor).enable(3, sushiMigrator.address, sushiMigrator.address);
 
@@ -121,9 +121,9 @@ describe("SushiMigrator", async () => {
             to: user.address,
             value: ethers.utils.parseEther("2.0"), // Sends exactly 1.0 ether
         });
-        await ohmContract.connect(user).approve(uniRouter, "1247350");
+        await noroContract.connect(user).approve(uniRouter, "1247350");
 
-        // The current price in the OHM/ETH uniswap pool isn't correct, using swapExactTokensForTokens to set the right price before proceeding.
+        // The current price in the NORO/ETH uniswap pool isn't correct, using swapExactTokensForTokens to set the right price before proceeding.
         await router
             .connect(user)
             .swapExactTokensForTokens(
@@ -137,7 +137,7 @@ describe("SushiMigrator", async () => {
                 "1000000000000000000"
             );
 
-        const ohmBalBeforeTx = await ohmContract.balanceOf(treasury.address);
+        const noroBalBeforeTx = await noroContract.balanceOf(treasury.address);
         const wethBalBeforeTx = await wethContract.balanceOf(treasury.address);
         const lpBalBeforeTx = await uniswapLpContract.balanceOf(treasury.address);
 
@@ -146,14 +146,14 @@ describe("SushiMigrator", async () => {
             .executeTx(
                 sushiRouter,
                 uniRouter,
-                sushiOhmEthLpAddress,
-                uniOhmEthLpAddress,
+                sushiNoroEthLpAddress,
+                uniNoroEthLpAddress,
                 amount,
                 990,
                 970
             );
 
-        const ohmBalAfterTx = await ohmContract.balanceOf(treasury.address);
+        const noroBalAfterTx = await noroContract.balanceOf(treasury.address);
         const wethBalAfterTx = await wethContract.balanceOf(treasury.address);
 
         const lpBalAfterTx = await uniswapLpContract.balanceOf(treasury.address);
@@ -161,8 +161,8 @@ describe("SushiMigrator", async () => {
 
         if (tx.uniPoolToken0ReturnedToTreasury > 0) {
             assert.equal(
-                Number(ohmBalAfterTx),
-                Number(ohmBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
+                Number(noroBalAfterTx),
+                Number(noroBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
             );
         }
 

@@ -8,11 +8,11 @@ import { BigNumber, BaseContract, ContractFactory, Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { FakeContract, MockContract, MockContractFactory } from "@defi-wonderland/smock";
 import {
-    OlympusTreasury,
+    CunoroTreasury,
     TreasuryExtender,
     TreasuryExtender__factory,
     BaseAllocator,
-    OlympusAuthority,
+    CunoroAuthority,
     MockERC20,
     SimplestMockAllocator,
     SimplestMockAllocator__factory,
@@ -20,7 +20,7 @@ import {
 
 // data
 import { coins } from "../utils/coins";
-import { olympus } from "../utils/olympus";
+import { cunoro } from "../utils/cunoro";
 import {
     impersonate,
     snapshot,
@@ -42,8 +42,8 @@ describe("BaseAllocator", async () => {
 
     // contracts
     let extender: TreasuryExtender;
-    let treasury: OlympusTreasury;
-    let authority: OlympusAuthority;
+    let treasury: CunoroTreasury;
+    let authority: CunoroAuthority;
     let allocator: SimplestMockAllocator;
 
     // tokens
@@ -72,14 +72,14 @@ describe("BaseAllocator", async () => {
         tokens = [frax, usdc, dai, usdt, weth];
 
         treasury = (await ethers.getContractAt(
-            "OlympusTreasury",
-            olympus.treasury
-        )) as OlympusTreasury;
+            "CunoroTreasury",
+            cunoro.treasury
+        )) as CunoroTreasury;
 
         authority = (await ethers.getContractAt(
-            "OlympusAuthority",
-            olympus.authority
-        )) as OlympusAuthority;
+            "CunoroAuthority",
+            cunoro.authority
+        )) as CunoroAuthority;
 
         const extenderFactory: TreasuryExtender__factory = (await ethers.getContractFactory(
             "TreasuryExtender"
