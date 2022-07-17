@@ -74,17 +74,17 @@ library Address {
     }
 
     function functionCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -107,8 +107,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -260,17 +260,17 @@ contract CunoroTreasury is Ownable {
     event ChangeQueued( MANAGING indexed managing, address queued );
     event ChangeActivated( MANAGING indexed managing, address activated, bool result );
 
-    enum MANAGING { 
-        RESERVEDEPOSITOR, 
-        RESERVESPENDER, 
-        RESERVETOKEN, 
-        RESERVEMANAGER, 
-        LIQUIDITYDEPOSITOR, 
-        LIQUIDITYTOKEN, 
-        LIQUIDITYMANAGER, 
-        DEBTOR, 
-        REWARDMANAGER, 
-        SOHM 
+    enum MANAGING {
+        RESERVEDEPOSITOR,
+        RESERVESPENDER,
+        RESERVETOKEN,
+        RESERVEMANAGER,
+        LIQUIDITYDEPOSITOR,
+        LIQUIDITYTOKEN,
+        LIQUIDITYMANAGER,
+        DEBTOR,
+        REWARDMANAGER,
+        SOHM
     }
 
     ICunoroERC20 public immutable Cunoro;
@@ -317,7 +317,7 @@ contract CunoroTreasury is Ownable {
 
     IERC20 public sCunoro;
     uint public sOHMQueue; // Delays change to sOHM address
-    
+
     uint public totalReserves; // Risk-free value of all assets
     uint public totalDebt;
 
@@ -325,14 +325,14 @@ contract CunoroTreasury is Ownable {
 
     constructor (
         address _Cunoro,
-        address _BEND,
+        address _ERC20,
         uint32 _secondsNeededForQueue
     ) {
         require( _Cunoro != address(0) );
         Cunoro = ICunoroERC20(_Cunoro);
 
-        isReserveToken[ _BEND ] = true;
-        reserveTokens.push( _BEND );
+        isReserveToken[ _ERC20 ] = true;
+        reserveTokens.push( _ERC20 );
 
     //    isLiquidityToken[ _OHMDAI ] = true;
     //    liquidityTokens.push( _OHMDAI );
@@ -349,7 +349,7 @@ contract CunoroTreasury is Ownable {
     function deposit( uint _amount, address _token, uint _value, uint _payout ) external {
         require( isReserveToken[ _token ] || isLiquidityToken[ _token ], "Not accepted" );
         IERC20( _token ).safeTransferFrom( msg.sender, address(this), _amount );
-        
+
         if ( isReserveToken[ _token ] ) {
             require( isReserveDepositor[ msg.sender ], "Not approved" );
         } else {
@@ -405,9 +405,9 @@ contract CunoroTreasury is Ownable {
 
         totalReserves = totalReserves.sub( value );
         emit ReservesUpdated( totalReserves );
-        
+
         IERC20( _token ).safeTransfer( msg.sender, _amount );
-        
+
         emit CreateDebt( msg.sender, _token, _amount, value );
     }
 
@@ -460,7 +460,7 @@ contract CunoroTreasury is Ownable {
         } else {
             require( isReserveManager[ msg.sender ], "Not approved" );
         }
-        
+
         require(value <= excessReserves(), "Insufficient reserves");
         totalReserves = totalReserves.sub( value );
         emit ReservesUpdated( totalReserves );
@@ -475,11 +475,11 @@ contract CunoroTreasury is Ownable {
      */
     function mintRewards( address _recipient, uint _amount ) external {
         require( isRewardManager[ msg.sender ], "Not approved" );
-        require( _amount <= excessReserves(), "Insufficient reserves" );
+        // require( _amount <= excessReserves(), "Insufficient reserves" );
         Cunoro.mint( _recipient, _amount );
 
         emit RewardsMinted( msg.sender, _recipient, _amount );
-    } 
+    }
 
     /**
         @notice returns excess reserves not backing tokens
@@ -496,7 +496,7 @@ contract CunoroTreasury is Ownable {
     function auditReserves() external onlyOwner {
         uint reserves;
         for( uint i = 0; i < reserveTokens.length; i++ ) {
-            reserves = reserves.add ( 
+            reserves = reserves.add (
                 valueOf( reserveTokens[ i ], IERC20( reserveTokens[ i ] ).balanceOf( address(this) ) )
             );
         }
@@ -567,9 +567,9 @@ contract CunoroTreasury is Ownable {
         @return bool
      */
     function toggle(
-        MANAGING _managing, 
-        address _address, 
-        address _calculator 
+        MANAGING _managing,
+        address _address,
+        address _calculator
     ) external onlyOwner returns ( bool ) {
         require( _address != address(0), "IA" );
         bool result;
@@ -582,7 +582,7 @@ contract CunoroTreasury is Ownable {
             }
             result = !isReserveDepositor[ _address ];
             isReserveDepositor[ _address ] = result;
-            
+
         } else if ( _managing == MANAGING.RESERVESPENDER ) { // 1
             if ( requirements( reserveSpenderQueue, isReserveSpender, _address ) ) {
                 reserveSpenderQueue[ _address ] = 0;
@@ -684,12 +684,12 @@ contract CunoroTreasury is Ownable {
         @param queue_ mapping( address => uint )
         @param status_ mapping( address => bool )
         @param _address address
-        @return bool 
+        @return bool
      */
-    function requirements( 
-        mapping( address => uint32 ) storage queue_, 
-        mapping( address => bool ) storage status_, 
-        address _address 
+    function requirements(
+        mapping( address => uint32 ) storage queue_,
+        mapping( address => bool ) storage status_,
+        address _address
     ) internal view returns ( bool ) {
         if ( !status_[ _address ] ) {
             require( queue_[ _address ] != 0, "Must queue" );

@@ -462,7 +462,7 @@ contract Distributor is Ownable {
         @param _target uint
      */
     function setAdjustment( uint _index, bool _add, uint _rate, uint _target ) external onlyOwner {
-        require(_target <= 5000, "Too high reward rate");
+        // require(_target <= 5000, "Too high reward rate");
         adjustments[ _index ] = Adjust({
             add: _add,
             rate: _rate,

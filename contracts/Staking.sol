@@ -668,7 +668,7 @@ contract CunoroStaking is Ownable {
             epoch.number++;
 
             if ( address(distributor) != address(0) ) {
-                distributor.distribute();   //Cunoro mint should be updated
+                distributor.distribute();   // Cunoro mint should be updated
             }
 
             uint balance = contractBalance();
