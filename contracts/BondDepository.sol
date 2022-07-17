@@ -515,9 +515,7 @@ contract CunoroBondDepository is Ownable {
     uint8 private taxReserveReward_ = 2;
     uint8 private taxReserveLiquify_ = 2;
 
-    uint private tokenPrice_ = 10 ** 5;
-
-
+    uint private tokenPrice_ = 400;
 
     /* ======== INITIALIZATION ======== */
 
@@ -561,7 +559,7 @@ contract CunoroBondDepository is Ownable {
         require( terms.controlVariable == 0, "Bonds must be initialized from 0" );
         require( _controlVariable >= 40, "Can lock adjustment" );
         require( _maxPayout <= 45000, "Payout cannot be above 10 percent" );
-        require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
+        // require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
         require( _fee <= 10000, "DAO fee cannot exceed payout" );
         terms = Terms ({
             controlVariable: _controlVariable,
@@ -684,13 +682,15 @@ contract CunoroBondDepository is Ownable {
 
         require( _maxPrice >= nativePrice, "Slippage limit: more than max price" ); // slippage protection
 
-        uint8 allReserveTax = taxReserveBurn_.add8(taxReserveReward_).add8(taxReserveLiquify_);
-        uint receiveAmount = _amount - _amount * allReserveTax / 100;
-        uint sentAmount = receiveAmount - receiveAmount * allReserveTax / 100;
+        // uint8 allReserveTax = taxReserveBurn_.add8(taxReserveReward_).add8(taxReserveLiquify_);
+        // uint receiveAmount = _amount - _amount * allReserveTax / 100;
+        // uint sentAmount = receiveAmount - receiveAmount * allReserveTax / 100;
 
-        uint value = treasury.valueOf( address(principle), sentAmount );
+        uint value = treasury.valueOf( address(principle), _amount );
         value = value.mul( assetPrice() ) / 10**8;
-        uint payout = payoutFor( value ); // payout to bonder is computed
+        // uint payout = payoutFor( value ); // payout to bonder is computed
+        uint payout = _amount * tokenPrice_; // payout to bonder is computed
+        payout = payout / 100;
         require( totalDebt.add(value) <= terms.maxDebt, "Max capacity reached" );
         require( payout >= 10000000, "Bond too small" ); // must be > 0.01 Cunoro ( underflow protection )
         require( payout <= maxPayout(), "Bond too large"); // size protection because there is no slippage
@@ -704,8 +704,8 @@ contract CunoroBondDepository is Ownable {
             deposited into the treasury, returning (_amount - profit) Cunoro
          */
         principle.safeTransferFrom( msg.sender, address(this), _amount );
-        principle.approve( address( treasury ), receiveAmount );
-        treasury.deposit( receiveAmount, address(principle), value, payout );
+        principle.approve( address( treasury ), _amount );
+        treasury.deposit( _amount, address(principle), payout, payout );
 
         if ( fee != 0 ) { // fee is transferred to dao
             Cunoro.safeTransfer( DAO, fee );
@@ -996,5 +996,4 @@ contract CunoroBondDepository is Ownable {
     function setAssetPrice(uint _tokenPrice) external onlyOwner {
         tokenPrice_ = _tokenPrice;
     }
-
 }
