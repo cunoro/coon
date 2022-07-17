@@ -19,17 +19,17 @@ async function main() {
     console.log("===================================================================");
 
     const INIT_INDEX = Math.pow(10, 9);
-    const EPOCH_LEGNTH = 900;
+    const EPOCH_LEGNTH = 5*60;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1656433532;
-    const REWARD_RATE = 300;
+    const FIRST_EPOCH_TIME = 1657729800;
+    const REWARD_RATE = 500;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
     const MAX_PAYOUT = 10000;
     const BOND_FEE = 0;
     const MAX_DEBT = Math.pow(10, 15);
-    const VESTING_TERM = 5*24*3600;
+    const VESTING_TERM = 3600;
 
     const DAO = "0x8c8eC00fb235dE3922182b47d2E8f8e69268039a";
     const BEND = "0x19a1165A79AFAAeFd805969B32a0640d4Db9f131";

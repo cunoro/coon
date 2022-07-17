@@ -19,23 +19,23 @@ async function main() {
     console.log("===================================================================");
 
     const INIT_INDEX = Math.pow(10, 9);
-    const EPOCH_LEGNTH = 900;
+    const EPOCH_LEGNTH = 8*3600;
     const FIRST_EPOCH_NUM = 1;
-    const FIRST_EPOCH_TIME = 1656433532;
-    const REWARD_RATE = 300;
+    const FIRST_EPOCH_TIME = 1657540800;
+    const REWARD_RATE = 650;
 
     const CONTROL_VARIABLE = 40;
     const MIN_PRICE = 100;
-    const MAX_PAYOUT = 10000;
+    const MAX_PAYOUT = 30000;
     const BOND_FEE = 0;
     const MAX_DEBT = Math.pow(10, 15);
     const VESTING_TERM = 5*24*3600;
 
-    const DAO = "0x8c8eC00fb235dE3922182b47d2E8f8e69268039a";
-    const BEND = "0x19a1165A79AFAAeFd805969B32a0640d4Db9f131";
-    const WAVAX = "0xd00ae08403B9bbb9124bB305C09058E32C39A48c";
+    const DAO = "0x813C38214799535c1375606188aD7E8Fd1762651";
+    const BEND = "0x3160591776e34C319F2Ad28Ba8c1F4829adc3907";
+    const WAVAX = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    const AVAX_FEED = "0x5498BB86BC934c8D34FDA08E81D444153d0D06aD"; // 0x0A77230d17318075983913bC2145DB16C7366156
+    const AVAX_FEED = "0x0A77230d17318075983913bC2145DB16C7366156";
 
 // NORO token deploy
     const Cunoro = await ethers.getContractFactory("CunoroERC20Token");
@@ -128,67 +128,6 @@ async function main() {
 
     console.log("Warmup Deployed.", warmup.address);
 
-// BondDepository_BEND deploy
-    const BondDepository = await ethers.getContractFactory("CunoroBondDepository");
-    const bonddepository = await BondDepository.deploy(
-        cunoro.address,
-        BEND,
-        treasury.address,
-        DAO,
-        ZERO_ADDRESS
-    );
-    await bonddepository.deployed();
-    // initializeBondTerms
-    tx = await bonddepository.initializeBondTerms(
-        CONTROL_VARIABLE,
-        MIN_PRICE,
-        MAX_PAYOUT,
-        BOND_FEE,
-        MAX_DEBT,
-        VESTING_TERM
-    );
-    // add depositor to treasury
-    await tx.wait();
-    tx = await treasury.queue(0, bonddepository.address);
-    await tx.wait();
-    tx = await treasury.toggle(0, bonddepository.address, ZERO_ADDRESS);
-    // setStaking
-    await tx.wait();
-    tx = await bonddepository.setStaking(helper.address, true);
-    await tx.wait();
-
-    console.log("BondDepository_BEND Deployed.", bonddepository.address);
-
-// BondDepository_AVAX deploy
-    const AvaxBondDepository = await ethers.getContractFactory("AvaxBondDepository");
-    const avaxbonddepository = await AvaxBondDepository.deploy(
-        cunoro.address,
-        WAVAX,
-        treasury.address,
-        DAO,
-        AVAX_FEED
-    );
-    await avaxbonddepository.deployed();
-    // initializeBondTerms
-    tx = await avaxbonddepository.initializeBondTerms(
-        CONTROL_VARIABLE,
-        MIN_PRICE,
-        MAX_PAYOUT,
-        MAX_DEBT,
-        VESTING_TERM
-    );
-    // add depositor to treasury
-    await tx.wait();
-    tx = await treasury.queue(0, avaxbonddepository.address);
-    await tx.wait();
-    tx = await treasury.toggle(0, avaxbonddepository.address, ZERO_ADDRESS);
-    // setStaking
-    await tx.wait();
-    tx = await avaxbonddepository.setStaking(helper.address, true);
-    await tx.wait();
-
-    console.log("BondDepository_AVAX Deployed.", avaxbonddepository.address);
-
 // StandardBondingCalculator deploy
     const BondingCalculator = await ethers.getContractFactory("CunoroBondingCalculator");
     const bondingcalculator = await BondingCalculator.deploy(cunoro.address);
@@ -211,8 +150,6 @@ async function main() {
     console.log("Distributor : " + distributor.address);
     console.log("Helper : " + helper.address);
     console.log("Warmup : " + warmup.address);
-    console.log("BondDepository(BEND) : " + bonddepository.address);
-    console.log("BondDepository(AVAX) : " + avaxbonddepository.address);
     console.log("BondingCalculator : " + bondingcalculator.address);
     console.log("wsNORO : " + wsnoro.address);
 }
