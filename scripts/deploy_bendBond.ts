@@ -19,7 +19,7 @@ async function main() {
     console.log("Account balance:", (await deployer.getBalance()).toString());
     console.log("===================================================================");
 
-    const DAO = "0x8c8eC00fb235dE3922182b47d2E8f8e69268039a";
+    const DAO = "0x813C38214799535c1375606188aD7E8Fd1762651";
 
     const CUNORO_ADDRESS = "0x8810dc193bA78b0dB831687EBB8d79f24a8b5E81"
     const TREASURY_ADDRESS = "0xE62bec7F3Dba623223cb3Bd23f901dA3fAC42893"
