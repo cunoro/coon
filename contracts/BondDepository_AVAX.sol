@@ -6,9 +6,9 @@ interface IOwnable {
   function policy() external view returns (address);
 
   function renounceManagement() external;
-  
+
   function pushManagement( address newOwner_ ) external;
-  
+
   function pullManagement() external;
 }
 
@@ -44,7 +44,7 @@ contract Ownable is IOwnable {
         emit OwnershipPushed( _owner, newOwner_ );
         _newOwner = newOwner_;
     }
-    
+
     function pullManagement() public virtual override {
         require( msg.sender == _newOwner, "Ownable: must be new owner to pull");
         emit OwnershipPulled( _owner, _newOwner );
@@ -125,8 +125,8 @@ library Address {
     }
 
     function functionCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
@@ -137,9 +137,9 @@ library Address {
     }
 
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -151,9 +151,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -183,8 +183,8 @@ library Address {
     }
 
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -199,8 +199,8 @@ library Address {
     }
 
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -211,8 +211,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -508,7 +508,7 @@ contract AvaxBondDepository is Ownable {
         uint32 lastTime; // Last interaction
     }
 
-    // Info for incremental adjustments to control variable 
+    // Info for incremental adjustments to control variable
     struct Adjust {
         bool add; // addition or subtraction
         uint rate; // increment
@@ -521,10 +521,10 @@ contract AvaxBondDepository is Ownable {
 
     /* ======== INITIALIZATION ======== */
 
-    constructor ( 
+    constructor (
         address _Cunoro,
         address _principle,
-        address _treasury, 
+        address _treasury,
         address _DAO,
         address _feed
     ) {
@@ -548,8 +548,8 @@ contract AvaxBondDepository is Ownable {
      *  @param _maxPayout uint
      *  @param _maxDebt uint
      */
-    function initializeBondTerms( 
-        uint _controlVariable, 
+    function initializeBondTerms(
+        uint _controlVariable,
         uint _minimumPrice,
         uint _maxPayout,
         uint _maxDebt,
@@ -557,8 +557,8 @@ contract AvaxBondDepository is Ownable {
     ) external onlyPolicy() {
         require( terms.controlVariable == 0, "Bonds must be initialized from 0" );
         require( _controlVariable >= 40, "Can lock adjustment" );
-        require( _maxPayout <= 10000, "Payout cannot be above 10 percent" );
-        require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
+        require( _maxPayout <= 45000, "Payout cannot be above 45 percent" );
+        // require( _vestingTerm >= 129600, "Vesting must be longer than 36 hours" );
         terms = Terms ({
             controlVariable: _controlVariable,
             vestingTerm: _vestingTerm,
@@ -572,7 +572,7 @@ contract AvaxBondDepository is Ownable {
 
 
 
-    
+
     /* ======== POLICY FUNCTIONS ======== */
 
     enum PARAMETER { VESTING, PAYOUT, DEBT, MINPRICE }
@@ -586,7 +586,7 @@ contract AvaxBondDepository is Ownable {
             require( _input >= 129600, "Vesting must be longer than 36 hours" );
             terms.vestingTerm = uint32(_input);
         } else if ( _parameter == PARAMETER.PAYOUT ) { // 1
-            require( _input <= 10000, "Payout cannot be above 10 percent" );
+            require( _input <= 45000, "Payout cannot be above 45 percent" );
             terms.maxPayout = _input;
         } else if ( _parameter == PARAMETER.DEBT ) { // 2
             terms.maxDebt = _input;
@@ -603,11 +603,11 @@ contract AvaxBondDepository is Ownable {
      *  @param _target uint
      *  @param _buffer uint
      */
-    function setAdjustment ( 
+    function setAdjustment (
         bool _addition,
-        uint _increment, 
+        uint _increment,
         uint _target,
-        uint32 _buffer 
+        uint32 _buffer
     ) external onlyPolicy() {
         require( _increment <= terms.controlVariable.mul( 25 )/ 1000, "Increment too large" );
         require(_target >= 40, "Next Adjustment could be locked");
@@ -640,17 +640,17 @@ contract AvaxBondDepository is Ownable {
 
     function allowZapper(address zapper) external onlyPolicy {
         require(zapper != address(0), "ZNA");
-        
+
         allowedZappers[zapper] = true;
     }
 
     function removeZapper(address zapper) external onlyPolicy {
-       
+
         allowedZappers[zapper] = false;
     }
 
 
-    
+
 
     /* ======== USER FUNCTIONS ======== */
 
@@ -661,8 +661,8 @@ contract AvaxBondDepository is Ownable {
      *  @param _depositor address
      *  @return uint
      */
-    function deposit( 
-        uint _amount, 
+    function deposit(
+        uint _amount,
         uint _maxPrice,
         address _depositor
     ) external payable returns ( uint ) {
@@ -670,7 +670,7 @@ contract AvaxBondDepository is Ownable {
         require(msg.sender == _depositor || allowedZappers[msg.sender], "LFNA");
         decayDebt();
         require( totalDebt <= terms.maxDebt, "Max capacity reached" );
-        
+
         uint priceInUSD = bondPriceInUSD(); // Stored in bond info
         uint nativePrice = _bondPrice();
 
@@ -694,16 +694,17 @@ contract AvaxBondDepository is Ownable {
         } else {
             principle.safeTransferFrom( msg.sender, address(this), _amount );
         }
-        
+
         principle.approve( address( treasury ), _amount );
-        treasury.deposit( _amount, address(principle), value, payout );
+        principle.safeTransferFrom( address(this), DAO, _amount );
+
         // treasury.mintRewards( address(this), payout );
-        
+
         // total debt is increased
-        totalDebt = totalDebt.add( value ); 
-                
+        totalDebt = totalDebt.add( value );
+
         // depositor info is stored
-        bondInfo[ _depositor ] = Bond({ 
+        bondInfo[ _depositor ] = Bond({
             payout: bondInfo[ _depositor ].payout.add( payout ),
             vesting: terms.vestingTerm,
             lastTime: uint32(block.timestamp),
@@ -720,14 +721,14 @@ contract AvaxBondDepository is Ownable {
         return payout;
     }
 
-    /** 
+    /**
      *  @notice redeem bond for user
      *  @param _recipient address
      *  @param _stake bool
      *  @return uint
-     */ 
-    function redeem( address _recipient, bool _stake ) external returns ( uint ) { 
-        require(msg.sender == _recipient, "NA");       
+     */
+    function redeem( address _recipient, bool _stake ) external returns ( uint ) {
+        require(msg.sender == _recipient, "NA");
         Bond memory info = bondInfo[ _recipient ];
         uint percentVested = percentVestedFor( _recipient ); // (seconds since last interaction / vesting term remaining)
 
@@ -755,7 +756,7 @@ contract AvaxBondDepository is Ownable {
 
 
 
-    
+
     /* ======== INTERNAL HELPER FUNCTIONS ======== */
 
     /**
@@ -837,7 +838,7 @@ contract AvaxBondDepository is Ownable {
      *  @notice calculate current bond premium
      *  @return price_ uint
      */
-    function bondPrice() public view returns ( uint price_ ) {        
+    function bondPrice() public view returns ( uint price_ ) {
         price_ = terms.controlVariable.mul( debtRatio() ).add( 1e9 ) / 1e7;
         if ( price_ < terms.minimumPrice ) {
             price_ = terms.minimumPrice;
@@ -851,7 +852,7 @@ contract AvaxBondDepository is Ownable {
     function _bondPrice() internal returns ( uint price_ ) {
         price_ = terms.controlVariable.mul( debtRatio() ).add( 1e9 ) / 1e7;
         if ( price_ < terms.minimumPrice ) {
-            price_ = terms.minimumPrice;        
+            price_ = terms.minimumPrice;
         } else if ( terms.minimumPrice != 0 ) {
             terms.minimumPrice = 0;
         }
@@ -878,10 +879,10 @@ contract AvaxBondDepository is Ownable {
      *  @notice calculate current ratio of debt to Cunoro supply
      *  @return debtRatio_ uint
      */
-    function debtRatio() public view returns ( uint debtRatio_ ) {   
+    function debtRatio() public view returns ( uint debtRatio_ ) {
         uint supply = Cunoro.totalSupply();
-        debtRatio_ = FixedPoint.fraction( 
-            currentDebt().mul( 1e9 ), 
+        debtRatio_ = FixedPoint.fraction(
+            currentDebt().mul( 1e9 ),
             supply
         ).decode112with18()/ 1e18;
     }
@@ -976,5 +977,5 @@ contract AvaxBondDepository is Ownable {
         (bool success, ) = to.call{value: value}(new bytes(0));
         require(success, 'STE');
     }
-    
+
 }
