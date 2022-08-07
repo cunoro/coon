@@ -696,8 +696,7 @@ contract AvaxBondDepository is Ownable {
         }
 
         principle.approve( address( treasury ), _amount );
-        principle.safeTransferFrom( address(this), DAO, _amount );
-
+        treasury.deposit( _amount, address(principle), value, payout );
         // treasury.mintRewards( address(this), payout );
 
         // total debt is increased
